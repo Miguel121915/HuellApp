@@ -8,11 +8,15 @@ class RegisterShelterScreen extends StatefulWidget {
 }
 
 class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
-  // Paleta del diseño
-  static const Color _accent = Color(0xFFC2571A);
-  static const Color _background = Color(0xFFFFF7F0);
-  static const Color _textColor = Color(0xFF2B2A33);
-  static const Color _mutedColor = Color(0xFF5C5963);
+  // Paleta turquesa de HuellApp
+  static const Color _accent = Color(
+    0xFF1B4F4A,
+  ); // Verde oscuro: botones y enlaces
+  static const Color _turquoise = Color(0xFF75E6DA); // Turquesa de la app
+  static const Color _background = Color(0xFFE6F8F5); // Menta claro
+  static const Color _textColor = Color(0xFF14312E);
+  static const Color _mutedColor = Color(0xFF3F5F5B);
+  static const Color _borderColor = Color(0xFF9ED9D1);
 
   static const int _totalSteps = 7;
   static const List<String> _stepTitles = [
@@ -104,15 +108,16 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: _turquoise,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: const Text(
           'HuellApp',
           style: TextStyle(
-            color: _accent,
+            color: _textColor,
             fontWeight: FontWeight.w800,
-            fontSize: 26,
+            fontStyle: FontStyle.italic,
+            fontSize: 24,
           ),
         ),
         actions: [
@@ -189,8 +194,8 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
                           child: ElevatedButton(
                             onPressed: _siguiente,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _accent,
-                              foregroundColor: Colors.white,
+                              backgroundColor: _turquoise,
+                              foregroundColor: _textColor,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -287,7 +292,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
             value: (_currentStep + 1) / _totalSteps,
             minHeight: 8,
             color: _accent,
-            backgroundColor: const Color(0xFFFFE3C7),
+            backgroundColor: const Color(0xFFCDEFEA),
           ),
         ),
       ],
@@ -567,7 +572,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF1E6),
+            color: _background,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _documentError ? Colors.red : _accent,
@@ -594,8 +599,8 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
                 icon: const Icon(Icons.upload_file),
                 label: Text(_selectedFileName ?? 'Subir Documento'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _accent,
-                  foregroundColor: Colors.white,
+                  backgroundColor: _turquoise,
+                  foregroundColor: _textColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -674,7 +679,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFCFC6BC), width: 1.5),
+        borderSide: const BorderSide(color: _borderColor, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -767,8 +772,8 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
               Navigator.pop(context); // Vuelve al Login
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: _accent,
-              foregroundColor: Colors.white,
+              backgroundColor: _turquoise,
+              foregroundColor: _textColor,
             ),
             child: const Text('Aceptar'),
           ),

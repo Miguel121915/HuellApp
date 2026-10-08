@@ -8,11 +8,15 @@ class RegisterUserScreen extends StatefulWidget {
 }
 
 class _RegisterUserScreenState extends State<RegisterUserScreen> {
-  // Paleta compartida con el registro de refugio
-  static const Color _accent = Color(0xFFC2571A);
-  static const Color _background = Color(0xFFFFF7F0);
-  static const Color _textColor = Color(0xFF2B2A33);
-  static const Color _mutedColor = Color(0xFF5C5963);
+  // Paleta turquesa de HuellApp
+  static const Color _accent = Color(
+    0xFF1B4F4A,
+  ); // Verde oscuro: botones y enlaces
+  static const Color _turquoise = Color(0xFF75E6DA); // Turquesa de la app
+  static const Color _background = Color(0xFFE6F8F5); // Menta claro
+  static const Color _textColor = Color(0xFF14312E);
+  static const Color _mutedColor = Color(0xFF3F5F5B);
+  static const Color _borderColor = Color(0xFF9ED9D1);
 
   final _formKey = GlobalKey<FormState>();
 
@@ -36,15 +40,16 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: _turquoise,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: const Text(
           'HuellApp',
           style: TextStyle(
-            color: _accent,
+            color: _textColor,
             fontWeight: FontWeight.w800,
-            fontSize: 26,
+            fontStyle: FontStyle.italic,
+            fontSize: 24,
           ),
         ),
         actions: [
@@ -200,8 +205,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       ElevatedButton(
                         onPressed: _crearCuenta,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _accent,
-                          foregroundColor: Colors.white,
+                          backgroundColor: _turquoise,
+                          foregroundColor: _textColor,
                           minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -280,7 +285,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFCFC6BC), width: 1.5),
+        borderSide: const BorderSide(color: _borderColor, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
