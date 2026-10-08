@@ -4,11 +4,11 @@ import 'package:image_picker/image_picker.dart';
 
 class ModeloPublicacion {
   final String id;
-  final String usuario;
-  final String tiempo;
-  final String texto;
-  final String? urlImagen;
-  final Uint8List? bytesImagen;
+  String usuario;
+  String tiempo;
+  String texto;
+  String? urlImagen;
+  Uint8List? bytesImagen;
   int meGusta;
   bool leGusta;
   int compartidos;
@@ -44,7 +44,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
       id: '1',
       usuario: 'HuellApp Oficial',
       tiempo: 'Hace 5 h · 🌐',
-      texto: 'La familia nunca apaga tu brillo... ❤️✨',
+      texto: 'La familia nunca apaga tu brillo... ❤️️✨',
       meGusta: 121,
       compartidos: 12,
       comentarios: ['¡Qué gran mensaje!', 'Saludos a la comunidad HuellApp.'],
@@ -102,6 +102,121 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
         publicacion.meGusta--;
       }
     });
+  }
+
+  void _abrirImagenPantallaCompleta(ModeloPublicacion publicacion) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: publicacion.bytesImagen != null
+                  ? Image.memory(
+                      publicacion.bytesImagen!,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  : Image.network(
+                      publicacion.urlImagen!,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editarPublicacion(ModeloPublicacion publicacion) {
+    final TextEditingController editarController = TextEditingController(
+      text: publicacion.texto,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar publicación'),
+        content: TextField(
+          controller: editarController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Edita el contenido...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF75E6DA),
+            ),
+            onPressed: () {
+              setState(() {
+                publicacion.texto = editarController.text.trim();
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Publicación actualizada')),
+              );
+            },
+            child: const Text('Guardar', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _borrarPublicacion(ModeloPublicacion publicacion) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Eliminar publicación?'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              setState(() {
+                _publicaciones.removeWhere((item) => item.id == publicacion.id);
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Publicación eliminada')),
+              );
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _mostrarComentarios(ModeloPublicacion publicacion) {
@@ -169,10 +284,14 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                   ),
                   const Divider(),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
                         child: TextField(
                           controller: comentarioController,
+                          minLines: 1,
+                          maxLines: 3,
+                          keyboardType: TextInputType.multiline,
                           decoration: const InputDecoration(
                             hintText: 'Escribe un comentario...',
                             border: OutlineInputBorder(),
@@ -226,20 +345,32 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
   }
 
   Widget _renderizarImagen(ModeloPublicacion publicacion) {
-    if (publicacion.bytesImagen != null) {
-      return Image.memory(
-        publicacion.bytesImagen!,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    } else if (publicacion.urlImagen != null &&
-        publicacion.urlImagen!.isNotEmpty) {
-      return Image.network(
-        publicacion.urlImagen!,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
+    if (publicacion.bytesImagen != null ||
+        (publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty)) {
+      return GestureDetector(
+        onTap: () => _abrirImagenPantallaCompleta(publicacion),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxHeight: 380),
+          decoration: BoxDecoration(
+            color: Colors.black12,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: publicacion.bytesImagen != null
+                ? Image.memory(
+                    publicacion.bytesImagen!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                  )
+                : Image.network(
+                    publicacion.urlImagen!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                  ),
+          ),
+        ),
       );
     }
     return const SizedBox.shrink();
@@ -262,7 +393,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            // Caja para redactar publicación con opción de foto
+            // Caja para redactar publicación
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -282,6 +413,10 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                         Expanded(
                           child: TextField(
                             controller: _publicacionController,
+                            maxLines: null, // Permite que el campo crezca dinámicamente con cada Enter
+                            minLines: 1, // Inicia con altura de 1 línea
+                            keyboardType: TextInputType
+                                .multiline, // Habilita el teclado multilínea
                             decoration: const InputDecoration(
                               hintText: '¿Qué quieres reportar o publicar en HuellApp?',
                               border: InputBorder.none,
@@ -299,9 +434,9 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                             borderRadius: BorderRadius.circular(8),
                             child: Image.memory(
                               _bytesImagenWeb!,
-                              height: 140,
+                              height: 160,
                               width: double.infinity,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                             ),
                           ),
                           IconButton(
@@ -399,7 +534,49 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.more_horiz, color: Colors.grey),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_horiz,
+                                color: Colors.grey,
+                              ),
+                              onSelected: (value) {
+                                if (value == 'editar') {
+                                  _editarPublicacion(pub);
+                                } else if (value == 'borrar') {
+                                  _borrarPublicacion(pub);
+                                }
+                              },
+                              itemBuilder: (BuildContext context) => [
+                                const PopupMenuItem(
+                                  value: 'editar',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.edit,
+                                        color: Colors.blue,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Editar publicación'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'borrar',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Borrar publicación'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         if (pub.texto.isNotEmpty) ...[
@@ -409,10 +586,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                         if (pub.bytesImagen != null ||
                             pub.urlImagen != null) ...[
                           const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _renderizarImagen(pub),
-                          ),
+                          _renderizarImagen(pub),
                         ],
                         const SizedBox(height: 10),
                         Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
+import 'package:huellapp/screens/refugios_screen.dart';
 
 class KiroHomeScreen extends StatefulWidget {
   const KiroHomeScreen({super.key});
@@ -15,7 +16,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
   static const Color primaryTurquoise = Color(0xFF75E6DA);
   static const Color darkBorderColor = Color(0xFF1B4943);
 
-  // Función para abrir la ventana modal de Iniciar Sesión al tocar la huella
   void _mostrarLoginModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -131,7 +131,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
       ),
       body: Stack(
         children: [
-          // Fondo con patrón de huellitas
           Positioned.fill(
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
@@ -147,12 +146,10 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
               ),
             ),
           ),
-          // Contenido principal
           SafeArea(
             child: Column(
               children: [
                 const Spacer(),
-                // Mensaje del Asistente KIRO
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -181,14 +178,12 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Icono del Robot KIRO
                 const Icon(
                   Icons.smart_toy_rounded,
                   size: 140,
                   color: primaryTurquoise,
                 ),
                 const Spacer(),
-                // Campo de Búsqueda Inferior
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -228,20 +223,22 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
           ),
         ],
       ),
-      // Barra de navegación inferior
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
           if (index == 0) {
-            // Si toca el botón Foro (posición 0), abre la pantalla del foro
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const MuroHuellAppScreen(),
               ),
             );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const RefugiosScreen()),
+            );
           } else {
-            // Para los demás botones, cambia de pestaña normalmente
             setState(() {
               _selectedIndex = index;
             });
@@ -253,7 +250,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
         unselectedItemColor: Colors.black,
         showUnselectedLabels: true,
         items: [
-          // 1. Foro
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -269,8 +265,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
             ),
             label: 'Foro',
           ),
-
-          // 2. Refugios
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -286,8 +280,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
             ),
             label: 'Refugios',
           ),
-
-          // 3. Inicio (Círculo central)
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(12),
@@ -304,8 +296,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
             ),
             label: 'Inicio',
           ),
-
-          // 4. Reportar
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -327,8 +317,6 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
             ),
             label: 'Reportar',
           ),
-
-          // 5. Coincidencias
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(4),
