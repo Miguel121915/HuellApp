@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/screens/refugios_screen.dart';
+import 'package:huellapp/screens/reportar_screen.dart';
+import 'package:huellapp/screens/coincidencias_screen.dart';
 
 class KiroHomeScreen extends StatefulWidget {
   const KiroHomeScreen({super.key});
@@ -11,7 +13,7 @@ class KiroHomeScreen extends StatefulWidget {
 
 class _KiroHomeScreenState extends State<KiroHomeScreen> {
   final TextEditingController _queryController = TextEditingController();
-  int _selectedIndex = 2;
+  int _selectedIndex = 2; // Por defecto inicia en 'Inicio' (Kiro)
 
   static const Color primaryTurquoise = Color(0xFF75E6DA);
   static const Color darkBorderColor = Color(0xFF1B4943);
@@ -129,120 +131,120 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
           ),
         ],
       ),
-      body: Stack(
+      // IndexedStack gestiona las 5 vistas según el índice del BottomNavigationBar
+      body: IndexedStack(
+        index: _selectedIndex,
         children: [
-          Positioned.fill(
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 35,
-                crossAxisSpacing: 35,
-              ),
-              itemBuilder: (context, index) => Icon(
-                Icons.pets,
-                color: Colors.teal.shade100.withOpacity(0.4),
-                size: 28,
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
+          const MuroHuellAppScreen(), // Índice 0: Foro
+          const RefugiosScreen(), // Índice 1: Refugios
+          // Índice 2: Pantalla principal de Kiro (Inicio)
+          Stack(
+            children: [
+              Positioned.fill(
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 35,
+                    crossAxisSpacing: 35,
                   ),
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                  itemBuilder: (context, index) => Icon(
+                    Icons.pets,
+                    color: Colors.teal.shade100.withOpacity(0.4),
+                    size: 28,
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 15,
                       ),
-                    ],
-                  ),
-                  child: const Text(
-                    'Hola, me llamo KIRO',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Icon(
-                  Icons.smart_toy_rounded,
-                  size: 140,
-                  color: primaryTurquoise,
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.teal.shade50,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: darkBorderColor, width: 1.5),
-                    ),
-                    child: TextField(
-                      controller: _queryController,
-                      decoration: InputDecoration(
-                        hintText: 'Busqueda',
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 15,
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Hola, me llamo KIRO',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        border: InputBorder.none,
-                        suffixIcon: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: CircleAvatar(
-                            backgroundColor: darkBorderColor,
-                            child: const Icon(
-                              Icons.search,
-                              color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Icon(
+                      Icons.smart_toy_rounded,
+                      size: 140,
+                      color: primaryTurquoise,
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: darkBorderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _queryController,
+                          decoration: InputDecoration(
+                            hintText: 'Busqueda',
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 15,
+                            ),
+                            border: InputBorder.none,
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: CircleAvatar(
+                                backgroundColor: darkBorderColor,
+                                child: const Icon(
+                                  Icons.search,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const ReportarScreen(), // Índice 3: Reportar con IA
+          CoincidenciasScreen(), // Índice 4: Coincidencias conectadas al Foro
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MuroHuellAppScreen(),
-              ),
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RefugiosScreen()),
-            );
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
+          setState(() {
+            _selectedIndex = index;
+          });
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: primaryTurquoise,
