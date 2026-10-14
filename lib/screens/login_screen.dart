@@ -78,6 +78,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _entrar() {
+    // Si el login se abrió desde la huellita de la app (hay una pantalla
+    // atrás), solo se regresa al inicio. Si es el primer inicio, se entra.
+    if (Navigator.canPop(context)) {
+      Navigator.popUntil(context, (route) => route.isFirst);
+      return;
+    }
     // TODO: cuando existan los paneles, enviar a cada rol a su pantalla:
     //   'Usuario' -> AppNavigation()
     //   'Refugio' -> panel del refugio

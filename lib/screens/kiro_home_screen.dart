@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:huellapp/screens/muro_huellapp_screen.dart';
-import 'package:huellapp/screens/refugios_screen.dart';
-import 'package:huellapp/screens/reportar_screen.dart';
-import 'package:huellapp/screens/coincidencias_screen.dart';
+import 'package:huellapp/screens/login_screen.dart';
 
+/// Pantalla de KIRO: se abre desde el botón flotante del inicio.
+/// Muestra en qué puede ayudar y una caja para escribirle.
 class KiroHomeScreen extends StatefulWidget {
   const KiroHomeScreen({super.key});
 
@@ -11,94 +10,53 @@ class KiroHomeScreen extends StatefulWidget {
   State<KiroHomeScreen> createState() => _KiroHomeScreenState();
 }
 
+class _TemaAyuda {
+  final IconData icono;
+  final String texto;
+  final String pregunta;
+  const _TemaAyuda(this.icono, this.texto, this.pregunta);
+}
+
 class _KiroHomeScreenState extends State<KiroHomeScreen> {
   final TextEditingController _queryController = TextEditingController();
-  int _selectedIndex = 2; // Por defecto inicia en 'Inicio' (Kiro)
 
   static const Color primaryTurquoise = Color(0xFF75E6DA);
   static const Color darkBorderColor = Color(0xFF1B4943);
 
-  void _mostrarLoginModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            top: 20,
-            left: 20,
-            right: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Center(
-                child: Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: darkBorderColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryTurquoise,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sesión iniciada con éxito'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Ingresar',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  // En qué puede ayudar KIRO (ajustar según lo que KIRO pueda hacer)
+  static const List<_TemaAyuda> _temas = [
+    _TemaAyuda(
+      Icons.pets,
+      'Encontrar una mascota para adoptar',
+      '¿Cómo puedo adoptar una mascota?',
+    ),
+    _TemaAyuda(
+      Icons.location_on,
+      'Ver refugios cerca de ti',
+      '¿Qué refugios hay cerca de mí?',
+    ),
+    _TemaAyuda(
+      Icons.warning_amber_rounded,
+      'Reportar una mascota perdida o encontrada',
+      '¿Cómo reporto una mascota?',
+    ),
+    _TemaAyuda(
+      Icons.favorite_border,
+      'Resolver dudas sobre la adopción',
+      '¿Qué necesito para adoptar?',
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
+  void _usarTema(_TemaAyuda tema) {
+    _queryController.text = tema.pregunta;
+    _queryController.selection = TextSelection.collapsed(
+      offset: tema.pregunta.length,
     );
   }
 
@@ -111,6 +69,13 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                tooltip: 'Volver',
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: const Text(
           'HuellApp',
           style: TextStyle(
@@ -124,225 +89,160 @@ class _KiroHomeScreenState extends State<KiroHomeScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
-              tooltip: 'Iniciar Sesión',
+              tooltip: 'Iniciar sesión',
               icon: const Icon(Icons.pets, color: Colors.black, size: 32),
-              onPressed: () => _mostrarLoginModal(context),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
             ),
           ),
         ],
       ),
-      // IndexedStack gestiona las 5 vistas según el índice del BottomNavigationBar
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: Stack(
         children: [
-          const MuroHuellAppScreen(), // Índice 0: Foro
-          const RefugiosScreen(), // Índice 1: Refugios
-          // Índice 2: Pantalla principal de Kiro (Inicio)
-          Stack(
-            children: [
-              Positioned.fill(
-                child: GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 35,
-                    crossAxisSpacing: 35,
-                  ),
-                  itemBuilder: (context, index) => Icon(
-                    Icons.pets,
-                    color: Colors.teal.shade100.withOpacity(0.4),
-                    size: 28,
-                  ),
-                ),
+          Positioned.fill(
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 35,
+                crossAxisSpacing: 35,
               ),
-              SafeArea(
-                child: Column(
-                  children: [
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                      margin: const EdgeInsets.symmetric(horizontal: 40),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+              itemBuilder: (context, index) => Icon(
+                Icons.pets,
+                color: Colors.teal.shade100.withValues(alpha: 0.4),
+                size: 28,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
                           ),
-                        ],
-                      ),
-                      child: const Text(
-                        'Hola, me llamo KIRO',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Icon(
-                      Icons.smart_toy_rounded,
-                      size: 140,
-                      color: primaryTurquoise,
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: darkBorderColor,
-                            width: 1.5,
+                          margin: const EdgeInsets.symmetric(horizontal: 40),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ),
-                        child: TextField(
-                          controller: _queryController,
-                          decoration: InputDecoration(
-                            hintText: 'Busqueda',
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 15,
+                          child: const Text(
+                            'Hola, me llamo KIRO',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
-                            border: InputBorder.none,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: CircleAvatar(
-                                backgroundColor: darkBorderColor,
-                                child: const Icon(
-                                  Icons.search,
-                                  color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Icon(
+                          Icons.smart_toy_rounded,
+                          size: 110,
+                          color: primaryTurquoise,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Puedo ayudarte a:',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: darkBorderColor,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              for (final tema in _temas)
+                                ActionChip(
+                                  avatar: Icon(
+                                    tema.icono,
+                                    size: 18,
+                                    color: darkBorderColor,
+                                  ),
+                                  label: Text(
+                                    tema.texto,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                  side: const BorderSide(
+                                    color: darkBorderColor,
+                                  ),
+                                  onPressed: () => _usarTema(tema),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.teal.shade50,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: darkBorderColor,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: _queryController,
+                              // TODO: conectar con las respuestas de KIRO
+                              decoration: InputDecoration(
+                                hintText: 'Pregúntale a KIRO',
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 15,
+                                ),
+                                border: InputBorder.none,
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: CircleAvatar(
+                                    backgroundColor: darkBorderColor,
+                                    child: const Icon(
+                                      Icons.send,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const ReportarScreen(), // Índice 3: Reportar con IA
-          CoincidenciasScreen(), // Índice 4: Coincidencias conectadas al Foro
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: primaryTurquoise,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black,
-        showUnselectedLabels: true,
-        items: [
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.forum_outlined,
-                color: Colors.black,
-                size: 24,
-              ),
-            ),
-            label: 'Foro',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.maps_home_work_outlined,
-                color: Colors.black,
-                size: 24,
-              ),
-            ),
-            label: 'Refugios',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: primaryTurquoise, width: 2),
-              ),
-              child: const Icon(
-                Icons.other_houses_outlined,
-                color: Colors.black,
-                size: 32,
-              ),
-            ),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(Icons.videocam_outlined, color: Colors.black, size: 24),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Icon(Icons.pets, color: Colors.red, size: 8),
-                  ),
-                ],
-              ),
-            ),
-            label: 'Reportar',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Text(
-                  '1',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
                   ),
                 ),
               ),
             ),
-            label: 'Coincidencias',
           ),
         ],
       ),

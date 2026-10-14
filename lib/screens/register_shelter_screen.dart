@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/widgets/selector_ubicacion.dart';
 
 class RegisterShelterScreen extends StatefulWidget {
   const RegisterShelterScreen({super.key});
@@ -71,6 +72,11 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
   // 6. Documento que avale
   String? _selectedFileName;
   bool _documentError = false;
+
+  // Ubicación en el mapa (para aparecer en "Refugios cerca de ti")
+  double? _latitud;
+  double? _longitud;
+  bool _ubicacionError = false;
 
   // 7. Aceptación
   bool _acceptTerms = false;
@@ -481,6 +487,17 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           'Horario de atención o visitas',
           Icons.access_time,
         ),
+        const SizedBox(height: 20),
+        SelectorUbicacion(
+          latitud: _latitud,
+          longitud: _longitud,
+          hayError: _ubicacionError,
+          onCambio: (punto) => setState(() {
+            _latitud = punto?.latitude;
+            _longitud = punto?.longitude;
+            _ubicacionError = false;
+          }),
+        ),
       ],
     );
   }
@@ -726,6 +743,12 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
 
     // Valida los campos de la etapa actual
     if (!_formKey.currentState!.validate()) return;
+
+    // La ubicación en el mapa es obligatoria en la etapa 3
+    if (_currentStep == 2 && (_latitud == null || _longitud == null)) {
+      setState(() => _ubicacionError = true);
+      return;
+    }
 
     // El comprobante es obligatorio en la etapa 6
     if (_currentStep == 5 && _selectedFileName == null) {
