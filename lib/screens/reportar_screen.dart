@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:huellapp/servicios_ia.dart'; // Importa tu servicio de IA
 
 /// Colores que cambian según el tipo de reporte:
 /// ámbar cuando se busca una mascota y verde cuando se encontró.
@@ -69,6 +70,9 @@ class _ReportarScreenState extends State<ReportarScreen> {
   static const double _anchoMaximo = 640;
 
   final _formKey = GlobalKey<FormState>();
+
+  // Instancia del servicio de Inteligencia Artificial
+  final ServiciosIA _serviciosIA = ServiciosIA();
 
   String _tipoReporte = 'Extraviada';
 
@@ -139,7 +143,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
     );
   }
 
-  void _enviarReporte() {
+  void _enviarReporte() async {
     if (_formKey.currentState!.validate()) {
       if (_imagenBytes == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,17 +157,18 @@ class _ReportarScreenState extends State<ReportarScreen> {
         return;
       }
 
+      // 1. Mostrar diálogo de carga mientras la IA procesa la petición
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
+        builder: (context) => const AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               CircularProgressIndicator(color: darkBorderColor),
               SizedBox(height: 16),
               Text(
-                'Analizando imagen con IA y generando alerta...',
+                'Gemini está analizando los rasgos y generando la alerta...',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -172,28 +177,97 @@ class _ReportarScreenState extends State<ReportarScreen> {
         ),
       );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        Navigator.pop(context);
+      // 2. Construir el texto descriptivo combinando los campos del formulario
+      String textoParaAnalizar =
+          "Tipo: $_tipoMascota, "
+          "Nombre: ${_nombreMascotaController.text.isEmpty ? 'No proporcionado' : _nombreMascotaController.text}, "
+          "Raza o tipo estimado: ${_razaController.text}, "
+          "Señas particulares y descripción: ${_descripcionController.text}, "
+          "Ubicación: ${_ubicacionController.text}";
+
+      // 3. Enviar la petición POST al backend mediante el servicio
+      Map<String, dynamic>? resultadoIA = await _serviciosIA
+          .analizarMascotaConIA(textoParaAnalizar);
+
+      // Cerrar el diálogo de carga
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (resultadoIA != null) {
+        // 4. Éxito: Tenemos los datos estructurados devueltos por Gemini
+        String razaEstimada = resultadoIA['razaEstimada'] ?? 'Desconocida';
+        String colorPrincipal =
+            resultadoIA['colorPrincipal'] ?? 'No especificado';
+        String tamano = resultadoIA['tamano'] ?? 'Mediano';
+        String senas = resultadoIA['senasParticulares'] ?? '';
+        String resumenAlerta = resultadoIA['resumenAlerta'] ?? '';
+
+        // Mostrar un diálogo con el resultado estructurado de la IA
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('¡Reporte Generado con Éxito!'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'La IA analizó tu reporte y extrajo los siguientes datos para las Coincidencias:',
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '• Raza: $razaEstimada',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text('• Color: $colorPrincipal'),
+                  Text('• Tamaño: $tamano'),
+                  Text('• Señas: $senas'),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Resumen: "$resumenAlerta"',
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cierra alerta
+                  _formKey.currentState!.reset();
+                  setState(() {
+                    _imagenBytes = null;
+                    _tipoMascota = 'Perro';
+                    _nombreMascotaController.clear();
+                    _razaController.clear();
+                    _ubicacionController.clear();
+                    _descripcionController.clear();
+                  });
+                },
+                child: const Text(
+                  'Aceptar',
+                  style: TextStyle(
+                    color: darkBorderColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Error de red o servidor apagado
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              '¡Reporte creado con éxito! Se han buscado coincidencias.',
+              'No se pudo conectar con el servidor de Node.js. Asegúrate de encenderlo.',
             ),
-            backgroundColor: darkBorderColor,
+            backgroundColor: Colors.red,
           ),
         );
-
-        _formKey.currentState!.reset();
-        setState(() {
-          _imagenBytes = null;
-          _tipoMascota = 'Perro';
-          _nombreMascotaController.clear();
-          _razaController.clear();
-          _ubicacionController.clear();
-          _descripcionController.clear();
-        });
-      });
+      }
     }
   }
 
@@ -445,14 +519,14 @@ class _ReportarScreenState extends State<ReportarScreen> {
                   )
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(
                         Icons.add_a_photo_outlined,
                         size: 48,
                         color: darkBorderColor,
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: 8),
+                      Text(
                         'Toca aquí para subir foto de la mascota',
                         style: TextStyle(
                           color: darkBorderColor,

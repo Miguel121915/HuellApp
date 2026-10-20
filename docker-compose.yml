@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: huellapp_oracle
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PWD=HuellApp2026_Secure*
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+volumes:
+  oracle_data:
