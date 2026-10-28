@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:huellapp/servicios_ia.dart'; // Importa tu servicio de IA
+import 'package:huellapp/servicios_ia.dart';
+import 'package:huellapp/screens/coincidencias_screen.dart'; // Ajusta la ruta a tu carpeta de screens
+import 'package:huellapp/screens/foro_screen.dart'; // Ajusta la ruta a tu carpeta de screens
 
-/// Colores que cambian según el tipo de reporte:
-/// ámbar cuando se busca una mascota y verde cuando se encontró.
+/// Colores que cambian según el tipo de reporte
 class _Paleta {
   final Color principal;
   final Color suave;
@@ -70,13 +71,9 @@ class _ReportarScreenState extends State<ReportarScreen> {
   static const double _anchoMaximo = 640;
 
   final _formKey = GlobalKey<FormState>();
-
-  // Instancia del servicio de Inteligencia Artificial
   final ServiciosIA _serviciosIA = ServiciosIA();
 
   String _tipoReporte = 'Extraviada';
-
-  // Tipo de mascota seleccionado (Perro, Gato u Otro)
   String _tipoMascota = 'Perro';
 
   final TextEditingController _nombreMascotaController =
@@ -85,9 +82,11 @@ class _ReportarScreenState extends State<ReportarScreen> {
   final TextEditingController _ubicacionController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
 
-  // Guardamos los bytes de la imagen para compatibilidad total con Web y Móvil
   Uint8List? _imagenBytes;
   final ImagePicker _picker = ImagePicker();
+
+  // 👈 NUEVO: Estado de carga nativo sin modales congelados
+  bool _estaCargando = false;
 
   _Paleta get _paleta =>
       _tipoReporte == 'Extraviada' ? _paletaBusca : _paletaEncontre;
@@ -101,7 +100,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
     super.dispose();
   }
 
-  // Método universal compatible con Web y App nativa
   Future<void> _seleccionarImagen(ImageSource source) async {
     final XFile? image = await _picker.pickImage(
       source: source,
@@ -144,130 +142,103 @@ class _ReportarScreenState extends State<ReportarScreen> {
   }
 
   void _enviarReporte() async {
-    if (_formKey.currentState!.validate()) {
-      if (_imagenBytes == null) {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_imagenBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Por favor, añade una foto de la mascota para el análisis de IA',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Activar loader en pantalla
+    setState(() {
+      _estaCargando = true;
+    });
+
+    final String textoParaAnalizar =
+        "Tipo: $_tipoMascota, "
+        "Nombre: ${_nombreMascotaController.text.isEmpty ? 'No proporcionado' : _nombreMascotaController.text}, "
+        "Raza o tipo estimado: ${_razaController.text}, "
+        "Señas particulares y descripción: ${_descripcionController.text}, "
+        "Ubicación: ${_ubicacionController.text}";
+
+    Map<String, dynamic>? respuestaBackend;
+
+    try {
+      respuestaBackend = await _serviciosIA.analizarMascotaConIA(
+        textoParaAnalizar,
+        bytesImagen: _imagenBytes,
+        tipoReporte: _tipoReporte,
+        tipoMascota: _tipoMascota,
+        nombreMascota: _nombreMascotaController.text,
+        zonaUbicacion: _ubicacionController.text,
+      );
+    } catch (e) {
+      debugPrint('❌ Error al procesar reporte: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _estaCargando = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    if (respuestaBackend != null && respuestaBackend['exito'] == true) {
+      final List coincidencias = respuestaBackend['coincidencias'] ?? [];
+
+      if (coincidencias.isNotEmpty) {
+        // 🔀 ESCENARIO A: HAY COINCIDENCIAS -> Ir a CoincidenciasScreen
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Por favor, añade una foto de la mascota para el análisis de IA',
+              '¡Coincidencia detectada! Redirigiendo a las similitudes...',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: darkBorderColor,
           ),
         );
-        return;
-      }
 
-      // 1. Mostrar diálogo de carga mientras la IA procesa la petición
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: darkBorderColor),
-              SizedBox(height: 16),
-              Text(
-                'Gemini está analizando los rasgos y generando la alerta...',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      // 2. Construir el texto descriptivo combinando los campos del formulario
-      String textoParaAnalizar =
-          "Tipo: $_tipoMascota, "
-          "Nombre: ${_nombreMascotaController.text.isEmpty ? 'No proporcionado' : _nombreMascotaController.text}, "
-          "Raza o tipo estimado: ${_razaController.text}, "
-          "Señas particulares y descripción: ${_descripcionController.text}, "
-          "Ubicación: ${_ubicacionController.text}";
-
-      // 3. Enviar la petición POST al backend mediante el servicio
-      Map<String, dynamic>? resultadoIA = await _serviciosIA
-          .analizarMascotaConIA(textoParaAnalizar);
-
-      // Cerrar el diálogo de carga
-      if (!mounted) return;
-      Navigator.pop(context);
-
-      if (resultadoIA != null) {
-        // 4. Éxito: Tenemos los datos estructurados devueltos por Gemini
-        String razaEstimada = resultadoIA['razaEstimada'] ?? 'Desconocida';
-        String colorPrincipal =
-            resultadoIA['colorPrincipal'] ?? 'No especificado';
-        String tamano = resultadoIA['tamano'] ?? 'Mediano';
-        String senas = resultadoIA['senasParticulares'] ?? '';
-        String resumenAlerta = resultadoIA['resumenAlerta'] ?? '';
-
-        // Mostrar un diálogo con el resultado estructurado de la IA
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('¡Reporte Generado con Éxito!'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'La IA analizó tu reporte y extrajo los siguientes datos para las Coincidencias:',
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '• Raza: $razaEstimada',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text('• Color: $colorPrincipal'),
-                  Text('• Tamaño: $tamano'),
-                  Text('• Señas: $senas'),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Resumen: "$resumenAlerta"',
-                    style: const TextStyle(fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CoincidenciasScreen(
+              dynamicCoincidencias: coincidencias,
+              reporteId: respuestaBackend!['reporteId'],
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Cierra alerta
-                  _formKey.currentState!.reset();
-                  setState(() {
-                    _imagenBytes = null;
-                    _tipoMascota = 'Perro';
-                    _nombreMascotaController.clear();
-                    _razaController.clear();
-                    _ubicacionController.clear();
-                    _descripcionController.clear();
-                  });
-                },
-                child: const Text(
-                  'Aceptar',
-                  style: TextStyle(
-                    color: darkBorderColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
           ),
         );
       } else {
-        // Error de red o servidor apagado
+        // 🔀 ESCENARIO B: NO HAY COINCIDENCIAS -> Ir a ForoScreen
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'No se pudo conectar con el servidor de Node.js. Asegúrate de encenderlo.',
+              'Reporte publicado exitosamente en el Foro comunitario.',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.green,
           ),
         );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ForoScreen()),
+        );
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Ocurrió un problema al procesar la solicitud. Revisa la terminal del servidor.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -277,59 +248,94 @@ class _ReportarScreenState extends State<ReportarScreen> {
 
     return Scaffold(
       backgroundColor: backgroundLight,
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _anchoMaximo),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildBanner(p),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildFoto(p),
-                        const SizedBox(height: 20),
-                        _buildDatos(p),
-                        const SizedBox(height: 20),
-                        _buildLugar(p),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: p.principal,
-                            foregroundColor: p.oscuro,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: p.oscuro, width: 1.5),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _anchoMaximo),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildBanner(p),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildFoto(p),
+                            const SizedBox(height: 20),
+                            _buildDatos(p),
+                            const SizedBox(height: 20),
+                            _buildLugar(p),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: p.principal,
+                                foregroundColor: p.oscuro,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: p.oscuro, width: 1.5),
+                                ),
+                              ),
+                              onPressed: _estaCargando ? null : _enviarReporte,
+                              child: const Text(
+                                'Generar Alerta y Buscar Coincidencias',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                          onPressed: _enviarReporte,
-                          child: const Text(
-                            'Generar Alerta y Buscar Coincidencias',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+
+          // 👈 NUEVO: Overlay de carga limpio centrado en pantalla
+          if (_estaCargando)
+            Container(
+              color: Colors.black45,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: darkBorderColor),
+                      SizedBox(height: 16),
+                      Text(
+                        'Gemini está analizando los rasgos y buscando coincidencias...',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: darkBorderColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  // Banner superior dinámico con estilo de radar/mascota
   Widget _buildBanner(_Paleta p) {
     return Container(
       height: 226,
@@ -489,7 +495,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
     );
   }
 
-  // Sección de la Tarjeta de Foto
   Widget _buildFoto(_Paleta p) {
     return _tarjeta(
       encabezado: _encabezado(
@@ -600,7 +605,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
     );
   }
 
-  // Sección de Datos de la Mascota
   Widget _buildDatos(_Paleta p) {
     return _tarjeta(
       encabezado: _encabezado(p, Icons.pets, 'Sobre la mascota'),
@@ -684,7 +688,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
     );
   }
 
-  // Sección de Ubicación
   Widget _buildLugar(_Paleta p) {
     return _tarjeta(
       encabezado: _encabezado(p, Icons.location_on_outlined, p.donde),
@@ -699,7 +702,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
     );
   }
 
-  // Widgets auxiliares para mantener limpia y modular la interfaz
   Widget _tarjeta({required Widget encabezado, required List<Widget> hijos}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -779,7 +781,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
   }
 }
 
-// Pintor decorativo para los círculos de radar en el banner
 class _RadarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

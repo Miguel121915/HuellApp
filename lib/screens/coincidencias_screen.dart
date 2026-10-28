@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class CoincidenciasScreen extends StatefulWidget {
-  const CoincidenciasScreen({super.key});
+  final List dynamicCoincidencias;
+  final int? reporteId;
+
+  const CoincidenciasScreen({
+    super.key,
+    this.dynamicCoincidencias = const [],
+    this.reporteId,
+  });
 
   @override
   State<CoincidenciasScreen> createState() => _CoincidenciasScreenState();
@@ -12,22 +19,42 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
   static const Color darkBorderColor = Color(0xFF1B4943);
   static const Color backgroundLight = Color(0xFFE8F9F8);
 
-  // Lista simulada de coincidencias vinculadas con publicaciones del Foro en Oracle SQL
-  final List<Map<String, dynamic>> _coincidencias = [
-    {
-      'id': 1,
-      'nombre': 'Bobby (Coincidencia con tu post del Foro)',
-      'raza': 'Mestizo / Dorado',
-      'ubicacion': 'Col. Centro, a 1.2 km de tu reporte',
-      'porcentajeSimilitud': 92,
-      'fechaReporte': 'Hace 2 horas',
-      'descripcion': 'Lleva collar rojo sin placa. Coincide con la publicación realizada en el Foro.',
-      'contacto': '5512345678',
-      'postIdForo': 'FORO-8492',
-      'imagenUrl':
-          'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500',
-    },
-  ];
+  late List<Map<String, dynamic>> _coincidencias;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  void _cargarDatos() {
+    if (widget.dynamicCoincidencias.isNotEmpty) {
+      // Mapear la lista dinámica recibida de Node.js / Gemini
+      _coincidencias = widget.dynamicCoincidencias.map((c) {
+        return {
+          'id': c['id'] ?? c['post_id'] ?? 0,
+          'nombre': c['titulo'] ?? 'Mascota detectada en Foro',
+          'raza': c['raza'] ?? 'Ver detalles en publicación',
+          'ubicacion': c['ubicacion'] ?? 'Ubicación reportada en foro',
+          'porcentajeSimilitud':
+              (c['porcentaje_similitud'] ?? c['porcentajeSimilitud'] ?? 80)
+                  .toInt(),
+          'fechaReporte': 'Reciente',
+          'descripcion':
+              c['contenido'] ??
+              c['descripcion'] ??
+              'Coincidencia detectada con publicación activa en el Foro.',
+          'contacto': '5512345678',
+          'postIdForo': 'FORO-${c['post_id'] ?? c['id'] ?? 1}',
+          'imagenUrl':
+              c['imagen_url'] ??
+              'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500',
+        };
+      }).toList();
+    } else {
+      _coincidencias = [];
+    }
+  }
 
   void _verPublicacionEnForo(String postId) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -36,7 +63,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
         backgroundColor: darkBorderColor,
       ),
     );
-    // Aquí puedes agregar la navegación hacia la vista detallada del Foro
   }
 
   void _contactarReportante(String contacto, String nombre) {
@@ -102,6 +128,15 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundLight,
+      appBar: AppBar(
+        title: const Text(
+          'Coincidencias Detectadas',
+          style: TextStyle(color: darkBorderColor, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        iconTheme: const IconThemeData(color: darkBorderColor),
+      ),
       body: _coincidencias.isEmpty
           ? Center(
               child: Column(
@@ -134,7 +169,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Banner informativo superior
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -200,7 +234,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Tarjetas de coincidencias
                   ..._coincidencias.map((item) {
                     final int porcentaje = item['porcentajeSimilitud'];
                     return Container(
@@ -220,7 +253,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Imagen con porcentaje
                           Stack(
                             children: [
                               ClipRRect(
@@ -280,7 +312,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                             ],
                           ),
 
-                          // Información
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -357,7 +388,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                                 ),
                                 const SizedBox(height: 12),
 
-                                // Botón para ir a la publicación del foro
                                 TextButton.icon(
                                   onPressed: () =>
                                       _verPublicacionEnForo(item['postIdForo']),
@@ -377,7 +407,6 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                                 ),
                                 const SizedBox(height: 12),
 
-                                // Botones de acción
                                 Row(
                                   children: [
                                     Expanded(
