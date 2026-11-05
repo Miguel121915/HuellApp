@@ -115,6 +115,7 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `POST /reportes` | usuario | `{tipo, descripcion, zona, foto}` → también calcula coincidencias |
 | `GET /coincidencias` · `/coincidencias/resumen` | usuario | Mis coincidencias / contadores |
 | `POST /coincidencias/:id/descartar` · `/coincidencias/restaurar` | usuario | Declinar / restaurar |
+| `POST /enlaces` | con sesión | `{ruta}` de un documento propio (`/refugio/adopciones/:id/documentos/:doc/archivo` o `/refugio/mascotas/:id/documentos/:doc/archivo`) → `{url}` firmada, válida 5 minutos, para abrirlo fuera de la app (navegador o visor de PDF). Al abrirla se revisan los mismos permisos |
 | `GET /refugio/yo` · `PUT /refugio/perfil` · `GET /refugio/resumen` | refugio aprobado | Perfil y panel |
 | `GET·POST /refugio/mascotas` · `PUT·DELETE /refugio/mascotas/:id` · `PATCH …/estatus` | refugio aprobado | Inventario (CRUD) |
 | `GET·POST /refugio/mascotas/:id/documentos` · `GET …/documentos/:doc/archivo` · `DELETE …/documentos/:doc` | refugio aprobado | Documentos de la mascota `{tipo, nombre, dataUrl}` (PDF/JPG/PNG, máx. 5 MB, 10 por mascota) |
