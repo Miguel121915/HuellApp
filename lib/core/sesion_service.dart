@@ -134,6 +134,16 @@ class SesionService extends ChangeNotifier {
     });
   }
 
+  /// Vuelve a pedir la sesión al servidor (por ejemplo, para ver si ya aprobaron el refugio).
+  /// Devuelve los datos del refugio {nombre, estado, motivoRechazo, apelaciones} o null.
+  Future<Map<String, dynamic>?> refrescar() async {
+    final r = await _api.get('/auth/yo');
+    _actual = Sesion.desdeJson(r['sesion'] as Map<String, dynamic>);
+    await _guardar();
+    notifyListeners();
+    return r['refugio'] as Map<String, dynamic>?;
+  }
+
   void entrarComoInvitado() {
     _invitado = true;
     notifyListeners();

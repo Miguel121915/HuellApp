@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/api_client.dart';
+import '../core/destino.dart';
 import '../core/sesion_service.dart';
-import '../navigation.dart';
 import 'register_shelter_screen.dart';
 import 'register_user_screen.dart';
 
@@ -76,14 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       setState(() => _isLoading = false);
-
-      // Un refugio que todavía no está aprobado no puede usar su panel
-      if (sesion.esRefugio && !sesion.refugioAprobado) {
-        await _avisarEstadoRefugio(sesion.refugioEstado);
-        await SesionService.instancia.cerrarSesion();
-        return;
-      }
-      _entrar();
+      // Usuario → la app; refugio aprobado → su panel; refugio no aprobado → estado de su solicitud
+      _entrar(sesion);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -95,54 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _entrarComoVisitante() {
     SesionService.instancia.entrarComoInvitado();
-    _entrar();
+    _entrar(null);
   }
 
-  Future<void> _avisarEstadoRefugio(String? estado) {
-    final (titulo, texto) = switch (estado) {
-      'pendiente' => (
-          'Solicitud en revisión',
-          'El administrador todavía está revisando los documentos de tu refugio. '
-              'Te avisaremos por correo cuando sea aprobado.',
-        ),
-      'rechazado' => (
-          'Solicitud rechazada',
-          'Tu solicitud fue rechazada. Por ahora revisa el motivo y envía tu apelación '
-              'desde el sitio web de HuellApp.',
-        ),
-      'suspendido' => (
-          'Refugio suspendido',
-          'Tu refugio está suspendido. Comunícate con el administrador de HuellApp.',
-        ),
-      _ => ('Refugio no disponible', 'Tu refugio todavía no puede usar el panel.'),
-    };
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(titulo),
-        content: Text(texto),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido', style: TextStyle(color: _accent)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _entrar() {
-    // Si el login se abrió desde la huellita de la app (hay una pantalla
-    // atrás), solo se regresa al inicio. Si es el primer inicio, se entra.
-    if (Navigator.canPop(context)) {
+  void _entrar(Sesion? sesion) {
+    // Usuario o visitante que abrió el login desde dentro de la app: solo se regresa a donde estaba
+    final esUsuario = sesion == null || sesion.esUsuario;
+    if (esUsuario && Navigator.canPop(context)) {
       Navigator.popUntil(context, (route) => route.isFirst);
       return;
     }
-    // TODO (Sprint 1): el rol 'refugio' irá a su panel cuando exista en la app.
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const AppNavigation()),
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => destinoDeSesion(sesion)),
+      (route) => false,
     );
   }
 

@@ -18,6 +18,7 @@ final class RefugioExtra
         'rfc' => 'rfc', 'tipoOrganizacion' => 'tipo_organizacion', 'anioFundacion' => 'anio_fundacion',
         'whatsapp' => 'whatsapp', 'redes' => 'redes', 'necesidades' => 'necesidades',
         'tienePerros' => 'tiene_perros', 'tieneGatos' => 'tiene_gatos',
+        'descripcion' => 'descripcion', // la app la pide desde el registro; el sitio la edita en el perfil
     ];
 
     /** Lee y valida los campos extra que vengan en el cuerpo. @return array<string,mixed> columna => valor */
@@ -41,6 +42,7 @@ final class RefugioExtra
                 'redes' => self::lista($v, 'Las redes sociales', 5, 80),
                 'necesidades' => self::lista($v, 'Las necesidades', 10, 60),
                 'tienePerros', 'tieneGatos' => Validar::booleano($v, $campo) ? 1 : 0,
+                'descripcion' => Validar::texto($v, 'La descripción', max: 400, opcional: true),
             };
         }
         return $valores;

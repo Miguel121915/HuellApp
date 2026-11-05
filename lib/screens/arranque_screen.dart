@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/destino.dart';
 import '../core/sesion_service.dart';
-import '../navigation.dart';
 import 'login_screen.dart';
 
 /// Primera pantalla: recupera la sesión guardada en el teléfono.
@@ -25,13 +25,9 @@ class _ArranqueScreenState extends State<ArranqueScreen> {
     final valida = await sesion.cargar();
     if (!mounted) return;
 
-    // Un refugio no aprobado vuelve al login, que le explica su estado
-    final puedeEntrar = valida && !(sesion.actual!.esRefugio && !sesion.actual!.refugioAprobado);
-    if (valida && !puedeEntrar) await sesion.cerrarSesion();
-    if (!mounted) return;
-
+    // Con sesión: cada rol a su pantalla (usuario → app, refugio → panel o estado). Sin sesión: login.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => puedeEntrar ? const AppNavigation() : const LoginScreen()),
+      MaterialPageRoute(builder: (_) => valida ? destinoDeSesion(sesion.actual) : const LoginScreen()),
     );
   }
 

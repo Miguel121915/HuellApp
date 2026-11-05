@@ -38,6 +38,7 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
   flutter_svg: ^2.0.10
+  file_picker: ^8.1.2
   geolocator: ^14.1.1
   url_launcher: ^6.3.3
   http: ^1.2.2

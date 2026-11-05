@@ -1,4 +1,7 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/api_client.dart';
+import 'package:huellapp/services/refugio_service.dart';
 import 'package:huellapp/widgets/selector_ubicacion.dart';
 
 class RegisterShelterScreen extends StatefulWidget {
@@ -70,8 +73,17 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
   final _socialsController = TextEditingController();
 
   // 6. Documento que avale
-  String? _selectedFileName;
+  // Documentos que pide la API (los mismos que en el sitio web)
+  static const List<(String, String, bool)> _tiposDocumento = [
+    ('acta', 'Acta constitutiva o constancia fiscal', true),
+    ('domicilio', 'Comprobante de domicilio', true),
+    ('identificacion', 'Identificación del responsable', true),
+    ('permiso', 'Permiso municipal o de refugio (opcional)', false),
+  ];
+  static const int _maxBytesDocumento = 5 * 1024 * 1024;
+  final Map<String, ArchivoElegido> _documentos = {};
   bool _documentError = false;
+  bool _enviando = false;
 
   // Ubicación en el mapa (para aparecer en "Refugios cerca de ti")
   double? _latitud;
@@ -198,7 +210,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
                         child: SizedBox(
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: _siguiente,
+                            onPressed: _enviando ? null : _siguiente,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _turquoise,
                               foregroundColor: _textColor,
@@ -207,9 +219,11 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
                               ),
                             ),
                             child: Text(
-                              _currentStep == _totalSteps - 1
-                                  ? 'Enviar solicitud 🐾'
-                                  : 'Siguiente',
+                              _enviando
+                                  ? 'Enviando…'
+                                  : _currentStep == _totalSteps - 1
+                                      ? 'Enviar solicitud 🐾'
+                                      : 'Siguiente',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -343,7 +357,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           _shelterNameController,
           'Nombre del Refugio',
           Icons.store,
-          validator: _required,
+          validator: (v) => _minimo(v, 3),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
@@ -361,15 +375,26 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
         const SizedBox(height: 12),
         _buildTextField(
           _rfcController,
-          'RFC o Número de Registro (Opcional)',
+          'RFC (Opcional)',
           Icons.badge,
+          validator: (v) {
+            final t = (v ?? '').trim();
+            if (t.isEmpty) return null;
+            return t.length < 12 || t.length > 13 ? 'El RFC tiene 12 o 13 caracteres' : null;
+          },
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _foundationYearController,
-          'Año de Fundación',
+          'Año de Fundación (Opcional)',
           Icons.calendar_today,
           keyboardType: TextInputType.number,
+          validator: (v) {
+            final t = (v ?? '').trim();
+            if (t.isEmpty) return null;
+            final anio = int.tryParse(t);
+            return anio == null || anio < 1900 || anio > DateTime.now().year ? 'Escribe un año válido' : null;
+          },
         ),
         const SizedBox(height: 12),
         _buildTextField(
@@ -390,7 +415,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           _repNameController,
           'Nombre completo del representante',
           Icons.person,
-          validator: _required,
+          validator: (v) => _minimo(v, 3),
         ),
         const SizedBox(height: 12),
         _buildTextField(
@@ -415,10 +440,10 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
         const SizedBox(height: 12),
         _buildTextField(
           _phoneController,
-          'Teléfono / WhatsApp',
+          'Teléfono del refugio',
           Icons.phone,
           keyboardType: TextInputType.phone,
-          validator: _required,
+          validator: (v) => _telefono(v, obligatorio: true),
         ),
         const SizedBox(height: 12),
         _buildTextField(
@@ -465,7 +490,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           _addressController,
           'Dirección completa (Calle, #, Colonia)',
           Icons.location_on,
-          validator: _required,
+          validator: (v) => _minimo(v, 8),
         ),
         const SizedBox(height: 12),
         _buildTextField(
@@ -480,12 +505,21 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           'Código Postal',
           Icons.markunread_mailbox,
           keyboardType: TextInputType.number,
+          validator: (v) {
+            final t = (v ?? '').trim();
+            return t.isEmpty || RegExp(r'^\d{5}$').hasMatch(t) ? null : 'El código postal tiene 5 dígitos';
+          },
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _scheduleController,
-          'Horario de atención o visitas',
+          'Horario de atención (ej. 09:00 - 18:00)',
           Icons.access_time,
+          validator: (v) {
+            final m = RegExp(r'^(\d{2}):(\d{2}) - (\d{2}):(\d{2})$').firstMatch((v ?? '').trim());
+            if (m == null) return 'Escríbelo como 09:00 - 18:00';
+            return '${m[3]}:${m[4]}'.compareTo('${m[1]}:${m[2]}') <= 0 ? 'La hora de cierre debe ser después de la de apertura' : null;
+          },
         ),
         const SizedBox(height: 20),
         SelectorUbicacion(
@@ -566,87 +600,106 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       children: [
         _buildTextField(
           _publicContactController,
-          'Teléfono / Correo de contacto público',
-          Icons.contact_mail,
+          'WhatsApp (opcional)',
+          Icons.chat,
+          keyboardType: TextInputType.phone,
+          validator: (v) => _telefono(v, obligatorio: false),
         ),
         const SizedBox(height: 12),
         _buildTextField(
           _socialsController,
-          'Facebook, Instagram o Sitio Web',
+          'Facebook, Instagram o sitio web (uno por línea)',
           Icons.share,
-          maxLines: 2,
+          maxLines: 3,
         ),
       ],
     );
   }
 
-  // Etapa 6: Documento que avale el refugio
+  // Etapa 6: Documentos que avalan el refugio (los revisa el administrador en el sitio web)
   Widget _stepDocument() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: _background,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _documentError ? Colors.red : _accent,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            children: [
-              const Text(
-                'Documento obligatorio (PDF, JPG o PNG, máx. 5 MB)',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.w600),
+        const Text(
+          'PDF, JPG o PNG, máximo 5 MB cada uno. Los tres primeros son obligatorios.',
+          style: TextStyle(fontSize: 13, color: _mutedColor),
+        ),
+        const SizedBox(height: 12),
+        for (final (tipo, etiqueta, obligatorio) in _tiposDocumento)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _documentError && obligatorio && !_documentos.containsKey(tipo) ? Colors.red : _borderColor,
+                width: 1.5,
               ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Simulación de selección de archivo.
-                  // Para el real, usa el paquete file_picker.
-                  setState(() {
-                    _selectedFileName = 'documento_refugio_aval.pdf';
-                    _documentError = false;
-                  });
-                },
-                icon: const Icon(Icons.upload_file),
-                label: Text(_selectedFileName ?? 'Subir Documento'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _turquoise,
-                  foregroundColor: _textColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _documentos.containsKey(tipo) ? Icons.check_circle : Icons.description_outlined,
+                  color: _documentos.containsKey(tipo) ? Colors.green : _accent,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(etiqueta, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      if (_documentos[tipo] != null)
+                        Text(
+                          _documentos[tipo]!.nombre,
+                          style: const TextStyle(fontSize: 12, color: _mutedColor),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => _elegirDocumento(tipo),
+                  child: Text(_documentos.containsKey(tipo) ? 'Cambiar' : 'Subir'),
+                ),
+              ],
+            ),
           ),
-        ),
         if (_documentError)
           const Padding(
-            padding: EdgeInsets.only(top: 6, left: 4),
+            padding: EdgeInsets.only(top: 2, left: 4),
             child: Text(
-              'El comprobante es obligatorio',
+              'Sube el acta, el comprobante de domicilio y la identificación',
               style: TextStyle(color: Colors.red, fontSize: 12),
             ),
           ),
-        const SizedBox(height: 12),
-        const Text(
-          'Ejemplos aceptados:\n'
-          '• Acta constitutiva (A.C. / Fundación)\n'
-          '• Constancia de Situación Fiscal (SAT)\n'
-          '• Permiso municipal o carta de autoridad local o de una asociación '
-          'de protección animal\n'
-          '• Si no tienes documentos oficiales: fotos del refugio y '
-          'comprobante de domicilio.',
-          style: TextStyle(fontSize: 12, height: 1.5, color: _mutedColor),
-        ),
       ],
     );
+  }
+
+  Future<void> _elegirDocumento(String tipo) async {
+    final resultado = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
+    );
+    final archivo = resultado?.files.single;
+    if (archivo == null || archivo.bytes == null || !mounted) return;
+    if (archivo.size > _maxBytesDocumento) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El archivo pesa más de 5 MB. Elige uno más ligero.')),
+      );
+      return;
+    }
+    setState(() {
+      _documentos[tipo] = ArchivoElegido(
+        nombre: archivo.name,
+        bytes: archivo.bytes!,
+        mime: ArchivoElegido.mimeDe(archivo.name),
+      );
+      _documentError = false;
+    });
   }
 
   // Etapa 7: Aceptación y envío
@@ -730,6 +783,18 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
     return null;
   }
 
+  String? _minimo(String? value, int minimo) {
+    final t = (value ?? '').trim();
+    if (t.isEmpty) return 'Campo obligatorio';
+    return t.length < minimo ? 'Mínimo $minimo caracteres' : null;
+  }
+
+  String? _telefono(String? value, {required bool obligatorio}) {
+    final t = (value ?? '').trim();
+    if (t.isEmpty) return obligatorio ? 'Campo obligatorio' : null;
+    return RegExp(r'^[\d\s+()\-]{8,}$').hasMatch(t) ? null : 'Al menos 8 dígitos (números, espacios, + - y paréntesis)';
+  }
+
   // ---------- Navegación entre etapas ----------
 
   void _anterior() {
@@ -750,8 +815,9 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       return;
     }
 
-    // El comprobante es obligatorio en la etapa 6
-    if (_currentStep == 5 && _selectedFileName == null) {
+    // Los tres documentos obligatorios en la etapa 6
+    if (_currentStep == 5 &&
+        _tiposDocumento.any((d) => d.$3 && !_documentos.containsKey(d.$1))) {
       setState(() => _documentError = true);
       return;
     }
@@ -763,7 +829,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
     }
   }
 
-  void _enviarSolicitud() {
+  Future<void> _enviarSolicitud() async {
     if (!_acceptTerms || !_acceptPrivacy || !_declareTruth) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -772,6 +838,50 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       );
       return;
     }
+    if (_enviando) return;
+
+    final redes = _socialsController.text
+        .split(RegExp(r'[\n,]'))
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .take(5)
+        .toList();
+    final datos = <String, dynamic>{
+      'nombreRefugio': _shelterNameController.text.trim(),
+      'responsable': _repNameController.text.trim(),
+      'telefono': _phoneController.text.trim(),
+      'direccion': _addressController.text.trim(),
+      'horario': _scheduleController.text.trim(),
+      'correo': _emailController.text.trim(),
+      'password': _passwordController.text,
+      // Datos extra que también guarda el sitio web
+      'latitud': _latitud,
+      'longitud': _longitud,
+      'municipio': _municipalityController.text.trim(),
+      'codigoPostal': _zipCodeController.text.trim(),
+      'rfc': _rfcController.text.trim(),
+      'tipoOrganizacion': _orgType,
+      'anioFundacion': _foundationYearController.text.trim(),
+      'whatsapp': _publicContactController.text.trim(),
+      'redes': redes,
+      'tienePerros': _attendsDogs,
+      'tieneGatos': _attendsCats,
+      'descripcion': _descriptionController.text.trim(),
+    };
+
+    setState(() => _enviando = true);
+    try {
+      await RefugioService.instancia.registrar(datos, _documentos);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _enviando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _enviando = false);
 
     showDialog(
       context: context,
@@ -785,7 +895,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           ],
         ),
         content: const Text(
-          'Revisaremos la documentación de tu refugio y te notificaremos por correo electrónico.',
+          'Un administrador revisará la documentación de tu refugio. Mientras tanto, al iniciar sesión verás el estado de tu solicitud.',
           textAlign: TextAlign.center,
         ),
         actions: [
