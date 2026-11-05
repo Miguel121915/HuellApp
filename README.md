@@ -1,17 +1,27 @@
-# huellapp
+# HuellApp
 
-A new Flutter project.
+Plataforma de adopción de mascotas y reunificación de mascotas perdidas. Tiene dos clientes que comparten una sola API y una sola base de datos:
 
-## Getting Started
+```
+App móvil (Flutter) ──┐
+                      ├──► API PHP (api/) ──► Base de datos Oracle (OCI)
+Sitio web (HTML/JS) ──┘
+```
 
-This project is a starting point for a Flutter application.
+## Estructura del repositorio
 
-A few resources to get you started if this is your first Flutter project:
+| Carpeta | Qué es | Cómo se ejecuta |
+| --- | --- | --- |
+| raíz (`lib/`, `android/`, `ios/`, `pubspec.yaml`…) | App móvil en Flutter | `flutter pub get` y `flutter run` desde la raíz |
+| `api/` | API en PHP (sin frameworks) que usan la app y el sitio | `php artisan serve` dentro de `api/` (ver `api/README.md`) |
+| `sitio-web/` | Sitio web en HTML, CSS y JavaScript | Lo muestra la API en http://localhost:3000 (ver `sitio-web/README.md`) |
+| `backend/` | Servidor Node/Express que usa hoy la pantalla Reportar de la app (análisis con Gemini) | `npm install` y `node server.js` dentro de `backend/`. Se retirará cuando la IA pase a `api/` |
+| `database/` | Esquemas de base de datos | — |
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Cada parte se ejecuta por separado: cambiar el sitio web no afecta a la app y viceversa. Lo único que comparten es la API; si cambias una ruta o un campo de la API, avisa al equipo.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+> La API PHP y el servidor Node usan el puerto 3000 por defecto. Si necesitas los dos a la vez, inicia uno en otro puerto (por ejemplo `php artisan serve --port=8000`).
+
+## Secretos
+
+Ningún archivo `.env`, wallet de Oracle ni contraseña se sube al repositorio. Cada carpeta tiene un `.env.example`: cópialo como `.env` y llena tus valores.

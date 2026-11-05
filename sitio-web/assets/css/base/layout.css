@@ -1,0 +1,33 @@
+/* ==========================================================
+   layout.css — Layout común de las vistas internas (usuario, refugio, admin):
+   fondo con huellitas, contenedor centrado, banners de título y estados vacíos.
+   ========================================================== */
+
+/* Fondo blanco con huellitas grises decorativas */
+.pagina-usuario, .pagina-refugio, .pagina-admin {
+  min-height: 100vh;
+  background: var(--blanco) url("../../img/huellas-fondo.svg") center / 320px repeat;
+}
+.contenido { max-width: var(--ancho-max); margin-inline: auto; padding: var(--e6) var(--e5) var(--e8); }
+
+/* Banner de título amarillo pastel (como "Bienvenido al foro") */
+.titulo-banner {
+  display: block;
+  margin-bottom: var(--e5);
+  padding: var(--e3) var(--e5);
+  border-radius: var(--radio-m);
+  background: var(--amarillo);
+  text-align: center;
+}
+.titulo-banner--lima { background: var(--lima); }
+.seccion-titulo { margin-block: var(--e5) var(--e3); }
+.centrado { display: flex; justify-content: center; margin-top: var(--e5); }
+.vacio { padding: var(--e5); text-align: center; color: var(--tinta-suave); }
+.tarjeta.vacio { display: grid; justify-items: center; gap: var(--e3); color: var(--tinta); }
+
+@media (max-width: 900px) {
+  .contenido { padding-inline: var(--e4); }
+}
+
+/* Franja que aparece si el servidor no responde (la causa más común: no estaba encendido) */
+.banner-servidor { padding: var(--e3) var(--e5); background: var(--error); color: var(--blanco); font-weight: 700; text-align: center; }

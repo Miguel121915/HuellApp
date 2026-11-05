@@ -1,0 +1,69 @@
+/* navbar.css — Encabezado turquesa + navegación superior fija (escritorio) */
+.encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--aqua);
+  border-bottom: 3px solid var(--tinta);
+}
+.encabezado__interno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e5);
+  max-width: var(--ancho-max);
+  min-height: var(--alto-encabezado);
+  margin-inline: auto;
+  padding-inline: var(--e5);
+}
+
+.marca { display: inline-flex; align-items: center; gap: var(--e2); text-decoration: none; }
+.marca__texto { font-size: 2.25rem; }
+.marca__huella { width: 48px; height: 48px; }
+
+/* Navegación principal (se rellena desde js/components/navbar.js) */
+.nav { display: flex; align-items: center; gap: var(--e1); }
+.nav__enlace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--e2) var(--e4);
+  border-radius: var(--radio-m);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.nav__enlace:hover { background: rgb(255 255 255 / 0.55); }
+.nav__enlace[aria-current="page"] { background: var(--blanco); box-shadow: var(--sombra-s); }
+.nav__icono { width: 28px; height: 28px; }
+.nav__insignia {
+  position: absolute;
+  top: 0; right: 6px;
+  min-width: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: var(--blanco);
+  font-size: 0.75rem;
+  line-height: 20px;
+  text-align: center;
+}
+
+.encabezado__acciones { display: flex; align-items: center; gap: var(--e3); }
+
+/* Tablet / móvil: la navegación pasa a segunda fila con scroll horizontal */
+@media (max-width: 900px) {
+  .encabezado__interno { flex-wrap: wrap; padding-block: var(--e2); }
+  .nav { order: 3; width: 100%; overflow-x: auto; }
+  .marca__texto { font-size: 1.75rem; }
+  .marca__huella { width: 36px; height: 36px; }
+}
+
+/* Nombre del usuario y botón de salir */
+.encabezado__usuario { font-weight: 700; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) {
+  .encabezado__usuario { display: none; }
+  .nav { justify-content: space-between; }
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel del refugio · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/panel.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 id="panel-titulo" class="titulo-banner titulo-banner--lima">Panel del refugio</h1>
+    <p class="panel-estado"><span class="insignia insignia--aprobado">Refugio verificado</span> <span class="texto-suave">Tu refugio es visible para todos los usuarios de HuellApp.</span></p>
+
+    <section aria-labelledby="titulo-resumen">
+      <h2 id="titulo-resumen" class="seccion-titulo">Resumen</h2>
+      <div class="resumen">
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="total">–</span><span class="dato-resumen__etiqueta">Mascotas registradas</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="disponibles">–</span><span class="dato-resumen__etiqueta">Disponibles</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="enProceso">–</span><span class="dato-resumen__etiqueta">En proceso de adopción</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="adoptadas">–</span><span class="dato-resumen__etiqueta">Adoptadas</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="publicaciones">–</span><span class="dato-resumen__etiqueta">Publicaciones</span></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="titulo-accesos">
+      <h2 id="titulo-accesos" class="seccion-titulo">Accesos rápidos</h2>
+      <div class="accesos">
+        <a class="acceso tarjeta" href="inventario.html?nueva=1"><strong>Agregar una mascota</strong><span>Registra a un nuevo perro o gato en tu inventario.</span></a>
+        <a class="acceso tarjeta" href="publicaciones.html"><strong>Crear una publicación</strong><span>Muestra a una mascota disponible en tu página pública.</span></a>
+        <a class="acceso tarjeta" href="perfil.html"><strong>Actualizar mi perfil</strong><span>Cambia tu teléfono, dirección y horario de atención.</span></a>
+      </div>
+    </section>
+
+    <section aria-labelledby="titulo-recientes">
+      <h2 id="titulo-recientes" class="seccion-titulo">Últimas mascotas agregadas</h2>
+      <ul id="recientes" class="recientes"></ul>
+      <p id="sin-recientes" class="vacio" hidden>Aún no has registrado mascotas. <a class="enlace" href="inventario.html?nueva=1">Agrega la primera</a>.</p>
+    </section>
+  </main>
+</body>
+</html>

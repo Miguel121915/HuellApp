@@ -1,0 +1,145 @@
+/* ==========================================================
+   usuario.css — Estilos de la sección usuario: inicio (KIRO), refugios,
+   reportar y coincidencias. El layout común vive en base/layout.css.
+   ========================================================== */
+
+/* ---------- Inicio: KIRO ---------- */
+.kiro { display: grid; justify-items: center; gap: var(--e5); max-width: 760px; margin-inline: auto; }
+.kiro__globo {
+  position: relative;
+  width: min(100%, 460px);
+  padding: var(--e5);
+  background: var(--blanco);
+  border: 3px solid var(--tinta);
+  border-radius: 48px / 40px;
+  text-align: center;
+  font-weight: 700;
+}
+.kiro__globo::after { /* colita del globo, apunta a KIRO */
+  content: "";
+  position: absolute;
+  bottom: -14px; left: 50%;
+  width: 24px; height: 24px;
+  background: var(--blanco);
+  border-right: 3px solid var(--tinta);
+  border-bottom: 3px solid var(--tinta);
+  transform: translateX(-50%) rotate(45deg);
+}
+.kiro__enlace { display: inline-block; margin-top: var(--e2); }
+.kiro__imagen { width: min(300px, 70%); height: auto; }
+
+.kiro__buscador {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  background: var(--aqua-suave);
+  border: 3px solid var(--tinta);
+  border-radius: 999px;
+}
+.kiro__buscador input { flex: 1; min-width: 0; min-height: 56px; padding: 0 var(--e5); background: transparent; border: 0; font-size: 1.05rem; }
+.kiro__buscador input:focus-visible { box-shadow: none; outline: none; }
+.kiro__buscador:focus-within { box-shadow: var(--foco); }
+.kiro__buscador button { display: grid; place-items: center; width: 64px; background: var(--aqua-fuerte); border: 0; color: var(--blanco); }
+.kiro__buscador button:hover { background: #0b5c56; }
+
+.kiro__faq { width: 100%; text-align: center; }
+.kiro__faq-titulo { margin-bottom: var(--e3); font-size: 1.1rem; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--e2); }
+.chip { min-height: 40px; padding: var(--e1) var(--e4); background: var(--lila); border: 2px solid var(--lila-fuerte); border-radius: 999px; font-size: 0.9rem; font-weight: 700; transition: transform 0.12s ease; }
+.chip:hover { transform: translateY(-1px); background: #a6a6dd; }
+
+/* ---------- Refugios ---------- */
+.intro-kiro { display: flex; align-items: center; gap: var(--e4); max-width: 760px; margin: 0 auto var(--e6); }
+.intro-kiro img { flex-shrink: 0; width: 96px; height: auto; }
+
+.refugios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--e5); }
+.refugio-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  height: 100%;
+  padding: var(--e5);
+  background: var(--lima);
+  border: 3px solid var(--lima-fuerte);
+  border-radius: var(--radio-m);
+  text-decoration: none;
+  box-shadow: var(--sombra-s);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.refugio-tarjeta:hover { transform: translateY(-3px); box-shadow: var(--sombra-m); }
+.refugio-tarjeta__nombre { font-size: 1.25rem; font-weight: 800; }
+.refugio-tarjeta__dato { font-size: 0.9rem; }
+.refugio-tarjeta__accion { margin-top: var(--e3); font-weight: 800; }
+
+.refugio-cabecera { background: var(--lima); border-color: var(--lima-fuerte); margin-top: var(--e3); }
+.refugio-cabecera .titulo-banner { background: var(--blanco); }
+.refugio-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--e3) var(--e5); }
+.refugio-datos dt, .contacto-datos dt { font-size: 0.8125rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-suave); }
+.refugio-datos dd, .contacto-datos dd { margin: 0; font-weight: 600; }
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 var(--e4);
+  padding: var(--e4);
+  background: var(--aqua-suave);
+  border: 3px solid var(--aqua);
+  border-radius: var(--radio-m);
+  margin-bottom: var(--e4);
+}
+.filtros .campo { flex: 1 1 180px; }
+.filtros .boton { margin-bottom: var(--e4); }
+
+.mascotas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--e5); margin-top: var(--e3); }
+.publicaciones-refugio { margin-top: var(--e7); }
+
+/* ---------- Reportar ---------- */
+.reportar { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--e5); align-items: start; }
+.camara__visor {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #d9d9d9;
+  border-radius: var(--radio-m);
+}
+.camara__visor video, .camara__visor img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.camara__mensaje { padding: var(--e4); font-size: 1.25rem; font-weight: 800; text-align: center; }
+.camara__acciones { display: flex; flex-wrap: wrap; gap: var(--e3); margin-top: var(--e4); }
+
+.campo--grupo { border: 0; padding: 0; margin-inline: 0; min-width: 0; }
+.campo--grupo legend { padding: 0; margin-bottom: var(--e1); }
+.opcion { display: flex; align-items: center; gap: var(--e2); min-height: 44px; font-weight: 600; cursor: pointer; }
+.opcion input { width: 20px; height: 20px; accent-color: var(--aqua-fuerte); }
+
+/* ---------- Coincidencias ---------- */
+.coincidencias-barra { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; margin-bottom: var(--e4); }
+.coincidencias { display: grid; gap: var(--e6); }
+.coincidencia { background: #f8b26a; border: 3px solid #c27a2c; border-radius: var(--radio-m); padding: var(--e4); box-shadow: var(--sombra-s); }
+.coincidencia__aviso { display: block; margin-bottom: var(--e4); padding: var(--e2) var(--e4); background: var(--coral); border: 2px solid var(--error); border-radius: var(--radio-s); color: #5e0d0d; font-weight: 800; text-align: center; }
+.coincidencia__cuerpo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e4); }
+.coincidencia__lado { display: flex; flex-direction: column; gap: var(--e3); padding: var(--e4); border-radius: var(--radio-m); }
+.coincidencia__lado--mio { background: var(--amarillo); border: 2px dashed #c9a227; }
+.coincidencia__lado--hallazgo { background: #f6a9a9; border: 2px solid var(--error); }
+.coincidencia__subtitulo { font-size: 1.1rem; }
+.coincidencia__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
+.coincidencia__foto { overflow: hidden; border-radius: var(--radio-s); border: 3px solid var(--tinta); }
+.coincidencia__foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.coincidencia__texto { font-size: 0.9rem; }
+.coincidencia__acciones { display: flex; gap: var(--e3); margin-top: auto; }
+.coincidencia__acciones .boton { flex: 1; }
+.similitud { padding: 2px var(--e3); background: var(--blanco); border: 2px solid var(--tinta); border-radius: 999px; font-size: 0.875rem; font-weight: 800; }
+.contacto-datos { display: grid; gap: var(--e3); margin-top: var(--e4); }
+
+/* ---------- Tablet y móvil ---------- */
+@media (max-width: 900px) {
+  .reportar, .coincidencia__cuerpo { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .intro-kiro { flex-direction: column; text-align: center; }
+}
+
+/* Fotos de coincidencias más compactas en pantallas grandes */
+.coincidencia__foto img { max-height: 320px; }

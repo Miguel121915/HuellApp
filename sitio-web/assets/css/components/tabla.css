@@ -1,0 +1,18 @@
+/* tabla.css — Tabla de datos reutilizable (inventario del refugio, listas del administrador) */
+.tabla-contenedor { position: relative; overflow-x: auto; background: var(--blanco); border: 3px solid var(--lila-fuerte); border-radius: var(--radio-m); }
+.tabla { width: 100%; min-width: 1000px; border-collapse: collapse; }
+.tabla th, .tabla td { padding: var(--e3) var(--e4); text-align: left; vertical-align: middle; white-space: nowrap; border-bottom: 1px solid var(--borde); }
+.tabla thead th { background: var(--lila); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.tabla tbody th { font-weight: 800; }
+.tabla tbody tr:last-child > * { border-bottom: 0; }
+.tabla tbody tr:hover { background: var(--aqua-suave); }
+
+.tabla__foto { width: 56px; height: 56px; min-width: 56px; max-width: none; object-fit: cover; border: 2px solid var(--lila-fuerte); border-radius: var(--radio-s); }
+.tabla__acciones { display: flex; gap: var(--e2); }
+.tabla__select { min-width: 140px; min-height: 38px; padding: 2px var(--e2); }
+
+/* Barra de búsqueda y filtros sobre una tabla */
+.herramientas { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 var(--e4); padding: var(--e4); margin-bottom: var(--e4); background: var(--aqua-suave); border: 3px solid var(--aqua); border-radius: var(--radio-m); }
+.herramientas .campo { flex: 1 1 170px; }
+.herramientas .boton { margin-bottom: var(--e4); }
+.herramientas__nueva { margin-left: auto; }

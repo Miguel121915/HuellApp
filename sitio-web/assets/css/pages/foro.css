@@ -1,0 +1,16 @@
+/* ==========================================================
+   foro.css — Muro estilo Facebook: caja de publicar + feed centrado.
+   Las tarjetas de publicación y el botón de huella son componentes
+   (tarjetas.css y botones.css).
+   ========================================================== */
+.contenido--foro { max-width: 860px; }
+
+.publicar { display: flex; flex-direction: column; gap: var(--e2); margin-bottom: var(--e6); background: var(--lila); }
+.publicar .campo { margin-bottom: var(--e2); }
+.publicar .campo__etiqueta { background: var(--amarillo); align-self: flex-start; padding: 2px var(--e3); border-radius: var(--radio-s); }
+.publicar__vista { display: flex; align-items: flex-end; gap: var(--e3); margin-top: var(--e2); }
+.publicar__vista img { width: 160px; border-radius: var(--radio-s); border: 3px solid var(--tinta); }
+.publicar__acciones { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); }
+
+.feed { display: flex; flex-direction: column; gap: var(--e5); }
+.feed__mas { display: flex; justify-content: center; margin-top: var(--e5); }

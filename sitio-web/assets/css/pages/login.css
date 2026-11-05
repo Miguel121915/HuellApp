@@ -1,0 +1,137 @@
+/* ==========================================================
+   login.css — Inicio de sesión, registros y estado del refugio
+   Escritorio primero (>=1280px); tablet/móvil como secundario.
+   ========================================================== */
+.pagina-login,
+.pagina-registro {
+  min-height: 100vh;
+  background: var(--aqua-suave) url("../../img/login-patron.svg") center / 360px repeat;
+}
+
+/* ---------- Login: tarjeta partida en dos ---------- */
+.login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(1040px, calc(100% - 48px));
+  min-height: 640px;
+  margin: 0 auto;
+  border: 3px solid var(--tinta);
+  border-radius: var(--radio-l);
+  overflow: hidden;
+  background: var(--blanco);
+  box-shadow: var(--sombra-m);
+}
+.pagina-login { display: grid; align-items: center; padding-block: var(--e5); }
+
+.login__bienvenida {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--e5);
+  padding: var(--e7);
+  background: var(--aqua) url("../../img/huellas-fondo.svg") center / 320px repeat;
+  border-right: 3px solid var(--tinta);
+}
+.login__logo { display: flex; align-items: center; gap: var(--e3); }
+.login__logo .logo-texto { font-size: 3.25rem; }
+.login__logo img { width: 84px; height: 84px; }
+.login__bienvenida h1 {
+  align-self: flex-start;
+  padding: var(--e3) var(--e4);
+  background: var(--amarillo);
+  border: 3px solid var(--tinta);
+  border-radius: var(--radio-m);
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+}
+.login__bienvenida p { font-size: 1.1rem; max-width: 34ch; font-weight: 500; }
+
+.login__panel { padding: var(--e7) var(--e7) var(--e6); display: flex; flex-direction: column; }
+.login__panel h2 { margin-bottom: var(--e4); }
+
+/* Selector de rol (pestañas) */
+.selector-rol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--e1);
+  padding: var(--e1);
+  margin-bottom: var(--e5);
+  background: var(--aqua-suave);
+  border-radius: var(--radio-m);
+}
+.selector-rol__opcion {
+  padding: var(--e2) var(--e3);
+  border: 0;
+  border-radius: calc(var(--radio-m) - 4px);
+  background: transparent;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+.selector-rol__opcion[aria-selected="true"] { background: var(--aqua-fuerte); color: var(--blanco); }
+.selector-rol__opcion:not([aria-selected="true"]):hover { background: var(--blanco); }
+
+.login__registro { margin-top: var(--e4); text-align: center; }
+
+/* Cuentas demo */
+.demo { margin-top: auto; padding-top: var(--e5); }
+.demo summary { cursor: pointer; font-weight: 700; color: var(--lila-fuerte); }
+.demo__lista { display: grid; gap: var(--e2); margin-top: var(--e3); }
+.demo__item {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e3);
+  padding: var(--e2) var(--e3);
+  background: var(--amarillo);
+  border-radius: var(--radio-s);
+  font-size: 0.875rem;
+}
+
+/* ---------- Registros (formularios largos) ---------- */
+.pagina-registro .encabezado { position: static; }
+.registro {
+  width: min(880px, calc(100% - 48px));
+  margin: var(--e6) auto var(--e7);
+  padding: var(--e6) var(--e7);
+  background: var(--blanco);
+  border: 3px solid var(--tinta);
+  border-radius: var(--radio-l);
+  box-shadow: var(--sombra-m);
+}
+.registro h1 { margin-bottom: var(--e2); font-size: 2rem; }
+.registro__intro { margin-bottom: var(--e5); color: var(--tinta-suave); }
+.registro fieldset { margin: 0 0 var(--e5); padding: var(--e4) var(--e5); border: 2px solid var(--aqua); border-radius: var(--radio-m); }
+.registro legend { padding-inline: var(--e2); font-weight: 800; }
+.registro__acciones { display: flex; justify-content: space-between; gap: var(--e4); }
+.horario { display: flex; gap: var(--e3); align-items: center; }
+
+/* Modo apelación: motivo del rechazo y documentos señalados por el administrador */
+.apelacion-aviso { margin-bottom: var(--e5); padding: var(--e4) var(--e5); background: var(--aviso-fondo); color: var(--aviso); border-left: 6px solid var(--amarillo-fuerte); border-radius: var(--radio-m); }
+.apelacion-aviso__titulo { margin-bottom: var(--e2); font-size: 1.05rem; }
+.apelacion-aviso p { margin: 0; }
+.apelacion-aviso p + p { margin-top: var(--e2); }
+.documento-actual { font-size: 0.8125rem; color: var(--tinta-suave); overflow-wrap: anywhere; }
+.campo--observado { padding: var(--e3); background: var(--error-fondo); border: 2px solid var(--error); border-radius: var(--radio-m); }
+.campo--observado .campo__etiqueta { color: var(--error); }
+.campo__aviso { margin: 0; color: var(--error); font-size: 0.875rem; }
+.campo--observado.campo--reemplazado { background: var(--exito-fondo); border-color: var(--exito); }
+.campo--observado.campo--reemplazado .campo__etiqueta,
+.campo--observado.campo--reemplazado .campo__aviso { color: var(--exito); }
+.campo--reemplazado .documento-actual { color: var(--exito); font-weight: 700; }
+
+/* ---------- Estado del refugio ---------- */
+.estado { width: min(640px, calc(100% - 48px)); margin: var(--e7) auto; text-align: center; }
+.estado h1 { margin-block: var(--e4); font-size: 1.9rem; }
+.estado p { margin-bottom: var(--e5); }
+.estado__acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--e3); }
+
+/* ---------- Splash de index.html ---------- */
+.cargando { display: grid; place-items: center; min-height: 100vh; gap: var(--e3); text-align: center; background: var(--aqua-suave); }
+
+/* ---------- Tablet / móvil (secundario) ---------- */
+@media (max-width: 900px) {
+  .login { grid-template-columns: 1fr; min-height: 0; }
+  .login__bienvenida { padding: var(--e5); border-right: 0; border-bottom: 3px solid var(--tinta); }
+  .login__logo .logo-texto { font-size: 2.4rem; }
+  .login__logo img { width: 56px; height: 56px; }
+  .login__panel, .registro { padding: var(--e5); }
+}
+
+/* Franja que aparece si el servidor no responde (la causa más común: no estaba encendido) */
+.banner-servidor { padding: var(--e3) var(--e5); background: var(--error); color: var(--blanco); font-weight: 700; text-align: center; }

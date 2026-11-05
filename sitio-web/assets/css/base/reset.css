@@ -1,0 +1,39 @@
+/* ==========================================================
+   reset.css — Reinicio mínimo y seguro
+   ========================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body, h1, h2, h3, h4, p, figure, ul, ol, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+
+img, svg, canvas, video { display: block; max-width: 100%; }
+img { height: auto; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+a { color: inherit; }
+
+/* Ocultar visualmente pero mantener para lectores de pantalla */
+.solo-lector {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Páginas protegidas: se muestran solo cuando el guardia confirma el acceso */
+body[data-protegida] { visibility: hidden; }
+
+[hidden] { display: none !important; }
+
+/* Respeta la preferencia de menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis publicaciones · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/publicaciones.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Mis publicaciones</h1>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div class="gestion">
+      <form id="formulario-publicacion" class="tarjeta tarjeta--blanca" novalidate>
+        <h2 id="titulo-formulario" class="seccion-titulo">Nueva publicación</h2>
+        <p id="sin-mascotas" class="alerta alerta--aviso" hidden>Primero registra una mascota en tu <a class="enlace" href="inventario.html?nueva=1">inventario</a> para poder publicarla.</p>
+
+        <div class="campo">
+          <label class="campo__etiqueta" for="pub-mascota">Mascota del inventario</label>
+          <select id="pub-mascota" class="campo__control"><option value="">Elige una mascota…</option></select>
+          <span class="campo__error" role="alert"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="pub-texto">Texto de la publicación</label>
+          <textarea id="pub-texto" class="campo__control" maxlength="500" placeholder="Cuéntales a los usuarios por qué esta mascota busca hogar."></textarea>
+          <span id="pub-contador" class="campo__ayuda" aria-hidden="true">0/500</span>
+          <span class="campo__error" role="alert"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="pub-foto">Foto (opcional)</label>
+          <input id="pub-foto" class="campo__control" type="file" accept="image/*">
+          <span class="campo__ayuda">Por defecto se usa la foto de la mascota.</span>
+          <span class="campo__error" role="alert"></span>
+          <figure id="pub-vista" class="vista-foto" hidden><img alt="Foto que se publicará" width="400" height="300"><button id="pub-foto-original" class="boton boton--contorno boton--pequeno" type="button" hidden>Usar la foto de la mascota</button></figure>
+        </div>
+        <fieldset class="campo republicar" id="campo-republicar">
+          <legend class="campo__etiqueta">Republicación automática</legend>
+          <label class="solo-lector" for="pub-republicar">Cada cuánto republicar</label>
+          <select id="pub-republicar" class="campo__control">
+            <option value="">No republicar</option>
+            <option value="7">Cada semana</option>
+            <option value="14">Cada 2 semanas</option>
+            <option value="30">Cada mes</option>
+            <option value="personalizada">Personalizada…</option>
+          </select>
+          <div id="pub-dias-zona" class="republicar__dias" hidden>
+            <label for="pub-dias">Cada</label>
+            <input id="pub-dias" class="campo__control" type="number" min="1" max="90" step="1" inputmode="numeric" value="3">
+            <span>días</span>
+          </div>
+          <span class="campo__ayuda">La publicación volverá a aparecer como nueva, arriba de la página de tu refugio, con la periodicidad que elijas. Se detiene sola si la mascota es adoptada.</span>
+          <span class="campo__error" role="alert"></span>
+        </fieldset>
+
+        <div id="alerta-publicacion" role="status" hidden></div>
+        <button id="boton-publicar" class="boton boton--primario boton--bloque" type="submit">Publicar</button>
+        <button id="cancelar-edicion" class="boton boton--contorno boton--bloque publicar-cancelar" type="button" hidden>Cancelar edición</button>
+      </form>
+
+      <section aria-labelledby="titulo-lista">
+        <h2 id="titulo-lista" class="seccion-titulo">Publicaciones de tu refugio</h2>
+        <ul id="lista-publicaciones" class="publicaciones-lista"></ul>
+        <p id="sin-publicaciones" class="vacio tarjeta tarjeta--blanca" hidden>Aún no tienes publicaciones. Crea la primera con el formulario.</p>
+      </section>
+    </div>
+
+    <dialog id="modal-borrar" class="modal" aria-labelledby="borrar-titulo">
+      <h2 id="borrar-titulo" class="modal__titulo">Eliminar publicación</h2>
+      <p>La publicación dejará de mostrarse en la página pública de tu refugio. La mascota seguirá en tu inventario.</p>
+      <div class="modal__acciones">
+        <button id="cancelar-borrar" class="boton boton--contorno" type="button">Cancelar</button>
+        <button id="confirmar-borrar" class="boton boton--peligro" type="button">Sí, eliminar</button>
+      </div>
+    </dialog>
+  </main>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preguntas frecuentes · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/preguntas.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Preguntas frecuentes</h1>
+    <p class="texto-suave intro-seccion">Estas respuestas las usa KIRO, el asistente del formulario de adopción, para resolver al instante las dudas de quienes quieren adoptar en tu refugio (documentos, requisitos, comprobantes…).</p>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div class="gestion">
+      <div class="gestion__lateral">
+        <form id="formulario-pregunta" class="tarjeta tarjeta--blanca" novalidate>
+          <h2 id="titulo-formulario" class="seccion-titulo">Nueva pregunta</h2>
+          <div class="campo" data-campo="pregunta">
+            <label class="campo__etiqueta" for="p-pregunta">Pregunta</label>
+            <input id="p-pregunta" name="pregunta" class="campo__control" type="text" maxlength="200" placeholder="Ej. ¿Qué comprobantes de domicilio aceptan?" autocomplete="off">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="respuesta">
+            <label class="campo__etiqueta" for="p-respuesta">Respuesta</label>
+            <textarea id="p-respuesta" name="respuesta" class="campo__control" maxlength="1000" placeholder="Escribe la respuesta tal como quieres que la lea el usuario."></textarea>
+            <span id="p-contador" class="campo__ayuda" aria-hidden="true">0/1000</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="claves">
+            <label class="campo__etiqueta" for="p-claves">Palabras clave <span class="texto-suave">(opcional)</span></label>
+            <input id="p-claves" name="claves" class="campo__control" type="text" maxlength="300" placeholder="recibo, luz, agua, predial" autocomplete="off">
+            <span class="campo__ayuda">Separadas por comas. Ayudan a KIRO a reconocer la duda aunque el usuario use otras palabras.</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <label class="casilla"><input type="checkbox" name="activa" checked><span>Visible para los usuarios</span></label>
+          <div id="alerta-formulario" role="status" hidden></div>
+          <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Agregar pregunta</button>
+          <button id="cancelar-edicion" class="boton boton--contorno boton--bloque publicar-cancelar" type="button" hidden>Cancelar edición</button>
+        </form>
+
+        <section class="tarjeta tarjeta--blanca probador" aria-labelledby="titulo-probador">
+          <h2 id="titulo-probador" class="seccion-titulo">Prueba a KIRO</h2>
+          <p class="texto-suave texto-pequeno">Escribe una duda como la escribiría un usuario y verás qué respuesta le daría el asistente.</p>
+          <label class="solo-lector" for="probar-texto">Duda de prueba</label>
+          <input id="probar-texto" class="campo__control" type="text" maxlength="200" placeholder="Ej. ¿sirve mi recibo de luz?" autocomplete="off">
+          <div id="probar-resultado" class="probador__resultado" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section aria-labelledby="titulo-lista">
+        <h2 id="titulo-lista" class="seccion-titulo">Tus preguntas <span id="conteo" class="texto-suave texto-pequeno"></span></h2>
+        <ul id="lista-preguntas" class="preguntas-lista"></ul>
+        <div id="sin-preguntas" class="vacio tarjeta tarjeta--blanca" hidden>
+          <p>Aún no tienes preguntas frecuentes. Mientras tanto, KIRO responde con respuestas generales de HuellApp.</p>
+          <button id="usar-sugeridas" class="boton boton--secundario" type="button">Empezar con preguntas sugeridas</button>
+        </div>
+      </section>
+    </div>
+
+    <dialog id="modal-borrar" class="modal" aria-labelledby="borrar-titulo">
+      <h2 id="borrar-titulo" class="modal__titulo">Eliminar pregunta</h2>
+      <p id="borrar-texto"></p>
+      <div class="modal__acciones">
+        <button id="cancelar-borrar" class="boton boton--contorno" type="button">Cancelar</button>
+        <button id="confirmar-borrar" class="boton boton--peligro" type="button">Sí, eliminar</button>
+      </div>
+    </dialog>
+  </main>
+</body>
+</html>

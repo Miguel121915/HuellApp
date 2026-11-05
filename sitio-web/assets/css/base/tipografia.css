@@ -1,0 +1,40 @@
+/* ==========================================================
+   tipografia.css — Inter (Google Fonts) con fallbacks del sistema
+   La fuente se carga con <link> en cada HTML (sin @import bloqueante).
+   ========================================================== */
+:root {
+  --fuente: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  font-family: var(--fuente);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--tinta);
+  background: var(--fondo);
+}
+
+h1, h2, h3, h4 { line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 3.4vw, 3rem); }
+h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); }
+h3 { font-size: 1.25rem; }
+
+/* Logotipo "HuellApp" en cursiva */
+.logo-texto {
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.texto-suave { color: var(--tinta-suave); }
+.texto-pequeno { font-size: 0.875rem; }
+
+a.enlace {
+  color: var(--lila-fuerte);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+a.enlace:hover { color: var(--tinta); }
+
+:focus-visible { outline: none; box-shadow: var(--foco); border-radius: var(--radio-s); }

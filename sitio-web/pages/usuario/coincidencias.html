@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coincidencias · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/coincidencias.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner">Coincidencias</h1>
+    <div class="coincidencias-barra">
+      <p id="resumen" class="texto-suave" role="status"></p>
+      <button id="boton-restaurar" class="boton boton--contorno boton--pequeno" type="button" hidden></button>
+    </div>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div id="lista-coincidencias" class="coincidencias"></div>
+
+    <section id="sin-coincidencias" class="vacio tarjeta tarjeta--blanca" hidden>
+      <img src="../../assets/img/kiro/kiro.svg" alt="" width="120" height="126">
+      <h2>No tienes coincidencias pendientes</h2>
+      <p>Cuando alguien reporte una mascota parecida a la tuya, aparecerá aquí.</p>
+      <a class="boton boton--secundario" href="reportar.html">Crear un reporte</a>
+    </section>
+
+    <dialog id="modal-contacto" class="modal" aria-labelledby="modal-titulo">
+      <h2 id="modal-titulo" class="modal__titulo">Datos de contacto</h2>
+      <p>Comunícate con quien reportó a la mascota para confirmar si es la tuya.</p>
+      <dl class="contacto-datos">
+        <div><dt>Nombre</dt><dd id="contacto-nombre"></dd></div>
+        <div><dt>Teléfono</dt><dd><a id="contacto-telefono" class="enlace" href="#"></a></dd></div>
+        <div><dt>Correo</dt><dd><a id="contacto-correo" class="enlace" href="#"></a></dd></div>
+      </dl>
+      <div class="modal__acciones"><button id="cerrar-modal" class="boton boton--primario" type="button">Cerrar</button></div>
+    </dialog>
+  </main>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solicitudes de adopción · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/components/tabla.css">
+  <link rel="stylesheet" href="../../assets/css/components/visor.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/adopciones.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Solicitudes de adopción</h1>
+
+    <section aria-labelledby="titulo-resumen">
+      <h2 id="titulo-resumen" class="solo-lector">Resumen</h2>
+      <div class="resumen">
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="pendiente">–</span><span class="dato-resumen__etiqueta">Nuevas</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="en revision">–</span><span class="dato-resumen__etiqueta">En revisión</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="aprobada">–</span><span class="dato-resumen__etiqueta">Aprobadas</span></article>
+        <article class="dato-resumen tarjeta"><span class="dato-resumen__numero" data-resumen="rechazada">–</span><span class="dato-resumen__etiqueta">Rechazadas</span></article>
+      </div>
+    </section>
+
+    <form class="herramientas" role="search">
+      <div class="campo">
+        <label class="campo__etiqueta" for="filtro-texto">Buscar</label>
+        <input id="filtro-texto" class="campo__control" type="search" placeholder="Mascota o solicitante" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="filtro-estado">Estado</label>
+        <select id="filtro-estado" class="campo__control">
+          <option value="abiertas" selected>Por atender (nuevas y en revisión)</option>
+          <option value="pendiente">Nuevas</option>
+          <option value="en revision">En revisión</option>
+          <option value="aprobada">Aprobadas</option>
+          <option value="rechazada">Rechazadas</option>
+          <option value="">Todas</option>
+        </select>
+      </div>
+    </form>
+
+    <p id="conteo" class="texto-suave" role="status" aria-live="polite"></p>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+    <ul id="lista-solicitudes" class="solicitudes-adopcion"></ul>
+    <p id="sin-solicitudes" class="vacio tarjeta tarjeta--blanca" hidden>No hay solicitudes con ese filtro. Cuando alguien pida adoptar una de tus mascotas, aparecerá aquí.</p>
+
+    <!-- Detalle de una solicitud -->
+    <dialog id="modal-solicitud" class="modal modal--ancho" aria-labelledby="solicitud-titulo">
+      <div class="solicitud-detalle__cabecera">
+        <img id="sd-foto" class="tabla__foto" alt="" width="56" height="56">
+        <div>
+          <h2 id="solicitud-titulo" class="modal__titulo">Solicitud</h2>
+          <p id="sd-fecha" class="texto-suave texto-pequeno"></p>
+        </div>
+        <span id="sd-estado" class="insignia"></span>
+      </div>
+
+      <h3 class="seccion-titulo">Solicitante</h3>
+      <dl class="datos-fijos datos-fijos--rejilla">
+        <div><dt>Nombre</dt><dd id="sd-nombre"></dd></div>
+        <div><dt>Correo</dt><dd><a id="sd-correo" class="enlace"></a></dd></div>
+        <div><dt>Teléfono</dt><dd><a id="sd-telefono" class="enlace"></a></dd></div>
+        <div><dt>Ocupación</dt><dd id="sd-ocupacion"></dd></div>
+        <div class="datos-fijos__completo"><dt>Dirección</dt><dd id="sd-direccion"></dd></div>
+      </dl>
+
+      <h3 class="seccion-titulo">Hogar</h3>
+      <dl class="datos-fijos datos-fijos--rejilla">
+        <div><dt>Vivienda</dt><dd id="sd-vivienda"></dd></div>
+        <div><dt>Otras mascotas</dt><dd id="sd-otras"></dd></div>
+        <div class="datos-fijos__completo"><dt>¿Por qué quiere adoptar?</dt><dd id="sd-motivo"></dd></div>
+      </dl>
+
+      <h3 class="seccion-titulo">Documentos</h3>
+      <ul id="sd-documentos" class="docs-mascota"></ul>
+      <div id="sd-visor-zona" hidden>
+        <p id="sd-visor-titulo" class="texto-suave texto-pequeno" aria-live="polite">Ningún documento abierto</p>
+        <div id="sd-visor" class="visor__area visor__area--compacta"><p class="vacio">Elige «Ver» en un documento.</p></div>
+        <a id="sd-visor-abrir" class="enlace" target="_blank" rel="noopener" hidden>Abrir en una pestaña nueva</a>
+      </div>
+
+      <form id="formulario-estado" class="subir-doc" novalidate>
+        <h3 class="seccion-titulo">Respuesta del refugio</h3>
+        <div class="formulario-grid">
+          <div class="campo" data-campo="estado">
+            <label class="campo__etiqueta" for="sd-nuevo-estado">Estado</label>
+            <select id="sd-nuevo-estado" name="estado" class="campo__control">
+              <option value="pendiente">Nueva</option>
+              <option value="en revision">En revisión</option>
+              <option value="aprobada">Aprobada</option>
+              <option value="rechazada">Rechazada</option>
+            </select>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo campo--completo" data-campo="nota">
+            <label class="campo__etiqueta" for="sd-nota">Nota para el solicitante <span id="sd-nota-req" class="texto-suave">(opcional)</span></label>
+            <textarea id="sd-nota" name="nota" class="campo__control" maxlength="400" placeholder="Ej. Te llamaremos esta semana para agendar una entrevista."></textarea>
+            <span class="campo__ayuda">El solicitante la verá junto al estado de su solicitud.</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+        </div>
+        <div id="alerta-estado" role="alert" hidden></div>
+        <div class="modal__acciones">
+          <button id="cerrar-solicitud" class="boton boton--contorno" type="button">Cerrar</button>
+          <button id="guardar-estado" class="boton boton--primario" type="submit">Guardar respuesta</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>

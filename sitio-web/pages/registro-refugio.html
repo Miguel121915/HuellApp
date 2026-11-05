@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar refugio · HuellApp</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../assets/css/pages/login.css">
+  <script type="module" src="../assets/js/modules/auth/registro-refugio.js"></script>
+</head>
+<body class="pagina-registro" data-protegida>
+  <header class="encabezado">
+    <div class="encabezado__interno">
+      <a class="marca" href="login.html" aria-label="HuellApp, ir al inicio de sesión">
+        <span class="logo-texto marca__texto">HuellApp</span>
+        <img class="marca__huella" src="../assets/img/logos/huella.svg" alt="" width="48" height="48">
+      </a>
+    </div>
+  </header>
+
+  <main class="registro">
+    <h1 id="registro-titulo">Registro de refugio</h1>
+    <p id="registro-intro" class="registro__intro">Un administrador revisará tus documentos antes de activar tu panel. Mientras tanto tu solicitud queda como Pendiente de verificación.</p>
+
+    <!-- Solo en modo apelación (?apelacion=1): motivo del rechazo -->
+    <section id="aviso-apelacion" class="apelacion-aviso" aria-labelledby="apelacion-titulo" hidden>
+      <h2 id="apelacion-titulo" class="apelacion-aviso__titulo">Motivo del rechazo</h2>
+      <p id="apelacion-motivo"></p>
+      <p class="texto-pequeno">Tus datos y documentos ya están cargados. Corrige lo necesario y reemplaza los documentos marcados en rojo; los demás se conservan si no eliges un archivo nuevo.</p>
+    </section>
+
+    <form id="form-registro" novalidate>
+      <div id="alerta" role="alert" hidden></div>
+
+      <fieldset>
+        <legend>Datos del refugio</legend>
+        <div class="formulario-grid">
+          <div class="campo campo--completo">
+            <label class="campo__etiqueta" for="nombreRefugio">Nombre del refugio</label>
+            <input class="campo__control" id="nombreRefugio" name="nombreRefugio" type="text">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="responsable">Responsable</label>
+            <input class="campo__control" id="responsable" name="responsable" type="text" autocomplete="name">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="telefono">Teléfono</label>
+            <input class="campo__control" id="telefono" name="telefono" type="tel" autocomplete="tel">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo campo--completo">
+            <label class="campo__etiqueta" for="direccion">Dirección del refugio</label>
+            <input class="campo__control" id="direccion" name="direccion" type="text" autocomplete="street-address">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo campo--completo">
+            <span class="campo__etiqueta" id="etiqueta-horario">Horario de atención</span>
+            <div class="horario" role="group" aria-labelledby="etiqueta-horario">
+              <input class="campo__control" id="horaApertura" name="horaApertura" type="time" value="09:00" aria-label="Hora de apertura">
+              <span>a</span>
+              <input class="campo__control" id="horaCierre" name="horaCierre" type="time" value="18:00" aria-label="Hora de cierre">
+            </div>
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="cuenta-acceso">
+        <legend>Cuenta de acceso</legend>
+        <div class="formulario-grid">
+          <div class="campo">
+            <label class="campo__etiqueta" for="correo">Correo electrónico</label>
+            <input class="campo__control" id="correo" name="correo" type="email" autocomplete="email">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="password">Contraseña</label>
+            <input class="campo__control" id="password" name="password" type="password" autocomplete="new-password">
+            <span class="campo__ayuda">Mínimo 8 caracteres.</span>
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Documentos (PDF, JPG o PNG, máx. 5 MB)</legend>
+        <div class="formulario-grid">
+          <div class="campo">
+            <label class="campo__etiqueta" for="acta">Acta constitutiva</label>
+            <input class="campo__control" id="acta" name="acta" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="domicilio">Comprobante de domicilio</label>
+            <input class="campo__control" id="domicilio" name="domicilio" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="identificacion">Identificación del responsable</label>
+            <input class="campo__control" id="identificacion" name="identificacion" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="permiso">Permiso de refugio (opcional)</label>
+            <input class="campo__control" id="permiso" name="permiso" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="registro__acciones">
+        <a id="boton-volver" class="boton boton--contorno" href="login.html">Volver</a>
+        <button class="boton boton--primario" id="boton-enviar" type="submit">Enviar solicitud</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+/* modal.css — Diálogos con <dialog> nativo */
+.modal {
+  width: min(560px, calc(100% - 32px));
+  padding: var(--e5);
+  border: 3px solid var(--tinta);
+  border-radius: var(--radio-l);
+  background: var(--blanco);
+  box-shadow: var(--sombra-m);
+}
+.modal::backdrop { background: rgb(27 31 42 / 0.55); }
+.modal__titulo { margin-bottom: var(--e3); }
+.modal__acciones { display: flex; justify-content: flex-end; gap: var(--e3); margin-top: var(--e5); }
+
+/* Los formularios largos se desplazan dentro del diálogo en pantallas bajas */
+.modal { max-height: calc(100vh - 32px); overflow-y: auto; }
+.modal--ancho { width: min(780px, calc(100% - 32px)); }

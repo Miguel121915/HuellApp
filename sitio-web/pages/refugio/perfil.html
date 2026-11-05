@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perfil del refugio · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/perfil.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 id="perfil-nombre" class="titulo-banner titulo-banner--lima">Perfil del refugio</h1>
+
+    <section class="tarjeta tarjeta--blanca" aria-labelledby="titulo-estado">
+      <h2 id="titulo-estado" class="seccion-titulo">Estado de verificación</h2>
+      <p><span id="estado-insignia" class="insignia insignia--aprobado">Refugio verificado</span></p>
+      <p class="texto-suave">HuellApp revisó tus documentos y tu refugio aparece en el listado público de centros de adopción.</p>
+    </section>
+
+    <div class="perfil-grid">
+      <section class="tarjeta tarjeta--blanca" aria-labelledby="titulo-datos">
+        <h2 id="titulo-datos" class="seccion-titulo">Datos registrados</h2>
+        <dl class="datos-fijos">
+          <div><dt>Nombre del refugio</dt><dd id="dato-nombre"></dd></div>
+          <div><dt>Responsable</dt><dd id="dato-responsable"></dd></div>
+          <div><dt>Correo</dt><dd id="dato-correo"></dd></div>
+        </dl>
+        <p class="texto-pequeno texto-suave">Para cambiar estos datos hay que volver a verificarlos con un administrador de HuellApp.</p>
+        <h3 class="seccion-titulo">Documentos</h3>
+        <ul id="lista-documentos" class="documentos"></ul>
+        <p id="sin-documentos" class="texto-suave" hidden>No hay documentos registrados.</p>
+      </section>
+
+      <form id="formulario-perfil" class="tarjeta tarjeta--blanca" novalidate>
+        <h2 class="seccion-titulo">Datos de contacto</h2>
+        <div class="campo" data-campo="telefono"><label class="campo__etiqueta" for="p-telefono">Teléfono</label><input id="p-telefono" name="telefono" class="campo__control" type="tel" inputmode="tel" maxlength="20" autocomplete="off"><span class="campo__error" role="alert"></span></div>
+        <div class="campo" data-campo="direccion"><label class="campo__etiqueta" for="p-direccion">Dirección</label><input id="p-direccion" name="direccion" class="campo__control" type="text" maxlength="160" autocomplete="off"><span class="campo__error" role="alert"></span></div>
+        <div class="campo" data-campo="horario">
+          <span class="campo__etiqueta" id="etiqueta-horario">Horario de atención</span>
+          <div class="campo-edad" role="group" aria-labelledby="etiqueta-horario">
+            <input name="horaApertura" class="campo__control" type="time" aria-label="Hora de apertura">
+            <input name="horaCierre" class="campo__control" type="time" aria-label="Hora de cierre">
+          </div>
+          <span class="campo__error" role="alert"></span>
+        </div>
+        <div class="campo" data-campo="descripcion"><label class="campo__etiqueta" for="p-descripcion">Sobre el refugio (opcional)</label><textarea id="p-descripcion" name="descripcion" class="campo__control" maxlength="400" placeholder="Cuenta tu misión, cuántos animales cuidas y cómo es el proceso de adopción."></textarea><span class="campo__error" role="alert"></span></div>
+        <div id="alerta-perfil" role="status" hidden></div>
+        <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Guardar cambios</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

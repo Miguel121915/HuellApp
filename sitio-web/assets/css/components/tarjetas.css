@@ -1,0 +1,98 @@
+/* tarjetas.css — Tarjeta lila con detalles amarillo pastel */
+.tarjeta {
+  background: var(--lila);
+  border: 3px solid var(--lila-fuerte);
+  border-radius: var(--radio-m);
+  padding: var(--e4);
+  box-shadow: var(--sombra-s);
+}
+.tarjeta__titulo {
+  display: inline-block;
+  background: var(--amarillo);
+  padding: var(--e1) var(--e3);
+  border-radius: var(--radio-s);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.tarjeta__cuerpo { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); }
+.tarjeta--blanca { background: var(--blanco); border-color: var(--borde); }
+
+/* Insignia de estado (Pendiente, Aprobado...) */
+.insignia {
+  display: inline-block;
+  padding: 2px var(--e3);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.insignia--pendiente { background: var(--aviso-fondo); color: var(--aviso); }
+.insignia--aprobado { background: var(--exito-fondo); color: var(--exito); }
+.insignia--rechazado { background: var(--error-fondo); color: var(--error); }
+
+/* ---------- Tarjeta de mascota ---------- */
+.mascota {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--blanco);
+  border: 3px solid var(--lila-fuerte);
+  border-radius: var(--radio-m);
+  box-shadow: var(--sombra-s);
+}
+.mascota__foto { aspect-ratio: 4 / 3; background: var(--lila-suave); }
+.mascota__foto img { width: 100%; height: 100%; object-fit: cover; }
+.mascota__cuerpo { display: flex; flex-direction: column; gap: var(--e2); padding: var(--e4); background: var(--lila); flex: 1; }
+.mascota__encabezado { display: flex; align-items: center; justify-content: space-between; gap: var(--e2); }
+.mascota__nombre { font-size: 1.25rem; }
+.mascota__especie { padding: 2px var(--e3); border-radius: 999px; background: var(--amarillo); font-size: 0.8125rem; font-weight: 800; }
+.mascota__datos { display: flex; flex-wrap: wrap; gap: var(--e1) var(--e2); }
+.mascota__dato { padding: 2px var(--e2); border-radius: var(--radio-s); background: var(--blanco); font-size: 0.8125rem; font-weight: 700; }
+.mascota__descripcion { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); font-size: 0.9rem; flex: 1; }
+
+/* ---------- Tarjeta de publicación (foro y refugios) ---------- */
+.publicacion { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: var(--e4); align-items: start; }
+.publicacion--sin-foto { grid-template-columns: 1fr; }
+.publicacion__foto { border-radius: var(--radio-s); overflow: hidden; border: 3px solid var(--lila-fuerte); background: var(--lila-suave); }
+.publicacion__foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.publicacion__contenido { display: flex; flex-direction: column; gap: var(--e3); min-width: 0; }
+.publicacion__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
+.publicacion__texto { font-size: 0.95rem; overflow-wrap: anywhere; }
+.publicacion__pie { display: flex; align-items: center; gap: var(--e3); flex-wrap: wrap; }
+
+.comentarios-toggle { min-height: 44px; padding: var(--e1) var(--e3); background: transparent; border: 0; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.comentarios { display: flex; flex-direction: column; gap: var(--e3); padding: var(--e3); background: var(--blanco); border: 2px solid var(--lila-suave); border-radius: var(--radio-s); }
+.comentarios__lista { display: flex; flex-direction: column; gap: var(--e2); }
+.comentarios__lista:empty::before { content: "Aún no hay comentarios. ¡Sé el primero!"; color: var(--tinta-suave); font-size: 0.875rem; font-style: italic; }
+
+/* Cada comentario es una "burbuja": borde de acento y fondos alternados para distinguir cada respuesta */
+.comentario {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--e2) var(--e3);
+  background: var(--lila-suave);
+  border-left: 4px solid var(--lila-fuerte);
+  border-radius: 0 var(--radio-s) var(--radio-s) 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.comentario:nth-child(even) { background: var(--lila-tenue); border-left-color: var(--aqua-fuerte); }
+.comentario__autor { color: var(--lila-fuerte); font-size: 0.8125rem; font-weight: 800; }
+.comentario:nth-child(even) .comentario__autor { color: var(--aqua-fuerte); }
+
+.comentarios__form { display: flex; gap: var(--e2); padding-top: var(--e3); border-top: 2px dashed var(--lila-suave); }
+.comentarios__form .campo__control { flex: 1; min-height: 40px; }
+
+@media (max-width: 720px) {
+  .publicacion { grid-template-columns: 1fr; }
+}
+
+/* Insignias extra: estatus "adoptado" y etiqueta de mascota en publicaciones */
+.insignia--adoptado { background: var(--lila-suave); color: var(--lila-fuerte); }
+.publicacion__etiqueta { align-self: flex-start; padding: 2px var(--e3); background: var(--blanco); border: 2px solid var(--lila-fuerte); border-radius: 999px; font-size: 0.8125rem; font-weight: 800; }
+
+/* ---------- Tarjetas de resumen (contadores del panel de refugio y del administrador) ---------- */
+.resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--e4); }
+.dato-resumen { display: flex; flex-direction: column; align-items: center; gap: var(--e1); padding: var(--e5) var(--e4); text-align: center; }
+.dato-resumen__numero { font-size: 2.75rem; font-weight: 800; line-height: 1; }
+.dato-resumen__etiqueta { padding: 2px var(--e3); background: var(--amarillo); border-radius: var(--radio-s); font-size: 0.875rem; font-weight: 700; }

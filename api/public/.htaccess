@@ -1,0 +1,6 @@
+# Solo se usa si sirves la carpeta public/ con Apache (no es necesario con "php artisan serve").
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]

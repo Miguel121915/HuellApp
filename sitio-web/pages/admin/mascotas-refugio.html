@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mascotas del refugio · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/tabla.css">
+  <link rel="stylesheet" href="../../assets/css/components/visor.css">
+  <link rel="stylesheet" href="../../assets/css/pages/admin.css">
+  <script type="module" src="../../assets/js/modules/admin/mascotas-refugio.js"></script>
+</head>
+<body class="pagina-admin" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <a class="enlace" href="refugios.html">← Refugios</a>
+    <div id="alerta" role="status" hidden></div>
+
+    <header id="cabecera" class="solicitud-cabecera tarjeta tarjeta--blanca">
+      <div class="solicitud-cabecera__titulo">
+        <h1 id="refugio-nombre">Mascotas del refugio</h1>
+        <span id="estado-insignia" class="insignia"></span>
+      </div>
+      <p class="texto-suave">Inventario completo del refugio (incluye mascotas en proceso y adoptadas). Elige una mascota para revisar sus documentos: certificados de vacunación, esterilización, pedigree y otros que haya subido el refugio.</p>
+      <a id="ver-solicitud" class="enlace texto-pequeno">Ver datos y documentos del refugio</a>
+    </header>
+
+    <div id="contenido-mascotas">
+      <form class="herramientas" role="search">
+        <div class="campo">
+          <label class="campo__etiqueta" for="filtro-texto">Buscar</label>
+          <input id="filtro-texto" class="campo__control" type="search" placeholder="Nombre o raza" autocomplete="off">
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="filtro-especie">Especie</label>
+          <select id="filtro-especie" class="campo__control"><option value="">Todas</option><option value="perro">Perros</option><option value="gato">Gatos</option></select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="filtro-estatus">Estatus</label>
+          <select id="filtro-estatus" class="campo__control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="en proceso">En proceso</option><option value="adoptado">Adoptado</option></select>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="filtro-documentos">Documentos</label>
+          <select id="filtro-documentos" class="campo__control">
+            <option value="">Todos</option>
+            <option value="por-revisar">Con documentos por revisar</option>
+            <option value="con">Con documentos</option>
+            <option value="sin">Sin documentos</option>
+          </select>
+        </div>
+      </form>
+
+      <p id="conteo" class="texto-suave" role="status" aria-live="polite"></p>
+      <ul id="lista-mascotas" class="mascotas-admin" aria-label="Mascotas del refugio"></ul>
+      <p id="sin-resultados" class="vacio" hidden>Ninguna mascota coincide con esos filtros.</p>
+      <p id="sin-mascotas" class="vacio tarjeta tarjeta--blanca" hidden>Este refugio todavía no ha registrado mascotas.</p>
+
+      <section id="detalle" class="detalle-mascota" aria-labelledby="detalle-nombre" hidden>
+        <div class="revision">
+          <section class="tarjeta tarjeta--blanca" aria-labelledby="titulo-documentos">
+            <div class="detalle-mascota__cabecera">
+              <img id="detalle-foto" class="tabla__foto" alt="" width="56" height="56">
+              <div>
+                <h2 id="detalle-nombre" class="detalle-mascota__nombre"></h2>
+                <p id="detalle-resumen" class="texto-suave texto-pequeno"></p>
+              </div>
+              <span id="detalle-estatus" class="insignia"></span>
+            </div>
+            <p id="detalle-salud" class="texto-pequeno"></p>
+            <h3 id="titulo-documentos" class="seccion-titulo">Documentos de la mascota</h3>
+            <p class="texto-suave texto-pequeno">Abre cada documento con «Ver» y márcalo como revisado cuando esté correcto. El refugio verá qué documentos ya revisaste.</p>
+            <ul id="lista-documentos" class="checklist"></ul>
+            <p id="sin-documentos" class="vacio" hidden>El refugio aún no ha subido documentos de esta mascota.</p>
+            <p id="progreso" class="progreso" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="tarjeta tarjeta--blanca visor" aria-labelledby="titulo-visor">
+            <h2 id="titulo-visor" class="seccion-titulo">Visor de documentos</h2>
+            <p id="visor-titulo" class="texto-suave texto-pequeno" aria-live="polite">Ningún documento abierto</p>
+            <div id="visor" class="visor__area"><p class="vacio">Elige un documento con el botón «Ver» para revisarlo aquí.</p></div>
+            <a id="visor-abrir" class="enlace" target="_blank" rel="noopener" hidden>Abrir en una pestaña nueva</a>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

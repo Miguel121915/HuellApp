@@ -1,0 +1,763 @@
+{
+  "usuarios": [
+    {
+      "nombre": "Ana López",
+      "correo": "ana@huellapp.mx",
+      "rol": "usuario"
+    },
+    {
+      "nombre": "Fernando Ruiz",
+      "correo": "refugio@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-1"
+    },
+    {
+      "nombre": "Marco Pineda",
+      "correo": "pendiente@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-5"
+    },
+    {
+      "nombre": "Rosa Camacho",
+      "correo": "rechazado@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-6"
+    },
+    {
+      "nombre": "Administrador",
+      "correo": "admin@huellapp.mx",
+      "rol": "admin"
+    },
+    {
+      "nombre": "Laura Méndez",
+      "correo": "petcare@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-2"
+    },
+    {
+      "nombre": "Diego Torres",
+      "correo": "petfriend@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-3"
+    },
+    {
+      "nombre": "Sofía Ortega",
+      "correo": "michis@huellapp.mx",
+      "rol": "refugio",
+      "refugio": "ref-4"
+    }
+  ],
+  "comunidad": [
+    {
+      "nombre": "Miguel Peña",
+      "correo": "miguel.pena@ejemplo.mx"
+    },
+    {
+      "nombre": "Laura Méndez",
+      "correo": "laura.mendez@ejemplo.mx"
+    },
+    {
+      "nombre": "Enrique Nieto",
+      "correo": "enrique.nieto@ejemplo.mx"
+    },
+    {
+      "nombre": "Sofía Ortega",
+      "correo": "sofia.ortega@ejemplo.mx"
+    },
+    {
+      "nombre": "Diego Torres",
+      "correo": "diego.torres@ejemplo.mx"
+    },
+    {
+      "nombre": "Carlos Vega",
+      "correo": "carlos.vega@ejemplo.mx",
+      "telefono": "55 1010 2020"
+    },
+    {
+      "nombre": "Rosa Camacho",
+      "correo": "rosa.camacho@ejemplo.mx"
+    },
+    {
+      "nombre": "Marco Pineda",
+      "correo": "marco.pineda@ejemplo.mx"
+    },
+    {
+      "nombre": "Marisol Reyes",
+      "correo": "marisol.reyes@ejemplo.mx",
+      "telefono": "55 3030 4040"
+    },
+    {
+      "nombre": "Héctor Salas",
+      "correo": "hector.salas@ejemplo.mx",
+      "telefono": "55 5050 6060"
+    }
+  ],
+  "refugios": [
+    {
+      "clave": "ref-1",
+      "correoDueno": "refugio@huellapp.mx",
+      "nombre": "Centro Fernandino el chico",
+      "responsable": "Fernando Ruiz",
+      "telefono": "55 1234 5678",
+      "direccion": "Av. Chimalhuacán 120, Cd. Nezahualcóyotl",
+      "horario": "09:00 - 18:00",
+      "estado": "aprobado",
+      "motivoRechazo": "",
+      "documentos": [
+        {
+          "tipo": "acta",
+          "nombre": "acta-constitutiva.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "comprobante-domicilio.pdf"
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "identificacion-responsable.pdf"
+        }
+      ]
+    },
+    {
+      "clave": "ref-2",
+      "correoDueno": "petcare@huellapp.mx",
+      "nombre": "Centro PetCare",
+      "responsable": "Laura Méndez",
+      "telefono": "55 2222 3333",
+      "direccion": "Calle Sur 8, Col. Providencia",
+      "horario": "10:00 - 17:00",
+      "estado": "aprobado",
+      "motivoRechazo": "",
+      "documentos": [
+        {
+          "tipo": "acta",
+          "nombre": "acta-constitutiva.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "comprobante-domicilio.pdf"
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "identificacion-responsable.pdf"
+        }
+      ]
+    },
+    {
+      "clave": "ref-3",
+      "correoDueno": "petfriend@huellapp.mx",
+      "nombre": "Refugio y centro de cuidados PetFriend",
+      "responsable": "Diego Torres",
+      "telefono": "55 4444 5555",
+      "direccion": "Av. Bordo de Xochiaca 45",
+      "horario": "09:00 - 16:00",
+      "estado": "aprobado",
+      "motivoRechazo": "",
+      "documentos": [
+        {
+          "tipo": "acta",
+          "nombre": "acta-constitutiva.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "comprobante-domicilio.pdf"
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "identificacion-responsable.pdf"
+        }
+      ]
+    },
+    {
+      "clave": "ref-4",
+      "correoDueno": "michis@huellapp.mx",
+      "nombre": "Refugio Michis & Cats",
+      "responsable": "Sofía Ortega",
+      "telefono": "55 6666 7777",
+      "direccion": "Calle Gato 3, Col. Evolución",
+      "horario": "11:00 - 19:00",
+      "estado": "aprobado",
+      "motivoRechazo": "",
+      "documentos": [
+        {
+          "tipo": "acta",
+          "nombre": "acta-constitutiva.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "comprobante-domicilio.pdf"
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "identificacion-responsable.pdf"
+        }
+      ]
+    },
+    {
+      "clave": "ref-5",
+      "correoDueno": "pendiente@huellapp.mx",
+      "nombre": "Patitas Felices",
+      "responsable": "Marco Pineda",
+      "telefono": "55 8888 1111",
+      "direccion": "Av. Texcoco 300",
+      "horario": "09:00 - 18:00",
+      "estado": "pendiente",
+      "motivoRechazo": "",
+      "documentos": [
+        {
+          "tipo": "acta",
+          "nombre": "acta-constitutiva.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "comprobante-domicilio.pdf"
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "ine-responsable.pdf"
+        }
+      ]
+    },
+    {
+      "clave": "ref-6",
+      "correoDueno": "rechazado@huellapp.mx",
+      "nombre": "Hogar Peludo",
+      "responsable": "Rosa Camacho",
+      "telefono": "55 9999 0000",
+      "direccion": "Calle Luna 12",
+      "horario": "10:00 - 15:00",
+      "estado": "rechazado",
+      "motivoRechazo": "El comprobante de domicilio tiene más de 3 meses de antigüedad. Sube uno reciente.",
+      "documentos": [
+        { "tipo": "acta", "nombre": "acta-hogar-peludo.pdf" },
+        { "tipo": "domicilio", "nombre": "recibo-luz-enero.pdf", "conError": true },
+        { "tipo": "identificacion", "nombre": "ine-rosa-camacho.pdf" }
+      ]
+    }
+  ],
+  "mascotas": [
+    {
+      "clave": "mas-1",
+      "refugio": "ref-1",
+      "nombre": "Max",
+      "especie": "perro",
+      "raza": "Mestizo",
+      "edadMeses": 24,
+      "sexo": "macho",
+      "tamano": "mediano",
+      "salud": "Vacunado y desparasitado",
+      "descripcion": "Juguetón y muy cariñoso. Se lleva bien con niños y otros perros.",
+      "foto": "assets/img/mascotas/perro-cafe.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-2",
+      "refugio": "ref-1",
+      "nombre": "Luna",
+      "especie": "perro",
+      "raza": "Labrador mestiza",
+      "edadMeses": 8,
+      "sexo": "hembra",
+      "tamano": "mediano",
+      "salud": "Vacunas al día",
+      "descripcion": "Cachorra llena de energía; necesita espacio para correr.",
+      "foto": "assets/img/mascotas/perro-dorado.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-3",
+      "refugio": "ref-1",
+      "nombre": "Canela",
+      "especie": "perro",
+      "raza": "Criolla",
+      "edadMeses": 36,
+      "sexo": "hembra",
+      "tamano": "pequeño",
+      "salud": "Esterilizada y vacunada",
+      "descripcion": "Tranquila, ideal para departamento. Le encantan los paseos cortos.",
+      "foto": "assets/img/mascotas/perro-dalmata.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-4",
+      "refugio": "ref-1",
+      "nombre": "Simón",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 12,
+      "sexo": "macho",
+      "tamano": "pequeño",
+      "salud": "Vacunado",
+      "descripcion": "Curioso y sociable. Duerme en cualquier regazo disponible.",
+      "foto": "assets/img/mascotas/gato-naranja.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-5",
+      "refugio": "ref-1",
+      "nombre": "Nube",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 6,
+      "sexo": "hembra",
+      "tamano": "pequeño",
+      "salud": "Desparasitada",
+      "descripcion": "Gatita muy dulce. Busca un hogar con paciencia y mucho cariño.",
+      "foto": "assets/img/mascotas/gato-blanco.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-6",
+      "refugio": "ref-1",
+      "nombre": "Bobby",
+      "especie": "perro",
+      "raza": "Mestizo",
+      "edadMeses": 48,
+      "sexo": "macho",
+      "tamano": "grande",
+      "salud": "En tratamiento",
+      "descripcion": "Todavía en recuperación; aún no está disponible.",
+      "foto": "assets/img/mascotas/perro-negro.svg",
+      "estatus": "en proceso"
+    },
+    {
+      "clave": "mas-7",
+      "refugio": "ref-2",
+      "nombre": "Rocky",
+      "especie": "perro",
+      "raza": "Pastor mestizo",
+      "edadMeses": 60,
+      "sexo": "macho",
+      "tamano": "grande",
+      "salud": "Vacunado y esterilizado",
+      "descripcion": "Leal y protector. Necesita un hogar con patio.",
+      "foto": "assets/img/mascotas/perro-negro.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-8",
+      "refugio": "ref-2",
+      "nombre": "Bella",
+      "especie": "perro",
+      "raza": "Chihuahua mix",
+      "edadMeses": 18,
+      "sexo": "hembra",
+      "tamano": "pequeño",
+      "salud": "Vacunas al día",
+      "descripcion": "Pequeña pero valiente. Se apega muy rápido a su persona.",
+      "foto": "assets/img/mascotas/perro-cafe.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-9",
+      "refugio": "ref-2",
+      "nombre": "Tom",
+      "especie": "gato",
+      "raza": "Atigrado",
+      "edadMeses": 30,
+      "sexo": "macho",
+      "tamano": "mediano",
+      "salud": "Vacunado y esterilizado",
+      "descripcion": "Independiente pero cariñoso cuando agarra confianza.",
+      "foto": "assets/img/mascotas/gato-gris.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-10",
+      "refugio": "ref-2",
+      "nombre": "Mía",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 96,
+      "sexo": "hembra",
+      "tamano": "mediano",
+      "salud": "Revisión geriátrica al día",
+      "descripcion": "Una señora tranquila que merece una vejez consentida.",
+      "foto": "assets/img/mascotas/gato-negro.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-11",
+      "refugio": "ref-2",
+      "nombre": "Toby",
+      "especie": "perro",
+      "raza": "Cruza de poodle",
+      "edadMeses": 4,
+      "sexo": "macho",
+      "tamano": "pequeño",
+      "salud": "Primera vacuna aplicada",
+      "descripcion": "Cachorro curioso que ya aprende a sentarse.",
+      "foto": "assets/img/mascotas/perro-dorado.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-12",
+      "refugio": "ref-3",
+      "nombre": "Duque",
+      "especie": "perro",
+      "raza": "Gran danés mestizo",
+      "edadMeses": 84,
+      "sexo": "macho",
+      "tamano": "grande",
+      "salud": "Vacunado",
+      "descripcion": "Un gigante bueno. Camina tranquilo con correa.",
+      "foto": "assets/img/mascotas/perro-dalmata.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-13",
+      "refugio": "ref-3",
+      "nombre": "Kira",
+      "especie": "perro",
+      "raza": "Husky mestiza",
+      "edadMeses": 14,
+      "sexo": "hembra",
+      "tamano": "mediano",
+      "salud": "Vacunada y esterilizada",
+      "descripcion": "Muy activa; ama los paseos largos y los juegos.",
+      "foto": "assets/img/mascotas/perro-cafe.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-14",
+      "refugio": "ref-3",
+      "nombre": "Pelusa",
+      "especie": "gato",
+      "raza": "Persa mestiza",
+      "edadMeses": 24,
+      "sexo": "hembra",
+      "tamano": "mediano",
+      "salud": "Vacunada",
+      "descripcion": "Pelaje esponjoso y carácter dulce. Disfruta los cepillados.",
+      "foto": "assets/img/mascotas/gato-blanco.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-15",
+      "refugio": "ref-3",
+      "nombre": "Bruno",
+      "especie": "perro",
+      "raza": "Criollo",
+      "edadMeses": 120,
+      "sexo": "macho",
+      "tamano": "mediano",
+      "salud": "Control de artritis",
+      "descripcion": "Senior sereno que solo pide una cama blandita y compañía.",
+      "foto": "assets/img/mascotas/perro-negro.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-16",
+      "refugio": "ref-3",
+      "nombre": "Chispa",
+      "especie": "perro",
+      "raza": "Mestiza",
+      "edadMeses": 5,
+      "sexo": "hembra",
+      "tamano": "pequeño",
+      "salud": "Desparasitada",
+      "descripcion": "Cachorrita traviesa, rescatada junto a sus hermanos.",
+      "foto": "assets/img/mascotas/perro-dorado.svg",
+      "estatus": "adoptado"
+    },
+    {
+      "clave": "mas-17",
+      "refugio": "ref-4",
+      "nombre": "Michi",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 10,
+      "sexo": "macho",
+      "tamano": "pequeño",
+      "salud": "Vacunado",
+      "descripcion": "Le encanta perseguir cualquier cosa que se mueva.",
+      "foto": "assets/img/mascotas/gato-gris-2.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-18",
+      "refugio": "ref-4",
+      "nombre": "Oreo",
+      "especie": "gato",
+      "raza": "Bicolor",
+      "edadMeses": 20,
+      "sexo": "macho",
+      "tamano": "mediano",
+      "salud": "Vacunado y esterilizado",
+      "descripcion": "Sociable y dormilón. Convive bien con otros gatos.",
+      "foto": "assets/img/mascotas/gato-negro.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-19",
+      "refugio": "ref-4",
+      "nombre": "Nala",
+      "especie": "gato",
+      "raza": "Doméstica",
+      "edadMeses": 36,
+      "sexo": "hembra",
+      "tamano": "mediano",
+      "salud": "Esterilizada",
+      "descripcion": "Elegante y reservada; se vuelve muy cariñosa en casa.",
+      "foto": "assets/img/mascotas/gato-naranja.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-20",
+      "refugio": "ref-4",
+      "nombre": "Garfield",
+      "especie": "gato",
+      "raza": "Atigrado",
+      "edadMeses": 72,
+      "sexo": "macho",
+      "tamano": "grande",
+      "salud": "Dieta controlada",
+      "descripcion": "Le gusta comer y dormir. Busca un hogar tranquilo.",
+      "foto": "assets/img/mascotas/gato-naranja.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-21",
+      "refugio": "ref-4",
+      "nombre": "Cleo",
+      "especie": "gato",
+      "raza": "Doméstica",
+      "edadMeses": 3,
+      "sexo": "hembra",
+      "tamano": "pequeño",
+      "salud": "Primera vacuna aplicada",
+      "descripcion": "Gatita rescatada; muy juguetona y mimosa.",
+      "foto": "assets/img/mascotas/gato-gris.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-22",
+      "refugio": "ref-4",
+      "nombre": "Sombra",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 108,
+      "sexo": "macho",
+      "tamano": "mediano",
+      "salud": "Revisión geriátrica al día",
+      "descripcion": "Senior tranquilo, ideal para quien busca compañía serena.",
+      "foto": "assets/img/mascotas/gato-negro.svg",
+      "estatus": "disponible"
+    },
+    {
+      "clave": "mas-23",
+      "refugio": "ref-4",
+      "nombre": "Pixel",
+      "especie": "gato",
+      "raza": "Doméstico",
+      "edadMeses": 14,
+      "sexo": "macho",
+      "tamano": "pequeño",
+      "salud": "Vacunado",
+      "descripcion": "Travieso y aventurero. Necesita juguetes y rascadores.",
+      "foto": "assets/img/mascotas/gato-gris-2.svg",
+      "estatus": "disponible"
+    }
+  ],
+  "publicacionesRefugio": [
+    {
+      "refugio": "ref-1",
+      "mascota": "mas-2",
+      "texto": "Conoce a Luna: 8 meses, mucha energía y un corazón enorme. Estamos recibiendo solicitudes de adopción esta semana.",
+      "foto": "assets/img/mascotas/perro-dorado.svg",
+      "fotoAlt": "Luna, cachorra dorada",
+      "horasAtras": 20
+    },
+    {
+      "refugio": "ref-1",
+      "mascota": "mas-4",
+      "texto": "Simón busca familia. Es sociable, está vacunado y se lleva bien con niños.",
+      "foto": "assets/img/mascotas/gato-naranja.svg",
+      "fotoAlt": "Simón, gato naranja",
+      "horasAtras": 240,
+      "republicarCadaDias": 7
+    },
+    {
+      "refugio": "ref-4",
+      "mascota": "mas-22",
+      "texto": "Los gatitos senior también merecen un hogar. Sombra tiene 9 años y mucho amor para dar.",
+      "foto": "assets/img/mascotas/gato-negro.svg",
+      "fotoAlt": "Sombra, gato negro",
+      "horasAtras": 48
+    }
+  ],
+  "preguntasRefugio": [
+    { "refugio": "ref-1", "pregunta": "¿Qué documentos necesito para adoptar?", "claves": ["requisitos", "papeles", "documentacion"],
+      "respuesta": "Necesitamos tu identificación oficial vigente (INE o pasaporte), un comprobante de domicilio y de 1 a 3 fotos del espacio donde vivirá la mascota. Puedes subirlos en PDF, JPG o PNG." },
+    { "refugio": "ref-1", "pregunta": "¿Qué comprobantes de domicilio aceptan?", "claves": ["recibo", "luz", "agua", "predial", "antiguedad"],
+      "respuesta": "Aceptamos recibo de luz, agua, teléfono, internet o predial a tu nombre o de un familiar directo, con una antigüedad máxima de 3 meses." },
+    { "refugio": "ref-1", "pregunta": "¿Cómo deben ser las fotos del espacio?", "claves": ["fotos", "patio", "casa", "departamento", "imagenes"],
+      "respuesta": "Toma fotos claras de las áreas donde estará la mascota: patio, jardín, azotea o interior. Si vives en departamento, incluye una foto de las ventanas o del balcón con protección." },
+    { "refugio": "ref-1", "pregunta": "¿Puedo adoptar si rento mi vivienda?", "claves": ["renta", "rentada", "arrendador", "casero"],
+      "respuesta": "Sí. Solo te pediremos que confirmes que en tu contrato de renta se permiten mascotas; si no estás seguro, pregúntale a tu arrendador antes de enviar la solicitud." },
+    { "refugio": "ref-1", "pregunta": "¿Cuánto tarda la revisión de mi solicitud?", "claves": ["tiempo", "cuando", "respuesta", "dias", "tarda"],
+      "respuesta": "Revisamos las solicitudes en un máximo de 5 días hábiles. Si todo está en orden te llamaremos para agendar una entrevista y una visita para conocer a la mascota." },
+    { "refugio": "ref-1", "pregunta": "¿La adopción tiene algún costo?", "claves": ["costo", "precio", "pagar", "cuota", "donativo"],
+      "respuesta": "La adopción no tiene costo. Al entregar la mascota pedimos un donativo voluntario que nos ayuda a cubrir vacunas y esterilizaciones de otros animales." },
+    { "refugio": "ref-2", "pregunta": "¿Qué necesito para adoptar en PetCare?", "claves": ["requisitos", "documentos", "papeles"],
+      "respuesta": "Identificación oficial, comprobante de domicilio reciente y fotos del lugar donde vivirá la mascota. Además, todos los adultos de la casa deben estar de acuerdo con la adopción." }
+  ],
+  "documentosMascota": [
+    { "mascota": "mas-1", "tipo": "vacunacion", "nombre": "cartilla-vacunacion-max.pdf", "verificado": true },
+    { "mascota": "mas-1", "tipo": "esterilizacion", "nombre": "constancia-esterilizacion-max.pdf", "verificado": false },
+    { "mascota": "mas-2", "tipo": "vacunacion", "nombre": "cartilla-vacunacion-luna.pdf", "verificado": false },
+    { "mascota": "mas-7", "tipo": "pedigree", "nombre": "pedigree-rocky.pdf", "verificado": false }
+  ],
+  "foro": [
+    {
+      "autor": "miguel.pena@ejemplo.mx",
+      "texto": "Yo llevé a mi perro a la veterinaria Huellitas y Salud porque tenía varios días aletargado y mal. Desde que llegamos, la atención fue muy buena y el veterinario revisó a mi mascota con bastante cuidado. También me explicó qué tenía y cómo debía darle el medicamento. En general, quedé satisfecho con el servicio y el trato que recibimos, por lo que sí recomendaría esta veterinaria.",
+      "foto": "assets/img/mascotas/perro-cafe.svg",
+      "fotoAlt": "Perro café recibiendo atención veterinaria",
+      "horasAtras": 3,
+      "likes": 12,
+      "comentarios": [
+        {
+          "autor": "laura.mendez@ejemplo.mx",
+          "texto": "¡Gracias por la recomendación! Justo buscaba una veterinaria por la zona."
+        }
+      ]
+    },
+    {
+      "autor": "enrique.nieto@ejemplo.mx",
+      "texto": "Hola, estoy buscando a mi gato que se perdió hace unos días. Es un gato de tamaño mediano, de color gris con rayas negras, tiene los ojos verdes y un collar azul. Se perdió cerca de la colonia Las Flores, aproximadamente en la zona del parque principal. Es un poco tímido y puede asustarse fácilmente, por lo que agradecería mucho si alguien lo ha visto o tiene información sobre él. Cualquier dato puede ayudarme a encontrarlo.",
+      "foto": "assets/img/mascotas/gato-gris.svg",
+      "fotoAlt": "Gato gris con rayas oscuras y ojos verdes",
+      "horasAtras": 7,
+      "likes": 8,
+      "comentarios": []
+    },
+    {
+      "autor": "sofia.ortega@ejemplo.mx",
+      "texto": "¡Final feliz! Hace una semana adopté a Canela en el Centro Fernandino y ya se adueñó de la sala. Si estás pensando en adoptar, anímate: te cambian la vida (y el sillón).",
+      "foto": "assets/img/mascotas/perro-dorado.svg",
+      "fotoAlt": "Perra dorada recién adoptada",
+      "horasAtras": 26,
+      "likes": 31,
+      "comentarios": [
+        {
+          "autor": "ana@huellapp.mx",
+          "texto": "¡Qué hermosa! Felicidades 🐾"
+        },
+        {
+          "autor": "diego.torres@ejemplo.mx",
+          "texto": "Bienvenida a la familia, Canela."
+        }
+      ]
+    },
+    {
+      "autor": "carlos.vega@ejemplo.mx",
+      "texto": "Encontré un perro blanco con manchas negras cerca del mercado de la colonia Evolución. Trae collar rojo pero sin placa. Está tranquilo y lo tengo resguardado. Si es tuyo, escríbeme por aquí.",
+      "foto": "assets/img/mascotas/perro-dalmata.svg",
+      "fotoAlt": "Perro blanco con manchas negras",
+      "horasAtras": 30,
+      "likes": 5,
+      "comentarios": []
+    },
+    {
+      "autor": "rosa.camacho@ejemplo.mx",
+      "texto": "Tip para estas fechas: revisa que tu mascota traiga collar con teléfono actualizado. Con una placa, una mascota extraviada regresa a casa mucho más rápido.",
+      "foto": "",
+      "fotoAlt": "",
+      "horasAtras": 52,
+      "likes": 17,
+      "comentarios": [
+        {
+          "autor": "marco.pineda@ejemplo.mx",
+          "texto": "Muy buen consejo. Además ayuda ponerles microchip."
+        }
+      ]
+    },
+    {
+      "autor": "laura.mendez@ejemplo.mx",
+      "texto": "Mi michi Oreo cumple un año de ser adoptado. Gracias a todos los que ayudan a que más gatitos encuentren hogar.",
+      "foto": "assets/img/mascotas/gato-blanco.svg",
+      "fotoAlt": "Gato blanco de ojos azules",
+      "horasAtras": 75,
+      "likes": 22,
+      "comentarios": []
+    },
+    {
+      "autor": "diego.torres@ejemplo.mx",
+      "texto": "Este fin de semana haremos una jornada de adopción en el Refugio PetFriend. Habrá cachorros, adultos y también seniors que merecen una segunda oportunidad. ¡Los esperamos!",
+      "foto": "assets/img/mascotas/perro-negro.svg",
+      "fotoAlt": "Perro negro de ojos tiernos",
+      "horasAtras": 98,
+      "likes": 9,
+      "comentarios": []
+    },
+    {
+      "autor": "ana@huellapp.mx",
+      "texto": "¿Alguien conoce una buena veterinaria de gatos cerca de la colonia San Miguel? Mi gato Tom necesita sus vacunas.",
+      "foto": "",
+      "fotoAlt": "",
+      "horasAtras": 120,
+      "likes": 4,
+      "comentarios": []
+    }
+  ],
+  "reportes": [
+    {
+      "clave": "rep-1",
+      "autor": "ana@huellapp.mx",
+      "tipo": "perdida",
+      "descripcion": "Hola, estoy buscando a mi gato que se perdió cerca del parque de la colonia San Miguel. Es gordito, de color gris con rayas oscuras y tiene los ojos verdes. Responde al nombre de Tom. Si alguien lo ha visto, agradecería mucho cualquier información.",
+      "zona": "Parque de la colonia San Miguel",
+      "foto": "assets/img/mascotas/gato-gris.svg",
+      "fotoAlt": "Tom, gato gris con rayas oscuras",
+      "horasAtras": 60
+    },
+    {
+      "clave": "hall-coin-1",
+      "autor": "carlos.vega@ejemplo.mx",
+      "tipo": "encontrada",
+      "descripcion": "Encontré un gato cerca del parque de la colonia San Miguel. Es gordito, gris con rayas oscuras y tiene los ojos verdes. Parece estar perdido y es bastante tranquilo. Si alguien reconoce estas características, puede contactarme para confirmar si es su gato.",
+      "zona": "Parque de la colonia San Miguel",
+      "foto": "assets/img/mascotas/gato-gris-2.svg",
+      "fotoAlt": "Gato gris con rayas oscuras encontrado",
+      "horasAtras": 2
+    },
+    {
+      "clave": "hall-coin-2",
+      "autor": "marisol.reyes@ejemplo.mx",
+      "tipo": "encontrada",
+      "descripcion": "Vi un gato gris merodeando por la calle Flores, a unas cuadras del parque. Se acerca a la gente y parece acostumbrado a vivir en casa, pero no pude ver el color de sus ojos.",
+      "zona": "Calle Flores, col. San Miguel",
+      "foto": "assets/img/mascotas/gato-gris.svg",
+      "fotoAlt": "Gato gris visto en la calle",
+      "horasAtras": 9
+    },
+    {
+      "clave": "hall-coin-3",
+      "autor": "hector.salas@ejemplo.mx",
+      "tipo": "encontrada",
+      "descripcion": "Llegó a mi patio un gato de pelo corto, color gris claro. Está flaquito y no trae collar. Lo estoy alimentando mientras busco a su dueño.",
+      "zona": "Col. Evolución, cerca del mercado",
+      "foto": "assets/img/mascotas/gato-blanco.svg",
+      "fotoAlt": "Gato claro encontrado en un patio",
+      "horasAtras": 21
+    }
+  ],
+  "coincidencias": [
+    {
+      "perdido": "rep-1",
+      "encontrado": "hall-coin-1",
+      "similitud": 92
+    },
+    {
+      "perdido": "rep-1",
+      "encontrado": "hall-coin-2",
+      "similitud": 74
+    },
+    {
+      "perdido": "rep-1",
+      "encontrado": "hall-coin-3",
+      "similitud": 58
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+/* ==========================================================
+   adopcion.css — Botón «Adoptar» de las tarjetas, formulario de solicitud de adopción
+   y asistente KIRO (botón flotante + chat). Paleta: turquesa, lila y amarillo de HuellApp.
+   ========================================================== */
+
+/* ---------- Botón «Adoptar» en la tarjeta de mascota ---------- */
+.mascota__pie { margin-top: auto; padding-top: var(--e2); }
+.boton--adoptar { background: var(--aqua); color: var(--tinta); border-color: var(--aqua-fuerte); font-size: 1rem; }
+.boton--adoptar:hover { background: #3fd9c0; }
+.boton--adoptar span { font-size: 1.15rem; }
+.boton--adoptar-enviada,
+.boton--adoptar-enviada:disabled { background: var(--amarillo); border-color: var(--amarillo-fuerte); color: var(--aviso); opacity: 1; }
+
+/* ---------- Formulario ---------- */
+.adopcion { padding: 0; overflow-x: hidden; }
+.adopcion form { padding: var(--e4) var(--e5) var(--e5); }
+.adopcion__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--e4);
+  padding: var(--e4) var(--e5);
+  background: var(--aqua-suave);
+  border-bottom: 3px solid var(--aqua);
+}
+.adopcion__foto { width: 88px; height: 88px; flex: none; object-fit: cover; background: var(--lila-suave); border: 3px solid var(--lila-fuerte); border-radius: var(--radio-m); }
+.adopcion__antetitulo { font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--aqua-fuerte); }
+.adopcion__titulo { font-size: 1.5rem; }
+
+.adopcion__grupo { margin: 0 0 var(--e4); padding: var(--e4); background: var(--blanco); border: 2px solid var(--lila); border-radius: var(--radio-m); }
+.adopcion__grupo legend { padding: 2px var(--e3); background: var(--lila); border-radius: var(--radio-s); font-weight: 800; }
+.adopcion__ayuda { display: block; margin-bottom: var(--e3); }
+
+/* Opciones tipo "pastilla" (tipo de vivienda) */
+.opciones { display: flex; flex-wrap: wrap; gap: var(--e2); }
+.opcion { position: relative; cursor: pointer; }
+.opcion input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.opcion span { display: inline-flex; align-items: center; min-height: 42px; padding: var(--e1) var(--e4); background: var(--lila-suave); border: 2px solid var(--lila); border-radius: 999px; font-weight: 700; }
+.opcion input:checked + span { background: var(--lila-fuerte); border-color: var(--lila-fuerte); color: var(--blanco); }
+.opcion input:focus-visible + span { box-shadow: var(--foco); }
+.campo--error .opcion span { border-color: var(--error); }
+
+/* Fotos del espacio */
+.adopcion__fotos { display: flex; flex-wrap: wrap; gap: var(--e3); }
+.adopcion__fotos:empty { display: none; }
+.adopcion__foto-item { display: flex; flex-direction: column; align-items: center; gap: var(--e1); }
+.adopcion__foto-item img { width: 96px; height: 72px; object-fit: cover; border: 2px solid var(--lila-fuerte); border-radius: var(--radio-s); }
+
+.adopcion__acepto { display: flex; align-items: flex-start; gap: var(--e2); padding: var(--e3); background: var(--amarillo); border-radius: var(--radio-m); font-weight: 600; cursor: pointer; }
+.adopcion__acepto input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--aqua-fuerte); }
+
+/* ---------- Asistente KIRO ---------- */
+.asistente__boton {
+  position: fixed;
+  right: max(16px, calc(50vw - 390px + 16px)); /* esquina del diálogo en escritorio, de la pantalla en móvil */
+  bottom: 24px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 52px;
+  padding: var(--e1) var(--e4) var(--e1) var(--e1);
+  background: var(--lila-fuerte);
+  border: 3px solid var(--blanco);
+  border-radius: 999px;
+  box-shadow: var(--sombra-m);
+  color: var(--blanco);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.asistente__boton:hover { transform: translateY(-2px); }
+.asistente__boton--abierto { background: var(--tinta); }
+.asistente__avatar { width: 36px; height: 38px; flex: none; padding: 2px; background: var(--amarillo); border-radius: 50%; }
+
+.asistente__panel {
+  position: fixed;
+  right: max(16px, calc(50vw - 390px + 16px));
+  bottom: 88px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 32px));
+  height: min(540px, calc(100vh - 120px));
+  overflow: hidden;
+  background: var(--blanco);
+  border: 3px solid var(--lila-fuerte);
+  border-radius: var(--radio-l);
+  box-shadow: var(--sombra-m);
+}
+.asistente__panel[hidden] { display: none; }
+.asistente__cabecera { display: flex; align-items: center; gap: var(--e3); padding: var(--e3) var(--e4); background: var(--lila); }
+.asistente__titulo { font-size: 1rem; }
+.asistente__subtitulo { font-size: 0.8125rem; color: var(--tinta-suave); }
+.asistente__cerrar { margin-left: auto; width: 36px; height: 36px; background: var(--blanco); border: 2px solid var(--lila-fuerte); border-radius: 50%; font-size: 1.25rem; line-height: 1; cursor: pointer; }
+
+.asistente__mensajes { flex: 1; display: flex; flex-direction: column; gap: var(--e2); padding: var(--e3); overflow-y: auto; background: var(--lila-tenue, #f5f5fc); }
+.asistente__mensaje { max-width: 88%; padding: var(--e2) var(--e3); border-radius: var(--radio-m); font-size: 0.9rem; overflow-wrap: anywhere; }
+.asistente__mensaje p { margin: var(--e1) 0 0; }
+.asistente__mensaje--bot { align-self: flex-start; background: var(--blanco); border: 2px solid var(--lila); border-bottom-left-radius: 4px; }
+.asistente__mensaje--usuario { align-self: flex-end; background: var(--aqua-suave); border: 2px solid var(--aqua); border-bottom-right-radius: 4px; }
+.asistente__pregunta { display: block; color: var(--lila-fuerte); }
+.asistente__fuente { display: block; margin-top: var(--e2); font-size: 0.75rem; color: var(--tinta-suave); font-style: italic; }
+.asistente__escribiendo { color: var(--tinta-suave); font-style: italic; }
+.asistente__llamar { display: block; margin-top: var(--e2); }
+.asistente__relacionadas { display: flex; flex-direction: column; align-items: flex-start; gap: var(--e1); margin-top: var(--e2); }
+
+.asistente__sugerencias,
+.asistente__vivas { display: flex; flex-wrap: wrap; gap: var(--e1); padding: var(--e2) var(--e3) 0; }
+.asistente__sugerencias:empty,
+.asistente__vivas:empty { display: none; }
+.asistente__vivas { border-top: 2px dashed var(--lila); }
+.asistente__vivas-titulo { width: 100%; font-size: 0.75rem; font-weight: 800; color: var(--tinta-suave); }
+.asistente__chip { padding: 4px var(--e3); background: var(--amarillo); border: 2px solid var(--amarillo-fuerte); border-radius: 999px; font-size: 0.8125rem; font-weight: 700; text-align: left; cursor: pointer; }
+.asistente__chip:hover { background: #fbe08d; }
+
+.asistente__formulario { display: flex; gap: var(--e2); padding: var(--e3); }
+.asistente__formulario .campo__control { min-height: 40px; }
+
+@media (max-width: 720px) {
+  .adopcion__cabecera { padding: var(--e3); }
+  .adopcion form { padding: var(--e3); }
+  .adopcion .formulario-grid { grid-template-columns: 1fr; }
+  .asistente__boton span { display: none; } /* en móvil queda solo el avatar de KIRO */
+  .asistente__boton { padding: var(--e1); }
+}

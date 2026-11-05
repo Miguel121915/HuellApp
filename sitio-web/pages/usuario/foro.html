@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Foro · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <link rel="stylesheet" href="../../assets/css/pages/foro.css">
+  <script type="module" src="../../assets/js/modules/usuario/foro.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido contenido--foro">
+    <h1 class="titulo-banner">Bienvenido al foro</h1>
+
+    <form id="formulario-publicar" class="publicar tarjeta" novalidate>
+      <div class="campo" id="campo-texto">
+        <label class="campo__etiqueta" for="publicar-texto">Crear publicación</label>
+        <textarea id="publicar-texto" name="texto" class="campo__control" rows="3" maxlength="600" placeholder="¿Qué quieres compartir con la comunidad?" required></textarea>
+        <span class="campo__error" role="alert"></span>
+      </div>
+
+      <div class="campo" id="campo-foto">
+        <label class="campo__etiqueta" for="publicar-foto">Foto (opcional)</label>
+        <input id="publicar-foto" name="foto" class="campo__control" type="file" accept="image/*">
+        <span class="campo__error" role="alert"></span>
+        <figure id="publicar-vista" class="publicar__vista" hidden>
+          <img alt="Vista previa de la foto que vas a publicar" width="400" height="300">
+          <button id="publicar-quitar" class="boton boton--contorno boton--pequeno" type="button">Quitar foto</button>
+        </figure>
+      </div>
+
+      <div class="publicar__acciones">
+        <span id="publicar-contador" class="texto-pequeno texto-suave" aria-hidden="true">0/600</span>
+        <button id="boton-publicar" class="boton boton--primario" type="submit">Publicar</button>
+      </div>
+      <div id="alerta-publicar" role="status" hidden></div>
+    </form>
+
+    <p id="feed-estado" class="texto-suave" role="status">Cargando publicaciones…</p>
+    <div id="feed" class="feed" aria-label="Publicaciones de la comunidad"></div>
+    <div id="zona-mas" class="feed__mas" hidden>
+      <button id="boton-mas" class="boton boton--secundario" type="button">Ver más publicaciones</button>
+    </div>
+  </main>
+</body>
+</html>

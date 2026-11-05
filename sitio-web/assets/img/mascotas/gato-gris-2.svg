@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Ilustración de un gato">
+<rect width="400" height="300" fill="#dff3f8"/>
+<ellipse cx="200" cy="292" rx="125" ry="42" fill="#8d97a3"/>
+<path d="M104 120L116 28l76 50z" fill="#8d97a3"/><path d="M296 120L284 28l-76 50z" fill="#8d97a3"/>
+<path d="M124 100l8-44 38 24z" fill="#f2b6c0"/><path d="M276 100l-8-44-38 24z" fill="#f2b6c0"/>
+<ellipse cx="200" cy="158" rx="104" ry="90" fill="#8d97a3"/><g stroke="#3f4856" stroke-width="7" stroke-linecap="round" fill="none"><path d="M200 70v28M176 76l6 24M224 76l-6 24"/><path d="M108 150h24M110 172l22-6M292 150h-24M290 172l-22-6"/></g>
+<ellipse cx="162" cy="140" rx="19" ry="22" fill="#8bd16f"/><ellipse cx="238" cy="140" rx="19" ry="22" fill="#8bd16f"/>
+<ellipse cx="162" cy="140" rx="6" ry="17" fill="#1b1f2a"/><ellipse cx="238" cy="140" rx="6" ry="17" fill="#1b1f2a"/>
+<circle cx="168" cy="131" r="4" fill="#fff"/><circle cx="244" cy="131" r="4" fill="#fff"/>
+<path d="M188 176h24l-12 14z" fill="#f4768a"/>
+<path d="M200 190q-14 18-30 8M200 190q14 18 30 8" fill="none" stroke="#1b1f2a" stroke-width="4" stroke-linecap="round"/>
+<g stroke="#1b1f2a" stroke-width="2.5" stroke-linecap="round" opacity=".55"><path d="M130 188l-44-8M130 198l-44 10M270 188l44-8M270 198l44 10"/></g>
+</svg>

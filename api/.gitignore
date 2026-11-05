@@ -1,0 +1,4 @@
+.env
+storage/uploads/imagenes/*
+storage/uploads/documentos/*
+!storage/uploads/**/.gitkeep

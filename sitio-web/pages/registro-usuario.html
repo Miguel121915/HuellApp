@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crear cuenta · HuellApp</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../assets/css/pages/login.css">
+  <script type="module" src="../assets/js/modules/auth/registro-usuario.js"></script>
+</head>
+<body class="pagina-registro">
+  <header class="encabezado">
+    <div class="encabezado__interno">
+      <a class="marca" href="login.html" aria-label="HuellApp, ir al inicio de sesión">
+        <span class="logo-texto marca__texto">HuellApp</span>
+        <img class="marca__huella" src="../assets/img/logos/huella.svg" alt="" width="48" height="48">
+      </a>
+    </div>
+  </header>
+
+  <main class="registro">
+    <h1>Crear cuenta de usuario</h1>
+    <p class="registro__intro">Con tu cuenta puedes reportar mascotas, ver coincidencias y participar en el foro.</p>
+
+    <form id="form-registro" novalidate>
+      <div id="alerta" role="alert" hidden></div>
+      <div class="formulario-grid">
+        <div class="campo campo--completo">
+          <label class="campo__etiqueta" for="nombre">Nombre completo</label>
+          <input class="campo__control" id="nombre" name="nombre" type="text" autocomplete="name">
+          <span class="campo__error" role="status"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="correo">Correo electrónico</label>
+          <input class="campo__control" id="correo" name="correo" type="email" autocomplete="email">
+          <span class="campo__error" role="status"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="telefono">Teléfono (opcional)</label>
+          <input class="campo__control" id="telefono" name="telefono" type="tel" autocomplete="tel">
+          <span class="campo__ayuda">Solo se muestra si decides contactar por una coincidencia.</span>
+          <span class="campo__error" role="status"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="password">Contraseña</label>
+          <input class="campo__control" id="password" name="password" type="password" autocomplete="new-password">
+          <span class="campo__ayuda">Mínimo 8 caracteres.</span>
+          <span class="campo__error" role="status"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="confirmar">Confirmar contraseña</label>
+          <input class="campo__control" id="confirmar" name="confirmar" type="password" autocomplete="new-password">
+          <span class="campo__error" role="status"></span>
+        </div>
+      </div>
+      <div class="registro__acciones">
+        <a class="boton boton--contorno" href="login.html">Volver</a>
+        <button class="boton boton--primario" id="boton-enviar" type="submit">Crear cuenta</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

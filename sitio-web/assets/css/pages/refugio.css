@@ -1,0 +1,96 @@
+/* ==========================================================
+   refugio.css — Panel del refugio: resumen, inventario, publicaciones y perfil.
+   El layout común vive en base/layout.css; la tabla en components/tabla.css.
+   ========================================================== */
+
+/* ---------- Panel ---------- */
+.panel-estado { display: flex; align-items: center; flex-wrap: wrap; gap: var(--e3); margin-bottom: var(--e3); }
+
+.accesos { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--e4); }
+.acceso { display: flex; flex-direction: column; gap: var(--e2); text-decoration: none; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.acceso:hover { transform: translateY(-3px); box-shadow: var(--sombra-m); }
+.acceso strong { font-size: 1.1rem; }
+.acceso span { padding: var(--e2) var(--e3); background: var(--amarillo); border-radius: var(--radio-s); font-size: 0.9rem; }
+
+.recientes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--e3); }
+.reciente { display: flex; align-items: center; gap: var(--e3); padding: var(--e3); background: var(--blanco); border: 2px solid var(--lila-fuerte); border-radius: var(--radio-m); }
+.reciente__nombre { flex: 1; font-weight: 800; }
+
+/* ---------- Inventario ---------- */
+.campo-edad { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e2); }
+.vista-foto { display: flex; align-items: flex-end; gap: var(--e3); margin-top: var(--e2); }
+.vista-foto img { width: 160px; border: 3px solid var(--tinta); border-radius: var(--radio-s); }
+
+/* Documentos de una mascota (diálogo del inventario) */
+.docs-mascota { display: flex; flex-direction: column; gap: var(--e2); margin-block: var(--e3); }
+.doc-mascota { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--e2) var(--e3); padding: var(--e3); background: var(--amarillo); border: 2px solid transparent; border-radius: var(--radio-s); }
+.doc-mascota--activo { border-color: var(--aqua-fuerte); background: var(--aqua-suave); }
+.doc-mascota__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.doc-mascota__info span { overflow-wrap: anywhere; }
+.doc-mascota__acciones { display: flex; align-items: center; flex-wrap: wrap; gap: var(--e2); }
+.subir-doc { padding-top: var(--e3); border-top: 2px dashed var(--borde); }
+.subir-doc .seccion-titulo { margin-top: 0; }
+
+/* ---------- Publicaciones ---------- */
+.gestion { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: var(--e5); align-items: start; }
+.publicaciones-lista { display: flex; flex-direction: column; gap: var(--e5); }
+.publicacion-item { display: flex; flex-direction: column; gap: var(--e2); }
+.publicacion-item__acciones { display: flex; align-items: center; flex-wrap: wrap; gap: var(--e3); }
+.publicacion-item__acciones .boton:first-of-type { margin-left: auto; }
+
+/* Republicación automática */
+.republicar { margin: 0 0 var(--e4); padding: 0; border: 0; min-width: 0; }
+.republicar__dias { display: flex; align-items: center; gap: var(--e2); margin-top: var(--e2); font-weight: 700; }
+.republicar__dias .campo__control { width: 90px; }
+.publicar-cancelar { margin-top: var(--e2); }
+.insignia--republica { background: var(--aqua-suave); color: var(--aqua-fuerte); }
+.tarjeta--editando { border-color: var(--aqua-fuerte); box-shadow: 0 0 0 3px var(--aqua-suave); }
+
+/* ---------- Preguntas frecuentes ---------- */
+.intro-seccion { max-width: 760px; margin-bottom: var(--e5); }
+.gestion__lateral { display: flex; flex-direction: column; gap: var(--e4); }
+.casilla { display: flex; align-items: center; gap: var(--e2); margin-bottom: var(--e4); font-weight: 700; cursor: pointer; }
+.casilla input { width: 20px; height: 20px; accent-color: var(--aqua-fuerte); }
+.probador { background: var(--lila-suave); border-color: var(--lila); }
+.probador .seccion-titulo { margin-top: 0; }
+.probador__resultado { margin-top: var(--e3); padding: var(--e3); background: var(--blanco); border: 2px dashed var(--lila-fuerte); border-radius: var(--radio-s); font-size: 0.9rem; }
+.probador__resultado strong { color: var(--lila-fuerte); }
+.probador__resultado p { margin: var(--e1) 0 0; }
+
+.preguntas-lista { display: flex; flex-direction: column; gap: var(--e3); }
+.pregunta-item { display: flex; flex-direction: column; gap: var(--e2); border-left: 6px solid var(--aqua); }
+.pregunta-item--oculta { border-left-color: var(--borde); opacity: 0.75; }
+.pregunta-item__cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--e3); }
+.pregunta-item__pregunta { font-size: 1.05rem; }
+.pregunta-item__respuesta { padding: var(--e3); background: var(--amarillo); border-radius: var(--radio-s); font-size: 0.9rem; overflow-wrap: anywhere; }
+.pregunta-item__claves { display: flex; flex-wrap: wrap; gap: var(--e1); }
+.pregunta-item__claves li { padding: 2px var(--e2); background: var(--lila-suave); border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.pregunta-item__acciones { display: flex; flex-wrap: wrap; gap: var(--e2); }
+
+/* ---------- Solicitudes de adopción ---------- */
+.solicitudes-adopcion { display: flex; flex-direction: column; gap: var(--e3); }
+.solicitud-adopcion { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: var(--e3); padding: var(--e3) var(--e4); }
+.solicitud-adopcion__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.solicitud-adopcion__info strong { overflow-wrap: anywhere; }
+.solicitud-detalle__cabecera { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--e3); }
+.solicitud-detalle__cabecera .modal__titulo { margin-bottom: 0; }
+.datos-fijos--rejilla { grid-template-columns: 1fr 1fr; }
+.datos-fijos__completo { grid-column: 1 / -1; }
+
+@media (max-width: 720px) {
+  .solicitud-adopcion { grid-template-columns: auto 1fr; }
+  .datos-fijos--rejilla { grid-template-columns: 1fr; }
+}
+
+/* ---------- Perfil ---------- */
+.perfil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e5); align-items: start; margin-top: var(--e5); }
+.datos-fijos { display: grid; gap: var(--e3); margin-bottom: var(--e3); }
+.datos-fijos dt { font-size: 0.8125rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-suave); }
+.datos-fijos dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.documentos { display: grid; gap: var(--e2); }
+.documento { display: flex; flex-direction: column; padding: var(--e2) var(--e3); background: var(--amarillo); border-radius: var(--radio-s); }
+
+@media (max-width: 900px) {
+  .gestion, .perfil-grid { grid-template-columns: 1fr; }
+  .herramientas__nueva { margin-left: 0; }
+}

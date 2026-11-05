@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reportar · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/reportar.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner">Reportar una mascota</h1>
+    <div class="reportar">
+      <section class="camara tarjeta tarjeta--blanca" aria-labelledby="titulo-camara">
+        <h2 id="titulo-camara" class="seccion-titulo">1. Foto de la mascota</h2>
+        <div class="camara__visor">
+          <video id="video" playsinline muted hidden></video>
+          <img id="vista-previa" alt="Foto capturada de la mascota" hidden>
+          <p id="camara-mensaje" class="camara__mensaje" role="status">Solicitando acceso a la cámara…</p>
+        </div>
+        <canvas id="lienzo" hidden></canvas>
+
+        <div id="alerta-camara" role="alert" hidden></div>
+        <div class="campo" id="campo-foto-reporte"><span class="campo__error" role="alert"></span></div>
+
+        <div class="camara__acciones">
+          <button id="boton-tomar" class="boton boton--secundario" type="button" disabled>Tomar foto</button>
+          <button id="boton-repetir" class="boton boton--contorno" type="button" hidden>Repetir foto</button>
+          <button id="boton-reintentar" class="boton boton--contorno" type="button" hidden>Volver a intentar</button>
+          <button id="boton-subir" class="boton boton--contorno" type="button">Subir archivo</button>
+          <input id="entrada-archivo" type="file" accept="image/*" hidden>
+        </div>
+      </section>
+
+      <form id="formulario-reporte" class="tarjeta tarjeta--blanca" novalidate>
+        <h2 class="seccion-titulo">2. Datos del reporte</h2>
+
+        <fieldset class="campo campo--grupo" id="campo-tipo">
+          <legend class="campo__etiqueta">¿Qué ocurrió?</legend>
+          <label class="opcion"><input type="radio" name="tipo" value="perdida"> Mi mascota se perdió</label>
+          <label class="opcion"><input type="radio" name="tipo" value="encontrada"> Encontré una mascota</label>
+          <span class="campo__error" role="alert"></span>
+        </fieldset>
+
+        <div class="campo" id="campo-descripcion">
+          <label class="campo__etiqueta" for="descripcion">Descripción</label>
+          <textarea id="descripcion" name="descripcion" class="campo__control" maxlength="600" placeholder="Color, tamaño, collar, señas particulares, nombre…"></textarea>
+          <span class="campo__error" role="alert"></span>
+        </div>
+
+        <div class="campo" id="campo-zona">
+          <label class="campo__etiqueta" for="zona">Zona</label>
+          <input id="zona" name="zona" class="campo__control" type="text" maxlength="120" placeholder="Colonia, calle o punto de referencia" autocomplete="off">
+          <span class="campo__error" role="alert"></span>
+        </div>
+
+        <div id="alerta-reporte" role="status" hidden></div>
+        <button id="boton-enviar" class="boton boton--primario boton--bloque" type="submit">Enviar reporte</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

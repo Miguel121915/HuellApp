@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventario · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/components/tabla.css">
+  <link rel="stylesheet" href="../../assets/css/components/visor.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/inventario.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Inventario de mascotas</h1>
+
+    <form class="herramientas" role="search">
+      <div class="campo">
+        <label class="campo__etiqueta" for="filtro-texto">Buscar</label>
+        <input id="filtro-texto" class="campo__control" type="search" placeholder="Nombre o raza" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="filtro-especie">Especie</label>
+        <select id="filtro-especie" class="campo__control"><option value="">Todas</option><option value="perro">Perros</option><option value="gato">Gatos</option></select>
+      </div>
+      <div class="campo">
+        <label class="campo__etiqueta" for="filtro-estatus">Estatus</label>
+        <select id="filtro-estatus" class="campo__control"><option value="">Todos</option><option value="disponible">Disponible</option><option value="en proceso">En proceso</option><option value="adoptado">Adoptado</option></select>
+      </div>
+      <button id="limpiar-filtros" class="boton boton--contorno" type="button">Limpiar</button>
+      <button class="boton boton--primario herramientas__nueva" type="button" data-nueva>+ Agregar mascota</button>
+    </form>
+
+    <p id="conteo" class="texto-suave" role="status" aria-live="polite"></p>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div id="contenedor-tabla" class="tabla-contenedor" role="region" aria-label="Inventario de mascotas (se puede desplazar horizontalmente)" tabindex="0">
+      <table class="tabla">
+        <caption class="solo-lector">Mascotas del refugio</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="solo-lector">Foto</span></th>
+            <th scope="col">Nombre</th><th scope="col">Especie</th><th scope="col">Raza</th><th scope="col">Edad</th>
+            <th scope="col">Sexo</th><th scope="col">Tamaño</th><th scope="col">Estatus</th>
+            <th scope="col"><span class="solo-lector">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla"></tbody>
+      </table>
+    </div>
+
+    <section id="sin-mascotas" class="vacio tarjeta tarjeta--blanca" hidden>
+      <h2>Tu inventario está vacío</h2>
+      <p>Registra a tu primera mascota para poder publicarla y recibir solicitudes de adopción.</p>
+      <button class="boton boton--primario" type="button" data-nueva>Agregar mascota</button>
+    </section>
+    <p id="sin-resultados" class="vacio" hidden>Ninguna mascota coincide con esos filtros.</p>
+    <div class="centrado"><button id="boton-mas" class="boton boton--secundario" type="button" hidden>Ver más mascotas</button></div>
+
+    <!-- Crear / editar -->
+    <dialog id="modal-mascota" class="modal modal--ancho" aria-labelledby="modal-titulo">
+      <h2 id="modal-titulo" class="modal__titulo">Agregar mascota</h2>
+      <form id="formulario-mascota" novalidate>
+        <div class="formulario-grid">
+          <div class="campo" data-campo="nombre"><label class="campo__etiqueta" for="m-nombre">Nombre</label><input id="m-nombre" name="nombre" class="campo__control" type="text" maxlength="40" autocomplete="off"><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="especie"><label class="campo__etiqueta" for="m-especie">Especie</label><select id="m-especie" name="especie" class="campo__control"><option value="">Elige…</option><option value="perro">Perro</option><option value="gato">Gato</option></select><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="raza"><label class="campo__etiqueta" for="m-raza">Raza</label><input id="m-raza" name="raza" class="campo__control" type="text" maxlength="60" placeholder="Ej. Mestizo, Labrador" autocomplete="off"><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="edad">
+            <label class="campo__etiqueta" for="m-edad">Edad</label>
+            <div class="campo-edad"><input id="m-edad" name="edad" class="campo__control" type="number" min="1" max="360" step="1" inputmode="numeric"><select name="unidad" class="campo__control" aria-label="Unidad de edad"><option value="anios">años</option><option value="meses">meses</option></select></div>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="sexo"><label class="campo__etiqueta" for="m-sexo">Sexo</label><select id="m-sexo" name="sexo" class="campo__control"><option value="">Elige…</option><option value="macho">Macho</option><option value="hembra">Hembra</option></select><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="tamano"><label class="campo__etiqueta" for="m-tamano">Tamaño</label><select id="m-tamano" name="tamano" class="campo__control"><option value="">Elige…</option><option value="pequeño">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option></select><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="salud"><label class="campo__etiqueta" for="m-salud">Estado de salud</label><input id="m-salud" name="salud" class="campo__control" type="text" maxlength="120" placeholder="Vacunas, esterilización, tratamientos" autocomplete="off"><span class="campo__error" role="alert"></span></div>
+          <div class="campo" data-campo="estatus"><label class="campo__etiqueta" for="m-estatus">Estatus</label><select id="m-estatus" name="estatus" class="campo__control"><option value="disponible">Disponible</option><option value="en proceso">En proceso</option><option value="adoptado">Adoptado</option></select><span class="campo__error" role="alert"></span></div>
+          <div class="campo campo--completo" data-campo="descripcion"><label class="campo__etiqueta" for="m-descripcion">Descripción</label><textarea id="m-descripcion" name="descripcion" class="campo__control" maxlength="400" placeholder="Carácter, con quién convive, cuidados especiales…"></textarea><span class="campo__error" role="alert"></span></div>
+          <div class="campo campo--completo" data-campo="foto">
+            <label class="campo__etiqueta" for="m-foto">Foto (opcional)</label>
+            <input id="m-foto" name="foto" class="campo__control" type="file" accept="image/*">
+            <span class="campo__ayuda">Se reduce automáticamente. Sin foto se usará una imagen genérica.</span>
+            <span class="campo__error" role="alert"></span>
+            <figure id="vista-foto" class="vista-foto"><img src="../../assets/img/mascotas/sin-foto.svg" alt="Vista previa de la foto" width="400" height="300"><button id="quitar-foto" class="boton boton--contorno boton--pequeno" type="button">Quitar foto</button></figure>
+          </div>
+        </div>
+        <div id="alerta-modal" role="alert" hidden></div>
+        <div class="modal__acciones">
+          <button id="cancelar-mascota" class="boton boton--contorno" type="button">Cancelar</button>
+          <button id="boton-guardar" class="boton boton--primario" type="submit">Guardar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Documentos especiales de la mascota (los revisa el administrador de HuellApp) -->
+    <dialog id="modal-documentos" class="modal modal--ancho" aria-labelledby="documentos-titulo">
+      <h2 id="documentos-titulo" class="modal__titulo">Documentos</h2>
+      <p class="texto-suave texto-pequeno">Adjunta certificados de vacunación, registros de esterilización, pedigree u otros. Solo los ve tu refugio y el equipo de HuellApp, que los revisa.</p>
+
+      <ul id="lista-docs" class="docs-mascota" aria-label="Documentos de la mascota"></ul>
+      <p id="sin-docs" class="vacio" hidden>Esta mascota todavía no tiene documentos.</p>
+      <p id="anuncio-docs" class="solo-lector" role="status" aria-live="polite"></p>
+
+      <div id="visor-docs-zona" class="visor-docs" hidden>
+        <p id="visor-docs-titulo" class="texto-suave texto-pequeno" aria-live="polite">Ningún documento abierto</p>
+        <div id="visor-docs" class="visor__area visor__area--compacta"><p class="vacio">Elige «Ver» en un documento.</p></div>
+        <a id="visor-docs-abrir" class="enlace" target="_blank" rel="noopener" hidden>Abrir en una pestaña nueva</a>
+      </div>
+
+      <form id="formulario-doc" class="subir-doc" novalidate>
+        <h3 class="seccion-titulo">Adjuntar documento</h3>
+        <div class="formulario-grid">
+          <div class="campo" data-campo="tipo">
+            <label class="campo__etiqueta" for="doc-tipo">Tipo de documento</label>
+            <select id="doc-tipo" name="tipo" class="campo__control"><option value="">Elige…</option></select>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="archivo">
+            <label class="campo__etiqueta" for="doc-archivo">Archivo</label>
+            <input id="doc-archivo" name="archivo" class="campo__control" type="file" accept="application/pdf,image/jpeg,image/png">
+            <span class="campo__ayuda">PDF, JPG o PNG. Máximo 5 MB.</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+        </div>
+        <div id="alerta-docs" role="alert" hidden></div>
+        <div class="modal__acciones">
+          <button id="cerrar-documentos" class="boton boton--contorno" type="button">Cerrar</button>
+          <button id="boton-subir-doc" class="boton boton--primario" type="submit">Subir documento</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Confirmar eliminación -->
+    <dialog id="modal-borrar" class="modal" aria-labelledby="borrar-titulo">
+      <h2 id="borrar-titulo" class="modal__titulo">Eliminar mascota</h2>
+      <p id="borrar-texto"></p>
+      <p id="borrar-aviso" class="alerta alerta--aviso" hidden></p>
+      <div class="modal__acciones">
+        <button id="cancelar-borrar" class="boton boton--contorno" type="button">Cancelar</button>
+        <button id="confirmar-borrar" class="boton boton--peligro" type="button">Sí, eliminar</button>
+      </div>
+    </dialog>
+  </main>
+</body>
+</html>

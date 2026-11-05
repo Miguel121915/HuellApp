@@ -1,0 +1,50 @@
+/* botones.css — Botones reutilizables */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: 44px;
+  padding: var(--e2) var(--e5);
+  border: 2px solid transparent;
+  border-radius: var(--radio-m);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.boton:hover { transform: translateY(-1px); }
+.boton:active { transform: translateY(0); }
+.boton:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.boton--primario { background: var(--aqua-fuerte); color: var(--blanco); }
+.boton--primario:hover { background: #0b5c56; }
+
+.boton--secundario { background: var(--lila); color: var(--tinta); }
+.boton--secundario:hover { background: #a6a6dd; }
+
+.boton--contorno { background: transparent; border-color: var(--tinta); color: var(--tinta); }
+.boton--contorno:hover { background: var(--aqua-suave); }
+
+.boton--peligro { background: var(--error); color: var(--blanco); }
+
+.boton--bloque { width: 100%; }
+.boton--pequeno { min-height: 36px; padding: var(--e1) var(--e4); font-size: 0.875rem; }
+
+/* Botón de "me gusta" con forma de huella de perro */
+.like-huella {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 44px;
+  padding: var(--e1) var(--e3);
+  background: var(--blanco);
+  border: 2px solid var(--tinta);
+  border-radius: 999px;
+  font-weight: 800;
+  color: var(--tinta-suave);
+  transition: transform 0.12s ease, color 0.12s ease, background-color 0.12s ease;
+}
+.like-huella:hover { transform: translateY(-1px); color: var(--tinta); }
+.like-huella__icono { width: 26px; height: 26px; opacity: 0.55; transition: transform 0.18s ease, opacity 0.18s ease; }
+.like-huella--activo { color: var(--like-activo); background: #fff1f4; border-color: var(--like-activo); }
+.like-huella--activo .like-huella__icono { opacity: 1; transform: scale(1.18) rotate(-8deg); }

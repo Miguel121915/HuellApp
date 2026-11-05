@@ -1,0 +1,60 @@
+/* ==========================================================
+   variables.css — Tokens de diseño de HuellApp
+   Toda la paleta, radios, sombras y espaciados viven aquí.
+   ========================================================== */
+:root {
+  /* Marca */
+  --aqua: #5eead4;          /* encabezado y navegación */
+  --aqua-suave: #d5f7f0;    /* fondos suaves */
+  --aqua-fuerte: #0f766e;   /* botones y texto sobre blanco (contraste AA) */
+  --lila: #b8b8e8;          /* tarjetas */
+  --lila-suave: #e7e7f8;
+  --lila-tenue: #f5f5fc;    /* fondo alterno de comentarios */
+  --lila-fuerte: #5b5bb0;
+  --amarillo: #fdecb5;      /* detalles pastel */
+  --amarillo-fuerte: #e9b91f;
+  --lima: #b9e86a;          /* botones de refugios (según las capturas) */
+  --lima-fuerte: #4d7c0f;
+  --coral: #f6a5a5;         /* aviso de coincidencia */
+  --like-activo: #e11d48;   /* huella de "me gusta" activa */
+
+  /* Neutros */
+  --tinta: #1b1f2a;
+  --tinta-suave: #475569;
+  --blanco: #ffffff;
+  --gris-huella: #d1d5db;   /* huellitas decorativas */
+  --borde: #b6c2d1;
+  --fondo: #ffffff;
+
+  /* Estados */
+  --error: #b42318;
+  --error-fondo: #fde8e6;
+  --exito: #166a4a;
+  --exito-fondo: #dcf5e8;
+  --aviso: #7a5a00;
+  --aviso-fondo: #fdecb5;
+
+  /* Forma */
+  --radio-s: 8px;
+  --radio-m: 14px;
+  --radio-l: 24px;
+  --sombra-s: 0 1px 2px rgb(27 31 42 / 0.12);
+  --sombra-m: 0 6px 18px rgb(27 31 42 / 0.14);
+
+  /* Espaciado (escala de 4px) */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --e7: 48px;
+  --e8: 64px;
+
+  /* Layout */
+  --ancho-max: 1200px;
+  --alto-encabezado: 72px;
+
+  /* Foco visible accesible */
+  --foco: 0 0 0 3px #fff, 0 0 0 6px var(--lila-fuerte);
+}

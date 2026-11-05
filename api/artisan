@@ -1,0 +1,315 @@
+#!/usr/bin/env php
+<?php
+/**
+ * artisan — Comandos de HuellApp desde la terminal (mismo estilo que el artisan de Laravel).
+ *
+ * AVISO: es un script propio y sencillo de este proyecto; NO es Laravel.
+ *
+ *   php artisan serve                 Enciende el servidor (http://localhost:3000)
+ *   php artisan migrate [--seed]      Crea la base de datos y las tablas (y carga datos demo)
+ *   php artisan migrate:fresh [--seed] Borra TODO y vuelve a crear las tablas
+ *   php artisan db:seed [--force]     Carga los datos de demostración
+ *   php artisan refugios ...          Lista y revisa refugios (aprobar, rechazar, suspender, reactivar)
+ *   php artisan test                  Ejecuta las pruebas automáticas (necesita Node.js)
+ */
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    exit('Este archivo se ejecuta desde la terminal:  php artisan');
+}
+if (PHP_VERSION_ID < 80100) {
+    fwrite(STDERR, 'HuellApp necesita PHP 8.1 o superior (tienes ' . PHP_VERSION . "). Actualiza XAMPP.\n");
+    exit(1);
+}
+if (!extension_loaded('pdo_mysql')) {
+    fwrite(STDERR, "Falta la extension pdo_mysql de PHP. En XAMPP: abre php.ini y quita el ; de la linea  extension=pdo_mysql\n");
+    exit(1);
+}
+if (PHP_OS_FAMILY === 'Windows') {
+    @exec('chcp 65001 > nul'); // para que los acentos se vean bien en la terminal de Windows
+}
+
+require __DIR__ . '/src/bootstrap.php';
+
+use HuellApp\{Base, Config, ErrorHttp, Migraciones, Semilla};
+
+/* ---------- Utilidades ---------- */
+
+function salir(string $mensaje, int $codigo = 1): never
+{
+    fwrite(STDERR, "\n[ERROR] $mensaje\n\n");
+    exit($codigo);
+}
+
+/** Ejecuta algo que usa la base de datos y muestra los errores de conexión de forma clara. */
+function conBase(callable $fn): mixed
+{
+    try {
+        return $fn();
+    } catch (ErrorHttp $e) {
+        salir($e->getMessage());
+    } catch (PDOException $e) {
+        salir('Error de base de datos: ' . $e->getMessage());
+    }
+}
+
+function opcion(array $args, string $nombre, ?string $defecto = null): ?string
+{
+    foreach ($args as $a) {
+        if (str_starts_with($a, "--$nombre=")) {
+            return substr($a, strlen($nombre) + 3);
+        }
+    }
+    return $defecto;
+}
+
+function bandera(array $args, string ...$nombres): bool
+{
+    foreach ($nombres as $n) {
+        if (in_array("--$n", $args, true)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function confirmar(string $pregunta, array $args): bool
+{
+    if (bandera($args, 'si', 'force')) {
+        return true;
+    }
+    echo "$pregunta Escribe SI para continuar: ";
+    return strtoupper(trim((string) fgets(STDIN))) === 'SI';
+}
+
+function sembrarDemo(): void
+{
+    echo "Cargando datos de demostracion...\n";
+    Semilla::sembrar();
+    echo "[OK] Datos cargados. Todas las cuentas demo usan la contrasena: Demo1234\n";
+    echo "     ana@huellapp.mx (usuario) | refugio@huellapp.mx (refugio verificado) | admin@huellapp.mx (administrador)\n";
+}
+
+/* ---------- Comandos ---------- */
+
+function cmdAyuda(): void
+{
+    echo <<<TXT
+
+    HuellApp - comandos disponibles
+
+      php artisan serve [--port=3000] [--host=127.0.0.1]   Enciende el servidor
+      php artisan migrate [--seed]                         Crea la base de datos y las tablas
+      php artisan migrate:fresh [--seed] [--si]            Borra TODO y recrea las tablas
+      php artisan db:seed [--force]                        Carga los datos de demostracion
+      php artisan refugios                                 Lista los refugios y su estado
+      php artisan refugios aprobar correo@refugio.com      (tambien: suspender, reactivar)
+      php artisan refugios rechazar correo@refugio.com "Motivo del rechazo"
+      php artisan publicaciones:republicar                 Republica ya las publicaciones que les toca
+      php artisan test                                     Pruebas automaticas (necesita Node.js)
+
+
+    TXT;
+}
+
+function cmdMigrate(array $args): void
+{
+    conBase(static function () use ($args): void {
+        Migraciones::migrar();
+        echo '[OK] Base de datos "' . Base::nombreBase() . "\" lista (puedes verla en phpMyAdmin).\n";
+        if (bandera($args, 'seed')) {
+            if (Migraciones::baseVacia()) {
+                sembrarDemo();
+            } else {
+                echo "La base ya tiene datos: no se cargo la demostracion (usa migrate:fresh --seed para empezar de cero).\n";
+            }
+        }
+    });
+}
+
+function cmdMigrateFresh(array $args): void
+{
+    if (!confirmar('Esto BORRA todas las tablas y datos de "' . Base::nombreBase() . '".', $args)) {
+        echo "Cancelado. No se borro nada.\n";
+        return;
+    }
+    conBase(static function () use ($args): void {
+        Migraciones::reiniciar();
+        foreach (['imagenes', 'documentos'] as $carpeta) {
+            foreach (glob(Config::dirUploads() . "/$carpeta/*") ?: [] as $archivo) {
+                if (is_file($archivo) && basename($archivo) !== '.gitkeep') {
+                    @unlink($archivo); // fotos y documentos subidos
+                }
+            }
+        }
+        echo "[OK] Tablas recreadas desde cero.\n";
+        if (bandera($args, 'seed')) {
+            sembrarDemo();
+        }
+    });
+}
+
+function cmdSeed(array $args): void
+{
+    conBase(static function () use ($args): void {
+        if (!Migraciones::tablasExisten()) {
+            salir('Todavia no existen las tablas. Ejecuta primero:  php artisan migrate');
+        }
+        if (!Migraciones::baseVacia() && !bandera($args, 'force')) {
+            salir('La base ya tiene datos. Para empezar de cero usa:  php artisan migrate:fresh --seed');
+        }
+        sembrarDemo();
+    });
+}
+
+function cmdServe(array $args): void
+{
+    $host = opcion($args, 'host', Config::obtener('APP_HOST')) ?: '127.0.0.1';
+    $puerto = opcion($args, 'port', Config::obtener('APP_PORT')) ?: '3000';
+
+    conBase(static function (): void {
+        Migraciones::migrar(); // si falta algo, se crea (es seguro repetirlo)
+        if (Migraciones::baseVacia()) {
+            echo "Base de datos nueva.\n";
+            sembrarDemo();
+        }
+    });
+
+    $web = Config::dirWeb();
+    $hayWeb = is_dir($web);
+    echo "\nHuellApp lista en http://$host:$puerto\n";
+    echo '  Base de datos: ' . Base::nombreBase() . ' en MySQL (' . Config::obtener('DB_HOST') . ':' . Config::obtener('DB_PORT') . ")\n";
+    echo $hayWeb ? "  Sitio web:     http://$host:$puerto  (carpeta $web)\n" : "  Sitio web:     no se encontro $web (usa tu propio servidor, ej. Live Server)\n";
+    echo "  Para detenerlo: Ctrl + C\n\n";
+
+    $proceso = proc_open(
+        [PHP_BINARY, '-d', 'memory_limit=512M', '-d', 'post_max_size=40M', '-d', 'upload_max_filesize=40M',
+            '-S', "$host:$puerto", '-t', $hayWeb ? $web : __DIR__ . '/public', __DIR__ . '/public/index.php'],
+        [0 => STDIN, 1 => STDOUT, 2 => STDERR],
+        $tuberias,
+    );
+    if (!is_resource($proceso)) {
+        salir('No se pudo iniciar el servidor.');
+    }
+    exit(proc_close($proceso));
+}
+
+function cmdRefugios(array $args): void
+{
+    $accion = $args[0] ?? 'listar';
+    conBase(static function () use ($accion, $args): void {
+        if ($accion === 'listar') {
+            $filas = Base::todos('SELECT r.id, r.nombre, r.estado, u.correo FROM refugios r JOIN usuarios u ON u.id = r.usuario_id ORDER BY r.id');
+            printf("\n%-4s %-38s %-11s %s\n", 'ID', 'REFUGIO', 'ESTADO', 'CORREO');
+            foreach ($filas as $f) {
+                printf("%-4s %-38s %-11s %s\n", $f['id'], substr($f['nombre'], 0, 36), $f['estado'], $f['correo']);
+            }
+            echo "\n";
+            return;
+        }
+        $destinos = ['aprobar' => ['aprobado', ['pendiente']], 'rechazar' => ['rechazado', ['pendiente']], 'suspender' => ['suspendido', ['aprobado']], 'reactivar' => ['aprobado', ['suspendido']]];
+        $correo = $args[1] ?? '';
+        if (!isset($destinos[$accion]) || $correo === '') {
+            salir("Uso:  php artisan refugios <aprobar|rechazar|suspender|reactivar> correo@refugio.com [motivo]\n       php artisan refugios            (para listar)");
+        }
+        [$nuevo, $origenes] = $destinos[$accion];
+        $refugio = Base::uno('SELECT r.id, r.nombre, r.estado FROM refugios r JOIN usuarios u ON u.id = r.usuario_id WHERE u.correo = ?', [$correo]);
+        if ($refugio === null) {
+            salir("No hay ningun refugio con el correo $correo.");
+        }
+        if (!in_array($refugio['estado'], $origenes, true)) {
+            salir("«{$refugio['nombre']}» esta {$refugio['estado']}; no se puede $accion.");
+        }
+        $motivo = trim(implode(' ', array_slice($args, 2)));
+        if ($accion === 'rechazar' && \HuellApp\Validar::largo($motivo) < 10) {
+            salir('Escribe un motivo de al menos 10 caracteres (entre comillas).');
+        }
+        Base::ejecutar(
+            'UPDATE refugios SET estado = ?, motivo_rechazo = ?, revisado_en = ? WHERE id = ?',
+            [$nuevo, in_array($accion, ['aprobar', 'reactivar'], true) ? '' : $motivo, Base::ahora(), $refugio['id']],
+        );
+        echo "[OK] «{$refugio['nombre']}» ahora esta $nuevo.\n";
+    });
+}
+
+/**
+ * Republicacion automatica. El servidor ya la aplica sola al mostrar las publicaciones; este comando
+ * sirve si se quiere programar (p. ej. con el Programador de tareas de Windows).
+ */
+function cmdRepublicar(): void
+{
+    conBase(static function (): void {
+        Migraciones::migrar();
+        $n = \HuellApp\Republicacion::aplicar();
+        echo $n === 1 ? "[OK] Se republico 1 publicacion.\n" : "[OK] Se republicaron $n publicaciones.\n";
+    });
+}
+
+/**
+ * Pruebas automaticas: crea una base APARTE ("huellapp_test"), levanta un servidor temporal y
+ * ejecuta las pruebas (pruebas/api.test.js, necesitan Node.js). No toca tus datos.
+ */
+function cmdTest(): void
+{
+    $nodeOk = @proc_open(['node', '--version'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $t);
+    if (!is_resource($nodeOk) || proc_close($nodeOk) !== 0) {
+        salir('Las pruebas necesitan Node.js (https://nodejs.org). El resto del proyecto no lo necesita.');
+    }
+    putenv('DB_NAME=huellapp_test');
+    echo "Preparando la base de pruebas (huellapp_test)...\n";
+    conBase(static function (): void {
+        Migraciones::reiniciar();
+        Semilla::sembrar();
+    });
+
+    $puerto = 3999;
+    $bitacora = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'huellapp-pruebas-servidor.log';
+    $servidor = proc_open(
+        [PHP_BINARY, '-S', "127.0.0.1:$puerto", '-t', __DIR__ . '/public', __DIR__ . '/public/index.php'],
+        [0 => ['pipe', 'r'], 1 => ['file', $bitacora, 'w'], 2 => ['file', $bitacora, 'a']],
+        $tuberias,
+        __DIR__,
+        array_merge(getenv(), ['DB_NAME' => 'huellapp_test']),
+    );
+    if (!is_resource($servidor)) {
+        salir('No se pudo iniciar el servidor de pruebas.');
+    }
+    $contexto = stream_context_create(['http' => ['timeout' => 1, 'ignore_errors' => true]]);
+    for ($i = 0, $listo = false; $i < 40 && !$listo; $i++) {
+        $listo = @file_get_contents("http://127.0.0.1:$puerto/api/salud", false, $contexto) !== false;
+        $listo || usleep(250000);
+    }
+    if (!$listo) {
+        proc_terminate($servidor);
+        salir("El servidor de pruebas no respondio. Revisa $bitacora");
+    }
+
+    $pruebas = proc_open(
+        ['node', '--test', 'pruebas/api.test.js'],
+        [0 => STDIN, 1 => STDOUT, 2 => STDERR],
+        $tuberias2,
+        __DIR__,
+        array_merge(getenv(), ['API_BASE' => "http://127.0.0.1:$puerto"]),
+    );
+    $codigo = is_resource($pruebas) ? proc_close($pruebas) : 1;
+    proc_terminate($servidor);
+    proc_close($servidor);
+    exit($codigo);
+}
+
+/* ---------- Despacho ---------- */
+
+$comando = $argv[1] ?? 'help';
+$args = array_slice($argv, 2);
+
+match ($comando) {
+    'serve' => cmdServe($args),
+    'migrate' => cmdMigrate($args),
+    'migrate:fresh' => cmdMigrateFresh($args),
+    'db:seed' => cmdSeed($args),
+    'refugios' => cmdRefugios($args),
+    'publicaciones:republicar' => cmdRepublicar(),
+    'test' => cmdTest(),
+    'help', 'list', '--help', '-h' => cmdAyuda(),
+    default => salir("Comando desconocido: $comando\n       Escribe  php artisan help  para ver los comandos."),
+};

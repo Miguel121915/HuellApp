@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisar solicitud · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/components/tabla.css">
+  <link rel="stylesheet" href="../../assets/css/components/visor.css">
+  <link rel="stylesheet" href="../../assets/css/pages/admin.css">
+  <script type="module" src="../../assets/js/modules/admin/detalle-solicitud.js"></script>
+</head>
+<body class="pagina-admin" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <a id="volver" class="enlace" href="solicitudes.html">← Solicitudes</a>
+    <div id="alerta" role="status" hidden></div>
+
+    <header class="solicitud-cabecera tarjeta tarjeta--blanca">
+      <div class="solicitud-cabecera__titulo">
+        <h1 id="refugio-nombre">Solicitud de refugio</h1>
+        <span id="estado-insignia" class="insignia"></span>
+      </div>
+      <dl class="solicitud-datos">
+        <div><dt>Responsable</dt><dd id="dato-responsable"></dd></div>
+        <div><dt>Correo</dt><dd id="dato-correo"></dd></div>
+        <div><dt>Teléfono</dt><dd id="dato-telefono"></dd></div>
+        <div><dt>Dirección</dt><dd id="dato-direccion"></dd></div>
+        <div><dt>Horario</dt><dd id="dato-horario"></dd></div>
+        <div><dt>Solicitud enviada</dt><dd id="dato-fecha"></dd></div>
+      </dl>
+      <p id="motivo" class="alerta alerta--aviso" hidden></p>
+      <p id="aviso-apelacion" class="alerta alerta--aviso" hidden></p>
+      <a id="ver-mascotas" class="boton boton--secundario boton--pequeno solicitud-cabecera__mascotas" hidden>Ver mascotas y sus documentos</a>
+    </header>
+
+    <div class="revision">
+      <section class="tarjeta tarjeta--blanca" aria-labelledby="titulo-documentos">
+        <h2 id="titulo-documentos" class="seccion-titulo">Documentos</h2>
+        <p id="ayuda-checklist" class="texto-suave texto-pequeno"></p>
+        <ul id="lista-documentos" class="checklist"></ul>
+        <p id="progreso" class="progreso" role="status" aria-live="polite"></p>
+        <div id="decision" class="decision">
+          <button id="boton-aprobar" class="boton boton--primario" type="button" disabled>Aprobar refugio</button>
+          <button id="boton-rechazar" class="boton boton--peligro" type="button">Rechazar solicitud</button>
+        </div>
+      </section>
+
+      <section class="tarjeta tarjeta--blanca visor" aria-labelledby="titulo-visor">
+        <h2 id="titulo-visor" class="seccion-titulo">Visor de documentos</h2>
+        <p id="visor-titulo" class="texto-suave texto-pequeno" aria-live="polite">Ningún documento abierto</p>
+        <div id="visor" class="visor__area"><p class="vacio">Elige un documento con el botón «Ver» para revisarlo aquí.</p></div>
+        <a id="visor-abrir" class="enlace" target="_blank" rel="noopener" hidden>Abrir en una pestaña nueva</a>
+      </section>
+    </div>
+
+    <dialog id="modal-aprobar" class="modal" aria-labelledby="aprobar-titulo">
+      <h2 id="aprobar-titulo" class="modal__titulo">Aprobar refugio</h2>
+      <p>Al aprobarlo, el refugio podrá usar su panel y será visible para todos los usuarios de HuellApp.</p>
+      <div class="modal__acciones">
+        <button id="cancelar-aprobar" class="boton boton--contorno" type="button">Cancelar</button>
+        <button id="confirmar-aprobar" class="boton boton--primario" type="button">Sí, aprobar</button>
+      </div>
+    </dialog>
+
+    <dialog id="modal-rechazo" class="modal" aria-labelledby="rechazo-titulo">
+      <h2 id="rechazo-titulo" class="modal__titulo">Rechazar solicitud</h2>
+      <form id="formulario-rechazo" novalidate>
+        <div class="campo" id="campo-motivo">
+          <label class="campo__etiqueta" for="motivo-rechazo">Motivo del rechazo (obligatorio)</label>
+          <textarea id="motivo-rechazo" name="motivo" class="campo__control" maxlength="400" placeholder="Ej. El comprobante de domicilio tiene más de 3 meses."></textarea>
+          <span class="campo__ayuda">El refugio verá este mensaje cuando intente entrar.</span>
+          <span class="campo__error" role="alert"></span>
+        </div>
+        <fieldset class="docs-error" id="docs-con-error">
+          <legend class="campo__etiqueta">Documentos con problemas (opcional)</legend>
+          <p class="campo__ayuda">El refugio verá un aviso junto a cada documento marcado y tendrá que reemplazarlo para apelar.</p>
+          <div id="lista-docs-error" class="docs-error__lista"></div>
+        </fieldset>
+        <div id="alerta-rechazo" role="alert" hidden></div>
+        <div class="modal__acciones">
+          <button id="cancelar-rechazo" class="boton boton--contorno" type="button">Cancelar</button>
+          <button class="boton boton--peligro" type="submit">Rechazar solicitud</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inicio de sesión · HuellApp</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../assets/css/pages/login.css">
+  <script type="module" src="../assets/js/modules/auth/login.js"></script>
+</head>
+<body class="pagina-login">
+  <main class="login">
+    <section class="login__bienvenida" aria-labelledby="titulo-bienvenida">
+      <div class="login__logo">
+        <span class="logo-texto">HuellApp</span>
+        <img src="../assets/img/logos/huella.svg" alt="" width="84" height="84">
+      </div>
+      <h1 id="titulo-bienvenida">Bienvenido a HuellApp</h1>
+      <p>Ayudamos a que las mascotas perdidas vuelvan a casa y a que más refugios encuentren familia para sus peluditos.</p>
+    </section>
+
+    <section class="login__panel" aria-labelledby="titulo-login">
+      <h2 id="titulo-login">Inicio de sesión</h2>
+
+      <div class="selector-rol" id="selector-rol" role="tablist" aria-label="Tipo de cuenta">
+        <button type="button" class="selector-rol__opcion" role="tab" data-rol="usuario" aria-selected="true" aria-controls="form-login">Usuario</button>
+        <button type="button" class="selector-rol__opcion" role="tab" data-rol="refugio" aria-selected="false" aria-controls="form-login" tabindex="-1">Refugio</button>
+        <button type="button" class="selector-rol__opcion" role="tab" data-rol="admin" aria-selected="false" aria-controls="form-login" tabindex="-1">Administrador</button>
+      </div>
+
+      <form id="form-login" role="tabpanel" novalidate>
+        <div id="alerta" role="alert" hidden></div>
+
+        <div class="campo" id="campo-correo">
+          <label class="campo__etiqueta" for="correo">Correo electrónico</label>
+          <input class="campo__control" id="correo" name="correo" type="email" autocomplete="email" placeholder="nombre@correo.com">
+          <span class="campo__error" role="status"></span>
+        </div>
+
+        <div class="campo" id="campo-password">
+          <label class="campo__etiqueta" for="password">Contraseña</label>
+          <input class="campo__control" id="password" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña">
+          <span class="campo__error" role="status"></span>
+        </div>
+
+        <button class="boton boton--primario boton--bloque" id="boton-entrar" type="submit">Entrar</button>
+      </form>
+
+      <p class="login__registro" id="enlace-registro">¿No tienes cuenta? <a class="enlace" href="registro-usuario.html">Regístrate</a></p>
+
+      <details class="demo">
+        <summary>Cuentas de demostración</summary>
+        <ul class="demo__lista" id="lista-demo"></ul>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

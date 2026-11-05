@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inicio · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/inicio.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <section class="kiro" aria-labelledby="titulo-kiro">
+      <h1 id="titulo-kiro" class="solo-lector">Inicio: asistente KIRO</h1>
+
+      <div class="kiro__globo" role="status" aria-live="polite">
+        <p id="kiro-globo"></p>
+        <a id="kiro-enlace" class="enlace kiro__enlace" href="#" hidden></a>
+      </div>
+
+      <img class="kiro__imagen" src="../../assets/img/kiro/kiro.svg" alt="KIRO, el gato-robot asistente" width="400" height="420">
+
+      <form id="kiro-formulario" class="kiro__buscador" role="search" novalidate>
+        <label class="solo-lector" for="kiro-entrada">Escribe tu duda aquí</label>
+        <input id="kiro-entrada" type="search" placeholder="Escribe tu duda aquí" autocomplete="off" maxlength="200">
+        <button type="submit" aria-label="Preguntar a KIRO">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+        </button>
+      </form>
+
+      <section class="kiro__faq" aria-labelledby="titulo-faq">
+        <h2 id="titulo-faq" class="kiro__faq-titulo">Preguntas frecuentes</h2>
+        <ul id="kiro-sugerencias" class="chips"></ul>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

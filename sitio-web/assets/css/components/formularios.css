@@ -1,0 +1,37 @@
+/* formularios.css — Campos, etiquetas, errores y alertas */
+.campo { display: flex; flex-direction: column; gap: var(--e1); margin-bottom: var(--e4); }
+
+.campo__etiqueta { font-weight: 700; font-size: 0.95rem; }
+.campo__ayuda { font-size: 0.8125rem; color: var(--tinta-suave); }
+
+.campo__control {
+  width: 100%;
+  min-height: 46px;
+  padding: var(--e2) var(--e3);
+  background: var(--blanco);
+  border: 2px solid var(--borde);
+  border-radius: var(--radio-m);
+}
+.campo__control:hover { border-color: var(--tinta-suave); }
+.campo__control:focus-visible { border-color: var(--lila-fuerte); box-shadow: var(--foco); }
+textarea.campo__control { min-height: 110px; resize: vertical; }
+
+.campo--error .campo__control { border-color: var(--error); background: var(--error-fondo); }
+.campo__error { color: var(--error); font-size: 0.8125rem; font-weight: 600; min-height: 1.1em; }
+
+/* Carga de archivos */
+.campo__control[type="file"] { padding: var(--e2); background: var(--amarillo); border-style: dashed; cursor: pointer; }
+
+/* Grillas de formulario para escritorio */
+.formulario-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--e5); }
+.formulario-grid .campo--completo { grid-column: 1 / -1; }
+
+/* Alertas */
+.alerta { padding: var(--e3) var(--e4); border-radius: var(--radio-m); font-weight: 600; margin-bottom: var(--e4); }
+.alerta--error { background: var(--error-fondo); color: var(--error); }
+.alerta--exito { background: var(--exito-fondo); color: var(--exito); }
+.alerta--aviso { background: var(--aviso-fondo); color: var(--aviso); }
+
+@media (max-width: 720px) {
+  .formulario-grid { grid-template-columns: 1fr; }
+}
