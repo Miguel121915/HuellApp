@@ -27,6 +27,14 @@ final class Aplicacion
     {
         $r = new Enrutador();
         $r->get('/salud', static fn (): array => ['ok' => true, 'servicio' => 'huellapp-api']);
+        // Enlace de 5 minutos para abrir un documento privado fuera de la app (visor de PDF o navegador)
+        $r->post('/enlaces', static function (Solicitud $s): array {
+            $ruta = $s->cuerpo()['ruta'] ?? null;
+            if (!is_string($ruta) || !preg_match(Sesion::PATRON_ARCHIVO, $ruta)) {
+                throw new ErrorHttp(400, 'Ese archivo no se puede abrir con un enlace.');
+            }
+            return ['url' => "/api$ruta?" . Sesion::firmarEnlace($ruta, (int) $s->usuario['id'])];
+        }, [[Sesion::class, 'requiereSesion']]);
         Auth::registrar($r);
         Foro::registrar($r);
         Refugios::registrar($r);

@@ -63,11 +63,54 @@ final class Sesion
         }
     }
 
+    /* ---------- Enlaces firmados para abrir documentos privados ----------
+     * Un navegador o visor externo no puede mandar la cabecera Authorization. Para que la app
+     * abra un documento privado, la API firma un enlace de 5 minutos SOLO para esa ruta GET de
+     * archivo y ese usuario. Al usarlo se aplican los mismos permisos de siempre (rol, dueño).
+     */
+    private const VIGENCIA_ENLACE = 300;
+    public const PATRON_ARCHIVO = '#^/(refugio/adopciones/\d+/documentos/\d+|refugio/mascotas/\d+/documentos/\d+)/archivo$#';
+
+    private static function firma(string $ruta, int $usuarioId, int $expira): string
+    {
+        return self::b64(hash_hmac('sha256', "enlace|$ruta|$usuarioId|$expira", Config::obtener('JWT_SECRET'), true));
+    }
+
+    /** Parámetros de consulta (u, exp, firma) que habilitan $ruta para el usuario por 5 minutos. */
+    public static function firmarEnlace(string $ruta, int $usuarioId): string
+    {
+        $expira = time() + self::VIGENCIA_ENLACE;
+        return http_build_query(['u' => $usuarioId, 'exp' => $expira, 'firma' => self::firma($ruta, $usuarioId, $expira)]);
+    }
+
+    /** Usuario de un enlace firmado válido para esta ruta, o null. */
+    private static function usuarioDeEnlace(Solicitud $s): ?int
+    {
+        $q = $s->query;
+        if ($s->metodo !== 'GET' || !preg_match(self::PATRON_ARCHIVO, $s->ruta) || !isset($q['u'], $q['exp'], $q['firma'])) {
+            return null;
+        }
+        $usuarioId = (int) $q['u'];
+        $expira = (int) $q['exp'];
+        if ($expira < time() || !is_string($q['firma']) || !hash_equals(self::firma($s->ruta, $usuarioId, $expira), $q['firma'])) {
+            return null;
+        }
+        return $usuarioId;
+    }
+
     /** Guardia: exige un token válido y carga al usuario desde la BD (un usuario borrado pierde el acceso). */
     public static function requiereSesion(Solicitud $s): void
     {
         if (!preg_match('/^Bearer (.+)$/', $s->cabecera('authorization') ?? '', $m)) {
-            throw new ErrorHttp(401, 'Inicia sesión para continuar.');
+            $porEnlace = self::usuarioDeEnlace($s);
+            if ($porEnlace === null) {
+                throw new ErrorHttp(401, 'Inicia sesión para continuar.');
+            }
+            $s->usuario = Base::uno('SELECT id, nombre, correo, telefono, rol FROM usuarios WHERE id = ?', [$porEnlace]);
+            if ($s->usuario === null) {
+                throw new ErrorHttp(401, 'Tu cuenta ya no existe. Inicia sesión de nuevo.');
+            }
+            return;
         }
         $carga = self::verificar($m[1]);
         if ($carga === null) {

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/api_client.dart';
 import '../../core/api_config.dart';
 import '../../services/refugio_service.dart';
+import '../../widgets/documentos_privados.dart';
 import '../../widgets/foto_huellapp.dart';
 
 // Secciones del panel del refugio que también tiene el sitio web:
@@ -455,9 +456,19 @@ class _AdopcionesTabState extends _SeccionState<AdopcionesTab> {
                   ]),
                 ),
             if (documentos.isNotEmpty) ...[
-              const Text('Documentos', style: TextStyle(fontSize: 12, color: Colors.black54)),
-              for (final d in documentos) Text('• ${d['nombre']}'),
-              const Text('Para abrirlos usa el panel del sitio web.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const Text('Documentos (toca para abrir)', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              for (final d in documentos)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    (d['mime'] as String? ?? '').contains('pdf') ? Icons.picture_as_pdf : Icons.image_outlined,
+                    color: _accent,
+                  ),
+                  title: Text(d['nombre'] as String? ?? '', overflow: TextOverflow.ellipsis),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => abrirDocumentoPrivado(context, '/refugio/adopciones/${s['id']}/documentos/${d['id']}/archivo'),
+                ),
               const SizedBox(height: 10),
             ],
             if (t('notaRefugio').isNotEmpty) Text('Tu nota: ${t('notaRefugio')}', style: const TextStyle(fontStyle: FontStyle.italic)),

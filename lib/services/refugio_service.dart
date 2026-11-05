@@ -101,6 +101,33 @@ class RefugioService {
 
   Future<void> eliminarMascota(String id) => _api.delete('/refugio/mascotas/$id');
 
+  /* ---------- Documentos de cada mascota (vacunas, esterilización…) ---------- */
+
+  static const Map<String, String> tiposDocumentoMascota = {
+    'vacunacion': 'Cartilla de vacunación',
+    'esterilizacion': 'Constancia de esterilización',
+    'desparasitacion': 'Desparasitación',
+    'pedigree': 'Pedigree',
+    'medico': 'Expediente médico',
+    'otro': 'Otro',
+  };
+
+  Future<List<Map<String, dynamic>>> documentosMascota(String mascotaId) async =>
+      ((await _api.get('/refugio/mascotas/$mascotaId/documentos'))['documentos'] as List? ?? []).cast<Map<String, dynamic>>();
+
+  Future<void> subirDocumentoMascota(String mascotaId, String tipo, ArchivoElegido archivo) =>
+      _api.post('/refugio/mascotas/$mascotaId/documentos', {'tipo': tipo, 'nombre': archivo.nombre, 'dataUrl': archivo.dataUrl});
+
+  Future<void> eliminarDocumentoMascota(String mascotaId, String documentoId) =>
+      _api.delete('/refugio/mascotas/$mascotaId/documentos/$documentoId');
+
+  /// URL completa (válida 5 minutos) para abrir un documento privado en el navegador o visor del teléfono.
+  /// [ruta] sin /api, por ejemplo /refugio/mascotas/3/documentos/7/archivo
+  Future<String> enlaceDocumento(String ruta) async {
+    final r = await _api.post('/enlaces', {'ruta': ruta});
+    return '${ApiConfig.servidor}${r['url']}';
+  }
+
   /* ---------- Publicaciones (las ven los usuarios en el perfil del refugio) ---------- */
 
   Future<List<Map<String, dynamic>>> publicaciones() async =>

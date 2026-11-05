@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/api_client.dart';
 import '../../services/refugio_service.dart';
+import '../../widgets/documentos_privados.dart';
 import '../../widgets/foto_huellapp.dart';
 
 /// Alta o edición de una mascota del inventario del refugio (como en el panel del sitio web).
@@ -242,6 +243,15 @@ class _MascotaFormScreenState extends State<MascotaFormScreen> {
               const {'disponible': 'Disponible', 'en proceso': 'En proceso de adopción', 'adoptado': 'Adoptado'},
               (v) => _estatus = v,
             ),
+            const SizedBox(height: 16),
+            // Documentos (vacunas, esterilización…): igual que en el inventario del sitio web
+            if (_esNueva)
+              const Text(
+                'Después de agregar la mascota podrás subir sus documentos (vacunas, esterilización…) desde «Editar».',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              )
+            else
+              DocumentosMascota(mascotaId: widget.mascota!.id),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _guardando ? null : _guardar,
