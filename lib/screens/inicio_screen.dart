@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
+import 'package:huellapp/services/catalogo_service.dart';
 import 'package:huellapp/screens/kiro_home_screen.dart';
 import 'package:huellapp/screens/refugios_cercanos_screen.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
@@ -34,7 +36,19 @@ class _InicioScreenState extends State<InicioScreen> {
   final TextEditingController _busquedaController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    CatalogoService.instancia.addListener(_alCambiarCatalogo);
+    CatalogoService.instancia.cargar();
+  }
+
+  void _alCambiarCatalogo() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    CatalogoService.instancia.removeListener(_alCambiarCatalogo);
     _busquedaController.dispose();
     super.dispose();
   }
@@ -55,7 +69,8 @@ class _InicioScreenState extends State<InicioScreen> {
   void _abrirReportar() => widget.onIrA(3);
 
   void _buscar() {
-    // TODO: pasar el texto a RefugiosScreen para que filtre los resultados
+    // La pantalla de Refugios toma este texto y filtra con él
+    CatalogoService.instancia.buscarDesdeInicio(_busquedaController.text);
     widget.onIrA(1);
   }
 
@@ -344,7 +359,7 @@ class _InicioScreenState extends State<InicioScreen> {
                   SizedBox(
                     height: 110,
                     width: double.infinity,
-                    child: Image.network(
+                    child: FotoHuellApp(
                       m.imagenPrincipal,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(

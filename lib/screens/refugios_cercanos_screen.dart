@@ -6,6 +6,7 @@ import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/screens/refugio_perfil_screen.dart';
 import 'package:huellapp/widgets/marcador_refugio.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:huellapp/services/catalogo_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Mapa de refugios cercanos.
@@ -55,11 +56,27 @@ class _RefugiosCercanosScreenState extends State<RefugiosCercanosScreen> {
   @override
   void initState() {
     super.initState();
+    CatalogoService.instancia.addListener(_alCambiarCatalogo);
+    CatalogoService.instancia.cargar();
     _obtenerUbicacion();
+  }
+
+  // Cuando llegan los refugios de la API se recalculan las distancias
+  void _alCambiarCatalogo() {
+    if (!mounted) return;
+    final yo = _miUbicacion;
+    if (yo != null) {
+      for (final r in _refugios) {
+        _distancias[r.id] =
+            Geolocator.distanceBetween(yo.latitude, yo.longitude, r.latitud!, r.longitud!) / 1000;
+      }
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    CatalogoService.instancia.removeListener(_alCambiarCatalogo);
     _mapController.dispose();
     super.dispose();
   }

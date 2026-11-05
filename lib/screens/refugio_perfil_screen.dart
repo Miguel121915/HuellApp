@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -205,7 +206,7 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
             PageView.builder(
               itemCount: fotos.length,
               onPageChanged: (i) => setState(() => _fotoActual = i),
-              itemBuilder: (context, i) => Image.network(
+              itemBuilder: (context, i) => FotoHuellApp(
                 fotos[i],
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -398,7 +399,7 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
                   SizedBox(
                     height: 130,
                     width: double.infinity,
-                    child: Image.network(
+                    child: FotoHuellApp(
                       m.imagenPrincipal,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
 
@@ -36,7 +37,7 @@ void mostrarPerfilMascota(
                         child: PageView.builder(
                           itemCount: mascota.fotos.length,
                           itemBuilder: (context, index) {
-                            return Image.network(
+                            return FotoHuellApp(
                               mascota.fotos[index],
                               width: double.infinity,
                               fit: BoxFit.cover,

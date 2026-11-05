@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
+import 'package:huellapp/services/catalogo_service.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
 
 class RefugiosScreen extends StatefulWidget {
@@ -13,6 +15,60 @@ class RefugiosScreen extends StatefulWidget {
 class _RefugiosScreenState extends State<RefugiosScreen> {
   final TextEditingController _busquedaController = TextEditingController();
   String _filtroSeleccionado = 'Todos';
+
+  @override
+  void initState() {
+    super.initState();
+    CatalogoService.instancia.addListener(_alCambiarCatalogo);
+    CatalogoService.instancia.cargar();
+  }
+
+  void _alCambiarCatalogo() {
+    if (!mounted) return;
+    final catalogo = CatalogoService.instancia;
+    if (catalogo.busquedaPendiente.isNotEmpty) {
+      // Viene de la búsqueda de Inicio
+      _busquedaController.text = catalogo.busquedaPendiente;
+      catalogo.busquedaPendiente = '';
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    CatalogoService.instancia.removeListener(_alCambiarCatalogo);
+    _busquedaController.dispose();
+    super.dispose();
+  }
+
+  /// Lo que se muestra cuando la lista está vacía: cargando, error o sin resultados.
+  Widget _listaVacia() {
+    final catalogo = CatalogoService.instancia;
+    if (catalogo.cargando) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1B4943)));
+    }
+    if (catalogo.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              Text(catalogo.error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () => catalogo.cargar(forzar: true),
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return const Center(child: Text('No se encontraron refugios con este filtro.'));
+  }
 
   List<Refugio> get _refugiosFiltrados {
     return listaRefugios.where((refugio) {
@@ -43,7 +99,49 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
     );
   }
 
+  // Filtros de mascotas (los mismos que tiene el sitio web: nombre, especie, edad y tamaño)
+  static const _especies = {'todas': 'Especie', 'perro': 'Perros', 'gato': 'Gatos'};
+  static const _edades = {'todas': 'Edad', 'cachorro': 'Cachorro (< 1 año)', 'adulto': 'Adulto (1–7)', 'senior': 'Senior (8+)'};
+  static const _tamanos = {'todos': 'Tamaño', 'pequeño': 'Pequeño', 'mediano': 'Mediano', 'grande': 'Grande'};
+
+  bool _pasaFiltros(MascotaRefugio m, String texto, String especie, String edad, String tamano) {
+    if (texto.isNotEmpty && !m.nombre.toLowerCase().contains(texto) && !m.raza.toLowerCase().contains(texto)) {
+      return false;
+    }
+    if (especie != 'todas' && m.especie != especie) return false;
+    if (tamano != 'todos' && m.tamano != tamano) return false;
+    if (edad == 'cachorro' && m.edadMeses >= 12) return false;
+    if (edad == 'adulto' && (m.edadMeses < 12 || m.edadMeses >= 96)) return false;
+    if (edad == 'senior' && m.edadMeses < 96) return false;
+    return true;
+  }
+
+  Widget _selectorFiltro(Map<String, String> opciones, String valor, ValueChanged<String> alCambiar) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: valor,
+          isDense: true,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          items: [
+            for (final e in opciones.entries) DropdownMenuItem(value: e.key, child: Text(e.value)),
+          ],
+          onChanged: (v) => alCambiar(v ?? opciones.keys.first),
+        ),
+      ),
+    );
+  }
+
   void _mostrarMascotasModal(Refugio refugio) {
+    String texto = '';
+    String especie = 'todas';
+    String edad = 'todas';
+    String tamano = 'todos';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -53,6 +151,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final visibles = refugio.mascotas
+                .where((m) => _pasaFiltros(m, texto, especie, edad, tamano))
+                .toList();
             return Container(
               height: MediaQuery.of(context).size.height * 0.80,
               padding: const EdgeInsets.all(16),
@@ -79,17 +180,46 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                     ],
                   ),
                   const Divider(),
+                  if (refugio.mascotas.isNotEmpty) ...[
+                    TextField(
+                      onChanged: (v) => setModalState(() => texto = v.trim().toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar por nombre o raza...',
+                        prefixIcon: const Icon(Icons.search),
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _selectorFiltro(_especies, especie, (v) => setModalState(() => especie = v)),
+                        _selectorFiltro(_edades, edad, (v) => setModalState(() => edad = v)),
+                        _selectorFiltro(_tamanos, tamano, (v) => setModalState(() => tamano = v)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Expanded(
-                    child: refugio.mascotas.isEmpty
-                        ? const Center(
+                    child: visibles.isEmpty
+                        ? Center(
                             child: Text(
-                              'No hay mascotas registradas por ahora.',
+                              refugio.mascotas.isEmpty
+                                  ? 'No hay mascotas disponibles por ahora.'
+                                  : 'Ninguna mascota coincide con los filtros.',
                             ),
                           )
                         : ListView.builder(
-                            itemCount: refugio.mascotas.length,
+                            itemCount: visibles.length,
                             itemBuilder: (context, index) {
-                              final mascota = refugio.mascotas[index];
+                              final mascota = visibles[index];
                               return Card(
                                 margin: const EdgeInsets.symmetric(
                                   vertical: 6.0,
@@ -114,7 +244,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          child: Image.network(
+                                          child: FotoHuellApp(
                                             mascota.imagenPrincipal,
                                             width: 110,
                                             height: 94,
@@ -344,10 +474,10 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
           ),
           Expanded(
             child: _refugiosFiltrados.isEmpty
-                ? const Center(
-                    child: Text('No se encontraron refugios con este filtro.'),
-                  )
-                : ListView.builder(
+                ? _listaVacia()
+                : RefreshIndicator(
+                    onRefresh: () => CatalogoService.instancia.cargar(forzar: true),
+                    child: ListView.builder(
                     padding: const EdgeInsets.all(12),
                     itemCount: _refugiosFiltrados.length,
                     itemBuilder: (context, index) {
@@ -364,7 +494,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(12),
                               ),
-                              child: Image.network(
+                              child: FotoHuellApp(
                                 refugio.imagenUrl,
                                 height: 160,
                                 width: double.infinity,
@@ -481,6 +611,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                         ),
                       );
                     },
+                  ),
                   ),
           ),
         ],
