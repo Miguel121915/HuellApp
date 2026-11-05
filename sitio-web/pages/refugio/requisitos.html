@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Requisitos de adopción · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <script type="module" src="../../assets/js/modules/refugio/requisitos.js"></script>
+</head>
+<body class="pagina-refugio" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Requisitos de adopción</h1>
+    <p class="texto-suave intro-seccion">Los usuarios los ven en la página de tu refugio y antes de enviar una solicitud, para que lleguen preparados a la visita.</p>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div class="gestion">
+      <div class="gestion__lateral">
+        <form id="formulario-requisito" class="tarjeta tarjeta--blanca" novalidate>
+          <h2 id="titulo-formulario" class="seccion-titulo">Nuevo requisito</h2>
+          <div class="campo" data-campo="texto">
+            <label class="campo__etiqueta" for="q-texto">Requisito</label>
+            <input id="q-texto" name="texto" class="campo__control" type="text" maxlength="150" placeholder="Ej. Ser mayor de edad" autocomplete="off">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="detalle">
+            <label class="campo__etiqueta" for="q-detalle">Detalle <span class="texto-suave">(opcional)</span></label>
+            <textarea id="q-detalle" name="detalle" class="campo__control" maxlength="500" placeholder="Ej. Presenta tu INE el día de la visita."></textarea>
+            <span id="q-contador" class="campo__ayuda" aria-hidden="true">0/500</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <label class="casilla"><input type="checkbox" name="obligatorio" checked><span>Es obligatorio (si no, se muestra como recomendable)</span></label>
+          <div id="alerta-formulario" role="status" hidden></div>
+          <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Agregar requisito</button>
+          <button id="cancelar-edicion" class="boton boton--contorno boton--bloque publicar-cancelar" type="button" hidden>Cancelar edición</button>
+        </form>
+      </div>
+
+      <section aria-labelledby="titulo-lista">
+        <h2 id="titulo-lista" class="seccion-titulo">Tus requisitos <span id="conteo" class="texto-suave texto-pequeno"></span></h2>
+        <ul id="lista-requisitos" class="preguntas-lista"></ul>
+        <div id="sin-requisitos" class="vacio tarjeta tarjeta--blanca" hidden>
+          <p>Aún no publicas requisitos. Los usuarios verán «Este refugio aún no publica requisitos».</p>
+          <button id="usar-sugeridos" class="boton boton--secundario" type="button">Empezar con requisitos sugeridos</button>
+        </div>
+      </section>
+    </div>
+
+    <dialog id="modal-borrar" class="modal" aria-labelledby="borrar-titulo">
+      <h2 id="borrar-titulo" class="modal__titulo">Eliminar requisito</h2>
+      <p id="borrar-texto"></p>
+      <div class="modal__acciones">
+        <button id="cancelar-borrar" class="boton boton--contorno" type="button">Cancelar</button>
+        <button id="confirmar-borrar" class="boton boton--peligro" type="button">Sí, eliminar</button>
+      </div>
+    </dialog>
+  </main>
+</body>
+</html>

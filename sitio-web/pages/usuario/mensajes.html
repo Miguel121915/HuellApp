@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis mensajes · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/mensajes.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Mis mensajes</h1>
+    <p class="texto-suave intro-seccion">Lo que les escribiste a los refugios y sus respuestas. Para escribirle a uno, entra a su página en «Refugios».</p>
+    <div id="alerta" role="status" hidden></div>
+    <ul id="lista-mensajes" class="mensajes-lista"></ul>
+    <section id="sin-mensajes" class="vacio tarjeta tarjeta--blanca" hidden>
+      <img src="../../assets/img/kiro/kiro.svg" alt="" width="120" height="126">
+      <h2>Aún no le has escrito a ningún refugio</h2>
+      <p>¿Tienes dudas sobre una mascota o sobre el proceso de adopción? Escríbele al refugio desde su página.</p>
+      <a class="boton boton--secundario" href="refugios.html">Ver refugios</a>
+    </section>
+  </main>
+</body>
+</html>

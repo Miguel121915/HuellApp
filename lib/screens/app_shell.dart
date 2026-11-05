@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/core/sesion_service.dart';
 import 'package:huellapp/screens/coincidencias_screen.dart';
+import 'package:huellapp/screens/favoritos_screen.dart';
 import 'package:huellapp/screens/inicio_screen.dart';
 import 'package:huellapp/screens/login_screen.dart';
+import 'package:huellapp/screens/mis_mensajes_screen.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/screens/refugios_screen.dart';
 import 'package:huellapp/screens/reportar_screen.dart';
@@ -32,6 +35,13 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  /// Favoritos y mensajes son de la cuenta: al visitante se le pide iniciar sesión.
+  Future<void> _abrir(String accion, Widget pantalla) async {
+    if (!await requiereSesion(context, accion)) return;
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
+  }
+
   void _mostrarCuenta(Sesion sesion) {
     showModalBottomSheet(
       context: context,
@@ -52,6 +62,27 @@ class _AppShellState extends State<AppShell> {
               ),
               title: Text(sesion.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text('${sesion.correo} · ${sesion.esRefugio ? 'Refugio' : 'Usuario'}'),
+            ),
+            const Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.favorite_border),
+              title: const Text('Mis favoritos'),
+              subtitle: const Text('Guarda mascotas y compáralas'),
+              onTap: () {
+                Navigator.pop(hoja);
+                _abrir('ver tus favoritos', const FavoritosScreen());
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.mail_outline),
+              title: const Text('Mis mensajes'),
+              subtitle: const Text('Lo que les escribiste a los refugios y sus respuestas'),
+              onTap: () {
+                Navigator.pop(hoja);
+                _abrir('ver tus mensajes', const MisMensajesScreen());
+              },
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -92,6 +123,16 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Mis favoritos',
+            icon: const Icon(Icons.favorite_border, color: Colors.black, size: 28),
+            onPressed: () => _abrir('guardar y comparar mascotas favoritas', const FavoritosScreen()),
+          ),
+          IconButton(
+            tooltip: 'Mis mensajes',
+            icon: const Icon(Icons.mail_outline, color: Colors.black, size: 28),
+            onPressed: () => _abrir('escribirles a los refugios', const MisMensajesScreen()),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ListenableBuilder(

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis favoritos · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/favoritos.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Mis favoritos</h1>
+    <p class="texto-suave intro-seccion">Las mascotas que guardaste con ♡. Marca de 2 a 3 para compararlas lado a lado.</p>
+    <div id="alerta" role="status" hidden></div>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <div class="favoritos-barra" id="barra-comparar" hidden>
+      <span id="texto-seleccion" class="texto-suave"></span>
+      <button id="boton-comparar" class="boton boton--primario boton--pequeno" type="button" disabled>Comparar</button>
+    </div>
+
+    <section id="comparacion" class="comparacion tarjeta tarjeta--blanca" aria-labelledby="titulo-comparacion" hidden>
+      <div class="comparacion__cabecera">
+        <h2 id="titulo-comparacion" class="seccion-titulo">Comparación</h2>
+        <button id="cerrar-comparacion" class="boton boton--contorno boton--pequeno" type="button">Cerrar</button>
+      </div>
+      <div class="comparacion__tabla-envoltura"><table id="tabla-comparacion" class="comparacion__tabla"></table></div>
+    </section>
+
+    <div id="lista-favoritos" class="mascotas-grid"></div>
+
+    <section id="sin-favoritos" class="vacio tarjeta tarjeta--blanca" hidden>
+      <img src="../../assets/img/kiro/kiro.svg" alt="" width="120" height="126">
+      <h2>Aún no tienes favoritos</h2>
+      <p>En la página de cada refugio, toca el ♡ de una mascota para guardarla aquí y compararla después.</p>
+      <a class="boton boton--secundario" href="refugios.html">Ver refugios</a>
+    </section>
+  </main>
+</body>
+</html>

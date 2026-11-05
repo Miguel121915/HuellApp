@@ -25,13 +25,13 @@ final class Base
     /** Columnas de texto opcional que en MySQL eran NOT NULL DEFAULT '' (ver database/esquema.sql). */
     private const TEXTO_OPCIONAL = [
         'descripcion', 'motivo_rechazo', 'motivo_anterior', 'foto', 'foto_alt',
-        'claves', 'ocupacion', 'otras_mascotas', 'nota_refugio',
+        'claves', 'ocupacion', 'otras_mascotas', 'nota_refugio', 'detalle', 'respuesta',
     ];
 
     /** Columnas numéricas por nombre, por si el driver no informa el tipo de la columna. */
     private const NUMERICAS = [
         'id', 'cuenta', 'tamano', 'edad_meses', 'apelaciones', 'verificado', 'con_error', 'activa',
-        'similitud', 'republicar_cada_dias', 'republicada_veces', 'total', 'verificados', 'total_likes', 'ya_dio',
+        'similitud', 'republicar_cada_dias', 'republicada_veces', 'total', 'verificados', 'total_likes', 'ya_dio', 'obligatorio', 'mensajes_nuevos',
     ];
 
     private static function opciones(): array

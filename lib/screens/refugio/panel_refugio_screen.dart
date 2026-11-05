@@ -27,7 +27,7 @@ const Map<String, Color> _estatusColor = {
 
 /// Panel del refugio en la app móvil (lo que ve un refugio aprobado al iniciar sesión).
 /// Mismas secciones que el panel del sitio web: Panel, Inventario, Publicaciones, Adopciones,
-/// Preguntas y Perfil.
+/// Mensajes, Requisitos, Preguntas y Perfil.
 class PanelRefugioScreen extends StatefulWidget {
   const PanelRefugioScreen({super.key});
 
@@ -41,6 +41,8 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
     (Icons.pets_outlined, 'Inventario'),
     (Icons.campaign_outlined, 'Publicaciones'),
     (Icons.assignment_outlined, 'Adopciones'),
+    (Icons.mail_outline, 'Mensajes'),
+    (Icons.checklist, 'Requisitos'),
     (Icons.help_outline, 'Preguntas'),
     (Icons.storefront_outlined, 'Perfil'),
   ];
@@ -51,6 +53,8 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
   int _version = 0;
 
   void _inventarioCambio() => setState(() => _version++);
+  // Se incrementa al leer o responder mensajes, para que el Resumen recuente los nuevos
+  int _mensajesVersion = 0;
 
   @override
   void dispose() {
@@ -110,11 +114,18 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
       body: IndexedStack(
         index: _indice,
         children: [
-          _ResumenTab(key: ValueKey('resumen-$_version'), onIrAInventario: () => _tabs.animateTo(1)),
+          _ResumenTab(
+            key: ValueKey('resumen-$_version-$_mensajesVersion'),
+            onIrAInventario: () => _tabs.animateTo(1),
+            onIrAMensajes: () => _tabs.animateTo(4),
+          ),
           _InventarioTab(onCambio: _inventarioCambio),
           // Publicaciones depende del inventario (elige mascota): se recarga si éste cambia
           PublicacionesTab(key: ValueKey('publicaciones-$_version')),
           const AdopcionesTab(),
+          // Al leer o responder, el Resumen vuelve a contar los mensajes nuevos
+          MensajesTab(onCambio: () => setState(() => _mensajesVersion++)),
+          const RequisitosTab(),
           const PreguntasTab(),
           const _PerfilTab(),
         ],
@@ -149,9 +160,10 @@ Widget _segunEstado({required bool cargando, required String? error, required Vo
 /* ======================= Resumen ======================= */
 
 class _ResumenTab extends StatefulWidget {
-  const _ResumenTab({super.key, required this.onIrAInventario});
+  const _ResumenTab({super.key, required this.onIrAInventario, required this.onIrAMensajes});
 
   final VoidCallback onIrAInventario;
+  final VoidCallback onIrAMensajes;
 
   @override
   State<_ResumenTab> createState() => _ResumenTabState();
@@ -235,6 +247,35 @@ class _ResumenTabState extends State<_ResumenTab> {
                 _cifra('En proceso', d['enProceso'], _estatusColor['en proceso']!),
                 _cifra('Adoptadas', d['adoptadas'], _estatusColor['adoptado']!),
               ]),
+              if (((d['mensajesNuevos'] as num?) ?? 0) > 0) ...[
+                const SizedBox(height: 8),
+                Card(
+                  color: const Color(0xFFFDE8E6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: ListTile(
+                    leading: const Icon(Icons.mark_email_unread_outlined, color: Color(0xFFB42318)),
+                    title: Text(
+                      (d['mensajesNuevos'] as num) == 1 ? 'Tienes 1 mensaje nuevo' : 'Tienes ${d['mensajesNuevos']} mensajes nuevos',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text('Usuarios que preguntan por tus mascotas'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: widget.onIrAMensajes,
+                  ),
+                ),
+              ],
+              if (((d['requisitos'] as num?) ?? 0) == 0) ...[
+                const SizedBox(height: 8),
+                Card(
+                  color: const Color(0xFFFDECB5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: const ListTile(
+                    leading: Icon(Icons.checklist, color: Color(0xFF7A5A00)),
+                    title: Text('Publica tus requisitos de adopción', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Así los usuarios llegan preparados a la visita (pestaña Requisitos).'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Row(
                 children: [

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
+import 'package:huellapp/services/usuario_service.dart';
+import 'package:huellapp/widgets/contacto_refugio.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Perfil de un refugio: fotos, descripción, horario, contacto, redes,
@@ -36,6 +38,22 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
   int _fotoActual = 0;
 
   Refugio get _r => widget.refugio;
+
+  @override
+  void initState() {
+    super.initState();
+    FavoritosService.instancia.addListener(_alCambiarFavoritos);
+  }
+
+  void _alCambiarFavoritos() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    FavoritosService.instancia.removeListener(_alCambiarFavoritos);
+    super.dispose();
+  }
 
   List<String> get _fotos => _r.fotos.isNotEmpty ? _r.fotos : [_r.imagenUrl];
 
@@ -109,6 +127,8 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
                 _filaIcono(Icons.schedule, _r.horario),
               ),
               _seccion('Contacto', _buildContacto()),
+              // HU-16: lo que pide el refugio para adoptar, antes de la visita
+              _seccion('Requisitos para adoptar', RequisitosRefugio(refugioId: _r.id)),
               if (_r.redes.isNotEmpty)
                 _seccion(
                   'Redes sociales',
@@ -319,6 +339,22 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
       children: [
         _filaIcono(Icons.phone, _r.contacto),
         const SizedBox(height: 10),
+        // HU-13: mensaje dentro de HuellApp (el refugio lo responde desde su panel)
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => abrirContactoRefugio(context, refugioId: _r.id, refugioNombre: _r.nombre),
+            icon: const Icon(Icons.mail_outline),
+            label: const Text('Escribir al refugio'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(46),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -411,13 +447,16 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
                   Positioned(
                     top: 6,
                     right: 6,
-                    child: CircleAvatar(
-                      radius: 15,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        m.esFavorito ? Icons.favorite : Icons.favorite_border,
-                        size: 18,
-                        color: m.esFavorito ? Colors.red : Colors.grey,
+                    child: GestureDetector(
+                      onTap: () => FavoritosService.instancia.alternar(context, m),
+                      child: CircleAvatar(
+                        radius: 15,
+                        backgroundColor: Colors.white,
+                        child: Icon(
+                          m.esFavorito ? Icons.favorite : Icons.favorite_border,
+                          size: 18,
+                          color: m.esFavorito ? Colors.red : Colors.grey,
+                        ),
                       ),
                     ),
                   ),

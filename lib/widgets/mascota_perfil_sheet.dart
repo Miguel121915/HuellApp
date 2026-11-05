@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
+import 'package:huellapp/services/usuario_service.dart';
+import 'package:huellapp/widgets/contacto_refugio.dart';
 
 /// Hoja con el perfil de una mascota (fotos, descripción, salud y botón de
 /// adopción). La usan la lista de refugios y el perfil del refugio.
@@ -75,10 +77,12 @@ void mostrarPerfilMascota(
                                         : Colors.grey,
                                     size: 28,
                                   ),
-                                  onPressed: () {
-                                    mascota.esFavorito = !mascota.esFavorito;
+                                  tooltip: mascota.esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos',
+                                  onPressed: () async {
+                                    // Se guarda en la API (HU-12); al visitante se le pide iniciar sesión
+                                    await FavoritosService.instancia.alternar(context, mascota);
                                     onCambio?.call();
-                                    setModalState(() {});
+                                    if (context.mounted) setModalState(() {});
                                   },
                                 ),
                               ],
@@ -150,7 +154,47 @@ void mostrarPerfilMascota(
                                   )
                                   .toList(),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
+                            // HU-16: requisitos del refugio antes de la visita o la solicitud
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE6F8F5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ExpansionTile(
+                                shape: const Border(),
+                                leading: const Icon(Icons.checklist, color: Color(0xFF1B4F4A)),
+                                title: const Text(
+                                  'Requisitos para adoptar',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text('Lo que pide $nombreRefugio', style: const TextStyle(fontSize: 12)),
+                                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                children: [RequisitosRefugio(refugioId: mascota.refugioId)],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // HU-13: preguntar al refugio responsable de esta mascota
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF1B4F4A),
+                                  side: const BorderSide(color: Color(0xFF1B4F4A), width: 1.5),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: () => abrirContactoRefugio(
+                                  context,
+                                  refugioId: mascota.refugioId,
+                                  refugioNombre: nombreRefugio,
+                                  mascota: mascota,
+                                ),
+                                icon: const Icon(Icons.mail_outline),
+                                label: const Text('Preguntar al refugio', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
                             SizedBox(
                               width: double.infinity,
                               height: 48,

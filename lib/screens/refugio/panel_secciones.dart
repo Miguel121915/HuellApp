@@ -671,3 +671,306 @@ class _PreguntasTabState extends _SeccionState<PreguntasTab> {
     );
   }
 }
+
+/* ======================= HU-13 Mensajes de los usuarios ======================= */
+
+class MensajesTab extends StatefulWidget {
+  const MensajesTab({super.key, this.onCambio});
+
+  /// Se llama al leer o responder (para actualizar el contador de mensajes nuevos).
+  final VoidCallback? onCambio;
+
+  @override
+  State<MensajesTab> createState() => _MensajesTabState();
+}
+
+class _MensajesTabState extends _SeccionState<MensajesTab> {
+  static const Map<String, (String, Color)> _estados = {
+    'nuevo': ('Nuevo', Color(0xFFB42318)),
+    'leido': ('Leído', Color(0xFFB7791F)),
+    'respondido': ('Respondido', Color(0xFF1F7A52)),
+  };
+
+  bool _soloPendientes = true;
+
+  @override
+  Future<List<Map<String, dynamic>>> pedir() => RefugioService.instancia.mensajes();
+
+  Future<void> _abrir(Map<String, dynamic> m) async {
+    // Al abrir un mensaje nuevo se marca como leído (igual que en el sitio web)
+    if (m['estado'] == 'nuevo') {
+      try {
+        await RefugioService.instancia.responderMensaje('${m['id']}');
+        m['estado'] = 'leido';
+        widget.onCambio?.call();
+        if (mounted) setState(() {});
+      } on ApiException {
+        // si falla, se puede responder igual
+      }
+    }
+    if (!mounted) return;
+    final respuesta = TextEditingController(text: m['respuesta'] as String? ?? '');
+    final contacto = [m['usuarioCorreo'], m['telefono']].where((v) => (v as String? ?? '').isNotEmpty).join(' · ');
+    final enviar = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (hoja) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(hoja).viewInsets.bottom + 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(m['usuarioNombre'] as String? ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              if (contacto.isNotEmpty) SelectableText(contacto, style: const TextStyle(color: Colors.black54)),
+              Text(
+                [if ((m['mascotaNombre'] as String? ?? '').isNotEmpty) 'Sobre ${m['mascotaNombre']}', fechaCorta(m['fecha'] as String?)].join(' · '),
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              Text(m['mensaje'] as String? ?? ''),
+              const SizedBox(height: 16),
+              TextField(
+                controller: respuesta,
+                maxLines: 4,
+                maxLength: 1000,
+                decoration: _decoracion('Tu respuesta', ayuda: 'Le llega a «Mensajes» en la app y en el sitio web'),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: _accent, foregroundColor: Colors.white),
+                  icon: const Icon(Icons.send),
+                  label: Text((m['respuesta'] as String? ?? '').isEmpty ? 'Responder' : 'Actualizar respuesta'),
+                  onPressed: () {
+                    if (respuesta.text.trim().length < 2) return;
+                    Navigator.pop(hoja, true);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (enviar != true) return;
+    final ok = await ejecutar(
+      () => RefugioService.instancia.responderMensaje('${m['id']}', respuesta: respuesta.text.trim()),
+      'Respuesta enviada a ${m['usuarioNombre']}',
+    );
+    if (ok) widget.onCambio?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visibles = _soloPendientes ? datos.where((m) => m['estado'] != 'respondido').toList() : datos;
+    return envolver(
+      vacio: 'Aún no te han escrito. Cuando un usuario te pregunte por una mascota o por tu proceso de adopción, '
+          'su mensaje aparecerá aquí.',
+      lista: () => ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        children: [
+          Wrap(spacing: 8, children: [
+            ChoiceChip(
+              label: const Text('Por responder'),
+              selected: _soloPendientes,
+              onSelected: (_) => setState(() => _soloPendientes = true),
+            ),
+            ChoiceChip(
+              label: const Text('Todos'),
+              selected: !_soloPendientes,
+              onSelected: (_) => setState(() => _soloPendientes = false),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          if (visibles.isEmpty)
+            const Padding(padding: EdgeInsets.all(24), child: Text('No tienes mensajes por responder. 🎉', textAlign: TextAlign.center)),
+          for (final m in visibles)
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: m['estado'] == 'nuevo' ? const BorderSide(color: Color(0xFFB42318), width: 2) : BorderSide.none,
+              ),
+              child: ListTile(
+                onTap: () => _abrir(m),
+                leading: (m['mascotaFoto'] as String? ?? '').isEmpty
+                    ? const CircleAvatar(backgroundColor: _turquoise, child: Icon(Icons.mail_outline, color: Colors.black))
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: FotoHuellApp(ApiConfig.urlArchivo(m['mascotaFoto'] as String), width: 48, height: 48, fit: BoxFit.cover),
+                      ),
+                title: Text(m['usuarioNombre'] as String? ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(m['mensaje'] as String? ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: Chip(
+                  label: Text(_estados[m['estado']]?.$1 ?? '', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                  backgroundColor: _estados[m['estado']]?.$2 ?? Colors.grey,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ======================= HU-16 Requisitos de adopción ======================= */
+
+class RequisitosTab extends StatefulWidget {
+  const RequisitosTab({super.key});
+
+  @override
+  State<RequisitosTab> createState() => _RequisitosTabState();
+}
+
+class _RequisitosTabState extends _SeccionState<RequisitosTab> {
+  /// Punto de partida para un refugio sin requisitos (los mismos que sugiere el sitio web).
+  static const _sugeridos = [
+    {'texto': 'Ser mayor de edad', 'detalle': 'Presenta tu identificación oficial (INE, pasaporte o cédula) el día de la visita.', 'obligatorio': true},
+    {'texto': 'Comprobante de domicilio reciente', 'detalle': 'Recibo de luz, agua o teléfono de los últimos 3 meses.', 'obligatorio': true},
+    {'texto': 'Visita al refugio para conocer a la mascota', 'detalle': 'Agenda tu visita antes de que se apruebe la adopción.', 'obligatorio': true},
+    {'texto': 'Permiso del arrendador si rentas', 'detalle': 'Una carta o mensaje del dueño de la vivienda que autorice tener mascotas.', 'obligatorio': false},
+    {'texto': 'Compromiso de esterilización y vacunas', 'detalle': 'Si la mascota aún no está esterilizada o vacunada, te pedimos completarlo.', 'obligatorio': true},
+  ];
+
+  @override
+  Future<List<Map<String, dynamic>>> pedir() => RefugioService.instancia.requisitos();
+
+  Future<void> _formulario([Map<String, dynamic>? q]) async {
+    final texto = TextEditingController(text: q?['texto'] as String? ?? '');
+    final detalle = TextEditingController(text: q?['detalle'] as String? ?? '');
+    var obligatorio = q?['obligatorio'] as bool? ?? true;
+    final formKey = GlobalKey<FormState>();
+    final guardar = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogo) => AlertDialog(
+          title: Text(q == null ? 'Nuevo requisito' : 'Editar requisito'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextFormField(
+                  controller: texto,
+                  maxLength: 150,
+                  decoration: _decoracion('Requisito', ayuda: 'Ej. Ser mayor de edad'),
+                  validator: (v) => (v ?? '').trim().length < 3 ? 'Mínimo 3 caracteres' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: detalle,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: _decoracion('Detalle (opcional)', ayuda: 'Ej. Presenta tu INE el día de la visita'),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Es obligatorio'),
+                  subtitle: const Text('Si no, se muestra como recomendable'),
+                  value: obligatorio,
+                  onChanged: (v) => setDialogo(() => obligatorio = v),
+                ),
+              ]),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) Navigator.pop(context, true);
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (guardar != true) return;
+    await ejecutar(
+      () => RefugioService.instancia.guardarRequisito(
+        {'texto': texto.text.trim(), 'detalle': detalle.text.trim(), 'obligatorio': obligatorio},
+        id: q == null ? null : '${q['id']}',
+      ),
+      q == null ? 'Requisito agregado. Los usuarios ya lo ven.' : 'Requisito actualizado',
+    );
+  }
+
+  Future<void> _usarSugeridos() async {
+    await ejecutar(() async {
+      for (final q in _sugeridos) {
+        await RefugioService.instancia.guardarRequisito(Map<String, dynamic>.from(q));
+      }
+    }, 'Se agregaron los requisitos sugeridos. Revísalos y adáptalos.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!cargando && error == null && datos.isEmpty) {
+      // Vacío con la opción de empezar con los sugeridos
+      return Scaffold(
+        backgroundColor: _fondo,
+        floatingActionButton: _botonNuevo(),
+        body: ListView(padding: const EdgeInsets.all(32), children: [
+          const Text(
+            'Aún no publicas requisitos. Los usuarios los ven en el perfil de tu refugio y antes de solicitar una adopción, '
+            'para que lleguen preparados a la visita.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: _usarSugeridos,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Empezar con requisitos sugeridos'),
+            ),
+          ),
+        ]),
+      );
+    }
+    return envolver(
+      vacio: '',
+      boton: _botonNuevo(),
+      lista: () => ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+        itemCount: datos.length,
+        itemBuilder: (context, i) {
+          final q = datos[i];
+          final obligatorio = q['obligatorio'] as bool? ?? true;
+          final detalle = q['detalle'] as String? ?? '';
+          return Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: ListTile(
+              leading: Icon(obligatorio ? Icons.check_circle : Icons.radio_button_unchecked, color: _accent),
+              title: Text(q['texto'] as String? ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text([obligatorio ? 'Obligatorio' : 'Recomendable', if (detalle.isNotEmpty) detalle].join(' · ')),
+              isThreeLine: detalle.isNotEmpty,
+              trailing: PopupMenuButton<String>(
+                onSelected: (v) async {
+                  if (v == 'editar') {
+                    _formulario(q);
+                  } else if (await confirmar('¿Eliminar requisito?', q['texto'] as String? ?? '')) {
+                    ejecutar(() => RefugioService.instancia.eliminarRequisito('${q['id']}'), 'Requisito eliminado');
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'editar', child: Text('Editar')),
+                  PopupMenuItem(value: 'eliminar', child: Text('Eliminar', style: TextStyle(color: Colors.red))),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _botonNuevo() => FloatingActionButton.extended(
+        onPressed: () => _formulario(),
+        backgroundColor: _accent,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Nuevo requisito'),
+      );
+}

@@ -167,6 +167,31 @@ class RefugioService {
   }
 
   Future<void> eliminarPregunta(String id) => _api.delete('/refugio/preguntas/$id');
+
+  /* ---------- HU-16 Requisitos de adopción ---------- */
+
+  Future<List<Map<String, dynamic>>> requisitos() async =>
+      ((await _api.get('/refugio/requisitos'))['requisitos'] as List? ?? []).cast<Map<String, dynamic>>();
+
+  /// [datos]: {texto, detalle, obligatorio}
+  Future<void> guardarRequisito(Map<String, dynamic> datos, {String? id}) async {
+    if (id == null) {
+      await _api.post('/refugio/requisitos', datos);
+    } else {
+      await _api.put('/refugio/requisitos/$id', datos);
+    }
+  }
+
+  Future<void> eliminarRequisito(String id) => _api.delete('/refugio/requisitos/$id');
+
+  /* ---------- HU-13 Mensajes de los usuarios ---------- */
+
+  Future<List<Map<String, dynamic>>> mensajes() async =>
+      ((await _api.get('/refugio/mensajes'))['mensajes'] as List? ?? []).cast<Map<String, dynamic>>();
+
+  /// Sin [respuesta] lo marca como leído; con [respuesta] lo responde.
+  Future<void> responderMensaje(String id, {String? respuesta}) =>
+      _api.patch('/refugio/mensajes/$id', respuesta == null ? {} : {'respuesta': respuesta});
 }
 
 /// "2026-11-05T08:30:00.000Z" → "05/11/2026" (hora local).

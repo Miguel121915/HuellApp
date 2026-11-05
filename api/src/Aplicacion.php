@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp;
 
-use HuellApp\Rutas\{Admin, Adopciones, Auth, Foro, Refugio, Refugios, Reportes};
+use HuellApp\Rutas\{Admin, Adopciones, Auth, Favoritos, Foro, Mensajes, Refugio, Refugios, Reportes, Requisitos};
 
 /** Aplicacion — Atiende una petición /api: CORS, rutas y errores (siempre responde JSON). */
 final class Aplicacion
@@ -42,6 +42,9 @@ final class Aplicacion
         Admin::registrar($r);
         Reportes::registrar($r);
         Adopciones::registrar($r);
+        Favoritos::registrar($r);
+        Mensajes::registrar($r);
+        Requisitos::registrar($r);
         return $r;
     }
 

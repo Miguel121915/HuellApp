@@ -53,8 +53,15 @@
 
 .encabezado__acciones { display: flex; align-items: center; gap: var(--e3); }
 
+/* Con 7-8 secciones (usuario y refugio) los enlaces se compactan antes de pasar a segunda fila */
+@media (max-width: 1360px) {
+  .nav__enlace { padding-inline: var(--e2); }
+  .marca__texto { font-size: 1.875rem; }
+  .encabezado__interno { gap: var(--e3); }
+}
+
 /* Tablet / móvil: la navegación pasa a segunda fila con scroll horizontal */
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .encabezado__interno { flex-wrap: wrap; padding-block: var(--e2); }
   .nav { order: 3; width: 100%; overflow-x: auto; }
   .marca__texto { font-size: 1.75rem; }

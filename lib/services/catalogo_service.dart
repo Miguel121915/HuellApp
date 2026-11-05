@@ -4,6 +4,7 @@ import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../data/refugios_data.dart';
 import '../models/refugio.dart';
+import 'usuario_service.dart';
 
 /// Carga de la API los refugios aprobados y sus mascotas disponibles, y los deja en
 /// [listaRefugios]. No necesita sesión: el visitante también puede ver el catálogo.
@@ -52,24 +53,16 @@ class CatalogoService extends ChangeNotifier {
             .toList();
       }));
 
-      // Se conservan los favoritos marcados en esta sesión (aún no se guardan en la API)
-      final favoritos = {
-        for (final ref in listaRefugios)
-          for (final m in ref.mascotas)
-            if (m.esFavorito) m.id,
-      };
       final nuevos = [
         for (var i = 0; i < refugiosJson.length; i++) Refugio.desdeApi(refugiosJson[i], mascotasPorRefugio[i]),
       ];
-      for (final ref in nuevos) {
-        for (final m in ref.mascotas) {
-          m.esFavorito = favoritos.contains(m.id);
-        }
-      }
       listaRefugios
         ..clear()
         ..addAll(nuevos);
       _cargado = true;
+      // Corazones de favoritos (HU-12): los guardados en la API, iguales que en el sitio web
+      FavoritosService.instancia.marcarCatalogo();
+      FavoritosService.instancia.cargar();
     } on ApiException catch (e) {
       _error = e.mensaje;
     } finally {

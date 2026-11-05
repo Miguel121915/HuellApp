@@ -50,11 +50,21 @@
           <div id="fila-redes" hidden><dt>Redes</dt><dd id="refugio-redes"></dd></div>
           <div id="fila-necesidades" hidden><dt>Necesitan</dt><dd id="refugio-necesidades"></dd></div>
         </dl>
-        <a id="refugio-como-llegar" class="boton boton--secundario boton--pequeno" href="#" target="_blank" rel="noopener" hidden>Cómo llegar (Google Maps)</a>
+        <div class="refugio-acciones">
+          <button id="boton-contactar" class="boton boton--primario boton--pequeno" type="button">Escribir al refugio</button>
+          <a id="refugio-como-llegar" class="boton boton--secundario boton--pequeno" href="#" target="_blank" rel="noopener" hidden>Cómo llegar (Google Maps)</a>
+        </div>
         <p id="refugio-descripcion" class="tarjeta__cuerpo" hidden></p>
       </header>
 
+      <section class="requisitos-refugio tarjeta tarjeta--blanca" aria-labelledby="titulo-requisitos">
+        <h2 id="titulo-requisitos" class="seccion-titulo">Requisitos para adoptar</h2>
+        <p class="texto-suave texto-pequeno">Revísalos antes de visitar el refugio o enviar una solicitud.</p>
+        <div id="lista-requisitos"></div>
+      </section>
+
       <h2 class="seccion-titulo">Mascotas disponibles</h2>
+      <p id="anuncio-favorito" class="solo-lector" role="status" aria-live="polite"></p>
       <form class="filtros" role="search">
         <div class="campo">
           <label class="campo__etiqueta" for="filtro-texto">Buscar</label>
@@ -102,6 +112,11 @@
           <p id="adopcion-refugio" class="texto-suave texto-pequeno"></p>
         </div>
       </header>
+
+      <section id="adopcion-requisitos" class="adopcion__requisitos" aria-labelledby="adopcion-requisitos-titulo" hidden>
+        <h3 id="adopcion-requisitos-titulo">Antes de enviar, revisa los requisitos del refugio</h3>
+        <div id="adopcion-lista-requisitos"></div>
+      </section>
 
       <form id="formulario-adopcion" novalidate>
         <fieldset class="adopcion__grupo">
@@ -167,6 +182,29 @@
         <div class="modal__acciones">
           <button id="cancelar-adopcion" class="boton boton--contorno" type="button">Cancelar</button>
           <button id="enviar-adopcion" class="boton boton--primario" type="submit"><span aria-hidden="true">🐾</span> Enviar solicitud</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Contacto con el refugio (HU-13) -->
+    <dialog id="modal-contacto" class="modal" aria-labelledby="contacto-titulo">
+      <h2 id="contacto-titulo" class="modal__titulo">Escribir al refugio</h2>
+      <p id="contacto-destino" class="texto-suave texto-pequeno"></p>
+      <form id="formulario-contacto" novalidate>
+        <div class="campo">
+          <label class="campo__etiqueta" for="contacto-mensaje">Tu mensaje</label>
+          <textarea id="contacto-mensaje" name="mensaje" class="campo__control" maxlength="1000" rows="5"></textarea>
+          <span id="contacto-contador" class="campo__ayuda" aria-hidden="true">0/1000</span>
+        </div>
+        <div class="campo">
+          <label class="campo__etiqueta" for="contacto-telefono">Teléfono para que te llamen <span class="texto-suave">(opcional)</span></label>
+          <input id="contacto-telefono" name="telefono" class="campo__control" type="tel" maxlength="25" autocomplete="tel">
+        </div>
+        <p class="campo__ayuda">El refugio verá tu nombre y tu correo. Su respuesta llegará a «Mensajes».</p>
+        <div id="alerta-contacto" role="alert" hidden></div>
+        <div class="modal__acciones">
+          <button id="cancelar-contacto" class="boton boton--contorno" type="button">Cancelar</button>
+          <button id="enviar-contacto" class="boton boton--primario" type="submit">Enviar mensaje</button>
         </div>
       </form>
     </dialog>

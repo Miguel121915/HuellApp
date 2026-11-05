@@ -123,3 +123,32 @@ export const actualizarPerfil = (cambios) => intentar(async () => {
   const r = await put("/refugio/perfil", cambios);
   return { ok: true, refugio: r.refugio };
 });
+
+/* ---------- HU-16 Requisitos de adopción ---------- */
+
+export async function listarRequisitos() {
+  return (await get("/refugio/requisitos")).requisitos;
+}
+
+/** Crea (sin `id`) o edita (con `id`). @param {{texto, detalle, obligatorio:boolean}} datos */
+export const guardarRequisito = (datos, id = null) => intentar(async () => {
+  const r = id ? await put(`/refugio/requisitos/${id}`, datos) : await post("/refugio/requisitos", datos);
+  return { ok: true, requisito: r.requisito };
+});
+
+export const eliminarRequisito = (id) => intentar(async () => {
+  await del(`/refugio/requisitos/${id}`);
+  return { ok: true };
+});
+
+/* ---------- HU-13 Mensajes de los usuarios ---------- */
+
+export async function listarMensajes() {
+  return (await get("/refugio/mensajes")).mensajes;
+}
+
+/** Sin respuesta = marcar como leído; con respuesta = responder. */
+export const responderMensaje = (id, respuesta = null) => intentar(async () => {
+  const r = await patch(`/refugio/mensajes/${id}`, respuesta === null ? {} : { respuesta });
+  return { ok: true, mensaje: r.mensaje };
+});

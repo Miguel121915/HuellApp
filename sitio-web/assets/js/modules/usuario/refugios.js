@@ -1,14 +1,16 @@
 /**
  * refugios.js — Listado de refugios verificados y, al entrar a uno (?id=ref-1),
  * sus mascotas disponibles con filtros (nombre, especie, edad, tamaño) y paginación por lotes.
+ * También: favoritos (HU-12), escribirle al refugio (HU-13) y sus requisitos de adopción (HU-16).
  */
 import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
-import { crearTarjetaMascota } from "../../components/tarjeta-mascota.js";
+import { crearTarjetaMascota, marcarFavorito } from "../../components/tarjeta-mascota.js";
 import { crearTarjetaPublicacion } from "../../components/tarjeta-publicacion.js";
 import {
   obtenerRefugiosVerificados, obtenerRefugioVerificado, obtenerMascotasDisponibles, obtenerPublicacionesRefugio,
-  obtenerPreguntasRefugio, obtenerMisSolicitudesAdopcion,
+  obtenerPreguntasRefugio, obtenerMisSolicitudesAdopcion, obtenerFavoritos, establecerFavorito,
+  obtenerRequisitosRefugio, enviarMensajeRefugio,
 } from "../../core/servicios.js";
 import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
 import { montarFormularioAdopcion } from "./adopcion.js";
@@ -43,6 +45,8 @@ let mostradas = 0;
 let refugioActual = null;
 const preguntasPorRefugio = new Map();  // caché de preguntas frecuentes (para el asistente)
 const solicitudesPorMascota = new Map(); // mascotaId → estado de la solicitud abierta o aprobada del usuario
+const favoritos = new Set();             // ids de mis mascotas favoritas
+let requisitosActuales = [];             // requisitos de adopción del refugio abierto
 
 const sesion = requerirRol("usuario", { permitirInvitado: true });
 const esVisitante = sesion?.rol === "invitado";
@@ -52,7 +56,7 @@ if (sesion) {
   montarNavbar({ sesion, activa: "refugios" });
   formularioAdopcion = montarFormularioAdopcion({ sesion, alEnviar: solicitudEnviada });
   enlazarEventos();
-  cargarMisSolicitudes().then(mostrarSegunUrl);
+  Promise.all([cargarMisSolicitudes(), cargarFavoritos()]).then(mostrarSegunUrl);
 }
 
 /* ---------- Adopción ---------- */
@@ -67,6 +71,93 @@ async function cargarMisSolicitudes() {
   } catch { /* sin conexión: la franja de aviso ya lo explica; los botones siguen activos */ }
 }
 
+async function cargarFavoritos() {
+  if (esVisitante) return;
+  try { (await obtenerFavoritos()).forEach((m) => favoritos.add(m.id)); } catch { /* sin conexión */ }
+}
+
+async function alternarFavorito(boton) {
+  if (esVisitante) { pedirCuenta("guardar mascotas en favoritos"); return; }
+  const id = boton.dataset.favorito;
+  const mascota = mascotasBase.find((m) => m.id === id);
+  const activo = !favoritos.has(id);
+  boton.disabled = true;
+  const r = await establecerFavorito(id, activo);
+  boton.disabled = false;
+  if (!r.ok) { mostrarAlerta(alerta, "error", r.error); return; }
+  if (activo) favoritos.add(id); else favoritos.delete(id);
+  marcarFavorito(boton, activo, mascota?.nombre || "la mascota");
+  document.getElementById("anuncio-favorito").textContent = activo
+    ? `${mascota?.nombre || "La mascota"} se guardó en tus favoritos.`
+    : `${mascota?.nombre || "La mascota"} se quitó de tus favoritos.`;
+}
+
+/* ---------- Contacto con el refugio (HU-13) ---------- */
+
+const modalContacto = document.getElementById("modal-contacto");
+const formularioContacto = document.getElementById("formulario-contacto");
+const alertaContacto = document.getElementById("alerta-contacto");
+let contactoMascota = null;
+
+function abrirContacto(mascota = null) {
+  if (esVisitante) { pedirCuenta("escribirle al refugio"); return; }
+  if (!refugioActual) return;
+  contactoMascota = mascota;
+  formularioContacto.reset();
+  ocultarAlerta(alertaContacto);
+  document.getElementById("contacto-destino").textContent = mascota
+    ? `Para ${refugioActual.nombre} · sobre ${mascota.nombre}`
+    : `Para ${refugioActual.nombre}`;
+  formularioContacto.elements.mensaje.placeholder = mascota
+    ? `Ej. Hola, me interesa ${mascota.nombre}. ¿Cuándo puedo visitarlo y qué necesito llevar?`
+    : "Ej. Hola, ¿qué días puedo visitar el refugio para conocer a las mascotas?";
+  document.getElementById("contacto-contador").textContent = "0/1000";
+  modalContacto.showModal();
+  formularioContacto.elements.mensaje.focus();
+}
+
+async function enviarContacto(evento) {
+  evento.preventDefault();
+  ocultarAlerta(alertaContacto);
+  const mensaje = formularioContacto.elements.mensaje.value.trim();
+  const telefono = formularioContacto.elements.telefono.value.trim();
+  if (mensaje.length < 10) { mostrarAlerta(alertaContacto, "error", "Escribe tu mensaje (al menos 10 caracteres)."); return; }
+  if (telefono && !/^[\d\s+()-]{8,}$/.test(telefono)) { mostrarAlerta(alertaContacto, "error", "El teléfono debe tener al menos 8 dígitos."); return; }
+  const boton = document.getElementById("enviar-contacto");
+  boton.disabled = true;
+  const r = await enviarMensajeRefugio({
+    ...(contactoMascota ? { mascotaId: contactoMascota.id } : { refugioId: refugioActual.id }),
+    mensaje, telefono,
+  });
+  boton.disabled = false;
+  if (!r.ok) { mostrarAlerta(alertaContacto, "error", r.error); return; }
+  modalContacto.close();
+  mostrarAlerta(alerta, "exito", `Mensaje enviado a ${refugioActual.nombre}. Verás su respuesta en «Mensajes».`);
+  alerta.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ---------- Requisitos de adopción (HU-16) ---------- */
+
+/** Lista de requisitos (obligatorios y recomendables) para el perfil del refugio y el formulario. */
+function crearListaRequisitos(requisitos) {
+  if (!requisitos.length) {
+    return [crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "Este refugio aún no publica requisitos. Puedes escribirle para preguntar." })];
+  }
+  return [crearElemento("ul", { clase: "requisitos-lista" }, requisitos.map((q) => crearElemento("li", { clase: `requisito${q.obligatorio ? "" : " requisito--opcional"}` }, [
+    crearElemento("span", { clase: "requisito__marca", texto: q.obligatorio ? "✓" : "○", atributos: { "aria-hidden": "true" } }),
+    crearElemento("div", {}, [
+      crearElemento("strong", { texto: q.texto }),
+      crearElemento("span", { clase: "requisito__tipo", texto: q.obligatorio ? " · Obligatorio" : " · Recomendable" }),
+      ...(q.detalle ? [crearElemento("p", { clase: "texto-pequeno", texto: q.detalle })] : []),
+    ]),
+  ])))];
+}
+
+async function mostrarRequisitos(refugioId) {
+  try { requisitosActuales = await obtenerRequisitosRefugio(refugioId); } catch { requisitosActuales = []; }
+  document.getElementById("lista-requisitos").replaceChildren(...crearListaRequisitos(requisitosActuales));
+}
+
 async function abrirAdopcion(mascotaId) {
   if (esVisitante) { pedirCuenta("solicitar una adopción"); return; }
   const mascota = mascotasBase.find((m) => m.id === mascotaId);
@@ -76,6 +167,10 @@ async function abrirAdopcion(mascotaId) {
     try { preguntas = await obtenerPreguntasRefugio(refugioActual.id); } catch { /* el asistente usa las respuestas generales */ }
     preguntasPorRefugio.set(refugioActual.id, preguntas);
   }
+  // Antes de llenar la solicitud, el usuario repasa los requisitos del refugio (HU-16)
+  const cajaRequisitos = document.getElementById("adopcion-requisitos");
+  cajaRequisitos.hidden = requisitosActuales.length === 0;
+  document.getElementById("adopcion-lista-requisitos").replaceChildren(...crearListaRequisitos(requisitosActuales));
   formularioAdopcion.abrir(mascota, refugioActual, preguntasPorRefugio.get(refugioActual.id));
 }
 
@@ -89,7 +184,10 @@ function solicitudEnviada(solicitud) {
   alerta.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-const crearTarjeta = (m) => crearTarjetaMascota(m, { conAdopcion: true, estadoSolicitud: solicitudesPorMascota.get(m.id) });
+const crearTarjeta = (m) => crearTarjetaMascota(m, {
+  conAdopcion: true, estadoSolicitud: solicitudesPorMascota.get(m.id),
+  conFavorito: true, esFavorito: favoritos.has(m.id), conContacto: true,
+});
 
 /* ---------- Navegación dentro de la página (sin recargar) ---------- */
 
@@ -119,7 +217,18 @@ function enlazarEventos() {
   // Botón "Adoptar" de cada tarjeta (delegación: las tarjetas se crean y recrean por lotes)
   rejilla.addEventListener("click", (evento) => {
     const boton = evento.target.closest("[data-adoptar]");
-    if (boton) abrirAdopcion(boton.dataset.adoptar);
+    if (boton) { abrirAdopcion(boton.dataset.adoptar); return; }
+    const corazon = evento.target.closest("[data-favorito]");
+    if (corazon) { alternarFavorito(corazon); return; }
+    const contactar = evento.target.closest("[data-contactar]");
+    if (contactar) abrirContacto(mascotasBase.find((m) => m.id === contactar.dataset.contactar) || null);
+  });
+
+  document.getElementById("boton-contactar").addEventListener("click", () => abrirContacto(null));
+  formularioContacto.addEventListener("submit", enviarContacto);
+  document.getElementById("cancelar-contacto").addEventListener("click", () => modalContacto.close());
+  formularioContacto.elements.mensaje.addEventListener("input", () => {
+    document.getElementById("contacto-contador").textContent = `${formularioContacto.elements.mensaje.value.length}/1000`;
   });
 
   // Filtros: el texto lleva debounce; los selects aplican de inmediato
@@ -205,6 +314,7 @@ async function mostrarDetalle(id) {
   mascotasBase = await obtenerMascotasDisponibles(refugio.id);
   entradaTexto.value = ""; filtroEspecie.value = ""; filtroEdad.value = ""; filtroTamano.value = "";
   aplicarFiltros();
+  mostrarRequisitos(refugio.id);
   mostrarPublicaciones(refugio.id);
 }
 

@@ -3,6 +3,7 @@ import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/services/catalogo_service.dart';
+import 'package:huellapp/services/usuario_service.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
 
 class RefugiosScreen extends StatefulWidget {
@@ -21,6 +22,12 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
     super.initState();
     CatalogoService.instancia.addListener(_alCambiarCatalogo);
     CatalogoService.instancia.cargar();
+    // El corazón de favoritos cambia también desde otras pantallas (HU-12)
+    FavoritosService.instancia.addListener(_alCambiarFavoritos);
+  }
+
+  void _alCambiarFavoritos() {
+    if (mounted) setState(() {});
   }
 
   void _alCambiarCatalogo() {
@@ -37,6 +44,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
   @override
   void dispose() {
     CatalogoService.instancia.removeListener(_alCambiarCatalogo);
+    FavoritosService.instancia.removeListener(_alCambiarFavoritos);
     _busquedaController.dispose();
     super.dispose();
   }
@@ -299,12 +307,11 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                                           : Colors.grey,
                                                       size: 22,
                                                     ),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        mascota.esFavorito =
-                                                            !mascota.esFavorito;
-                                                      });
-                                                      setModalState(() {});
+                                                    onPressed: () async {
+                                                      await FavoritosService.instancia.alternar(context, mascota);
+                                                      if (!mounted) return;
+                                                      setState(() {});
+                                                      if (context.mounted) setModalState(() {});
                                                     },
                                                   ),
                                                 ],

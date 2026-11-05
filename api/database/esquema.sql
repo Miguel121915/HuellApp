@@ -302,3 +302,53 @@ CREATE TABLE documentos_adopcion (
   CONSTRAINT fk_docadopcion_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitudes_adopcion (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_docadopcion_solicitud ON documentos_adopcion (solicitud_id);
+
+-- HU-12 Mascotas favoritas de cada usuario (para compararlas después) ---------------------
+CREATE SEQUENCE favoritos_seq;
+CREATE TABLE favoritos (
+  id         NUMBER(10) DEFAULT favoritos_seq.NEXTVAL NOT NULL,
+  usuario_id NUMBER(10) NOT NULL,
+  mascota_id NUMBER(10) NOT NULL,
+  creado_en  TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  CONSTRAINT pk_favoritos PRIMARY KEY (id),
+  CONSTRAINT uq_favoritos UNIQUE (usuario_id, mascota_id),
+  CONSTRAINT fk_favoritos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+  CONSTRAINT fk_favoritos_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas (id) ON DELETE CASCADE
+);
+
+-- HU-13 Mensajes de contacto de un usuario a un refugio (opcionalmente sobre una mascota) --
+CREATE SEQUENCE mensajes_refugio_seq;
+CREATE TABLE mensajes_refugio (
+  id            NUMBER(10) DEFAULT mensajes_refugio_seq.NEXTVAL NOT NULL,
+  usuario_id    NUMBER(10) NOT NULL,
+  refugio_id    NUMBER(10) NOT NULL,
+  mascota_id    NUMBER(10),
+  mensaje       VARCHAR2(1000 CHAR) NOT NULL,
+  telefono      VARCHAR2(25 CHAR),
+  respuesta     VARCHAR2(1000 CHAR),
+  estado        VARCHAR2(10 CHAR) DEFAULT 'nuevo' NOT NULL,
+  creado_en     TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  respondido_en TIMESTAMP(3),
+  CONSTRAINT pk_mensajes_refugio PRIMARY KEY (id),
+  CONSTRAINT ck_mensajes_estado CHECK (estado IN ('nuevo', 'leido', 'respondido')),
+  CONSTRAINT fk_mensajes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+  CONSTRAINT fk_mensajes_refugio FOREIGN KEY (refugio_id) REFERENCES refugios (id) ON DELETE CASCADE,
+  CONSTRAINT fk_mensajes_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas (id) ON DELETE SET NULL
+);
+CREATE INDEX idx_mensajes_refugio ON mensajes_refugio (refugio_id, estado);
+CREATE INDEX idx_mensajes_usuario ON mensajes_refugio (usuario_id);
+
+-- HU-16 Requisitos de adopción que define cada refugio -----------------------------------
+CREATE SEQUENCE requisitos_refugio_seq;
+CREATE TABLE requisitos_refugio (
+  id             NUMBER(10) DEFAULT requisitos_refugio_seq.NEXTVAL NOT NULL,
+  refugio_id     NUMBER(10) NOT NULL,
+  texto          VARCHAR2(150 CHAR) NOT NULL,
+  detalle        VARCHAR2(500 CHAR),
+  obligatorio    NUMBER(1) DEFAULT 1 NOT NULL,
+  creado_en      TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  actualizado_en TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  CONSTRAINT pk_requisitos_refugio PRIMARY KEY (id),
+  CONSTRAINT fk_requisitos_refugio FOREIGN KEY (refugio_id) REFERENCES refugios (id) ON DELETE CASCADE
+);
+CREATE INDEX idx_requisitos_refugio ON requisitos_refugio (refugio_id);

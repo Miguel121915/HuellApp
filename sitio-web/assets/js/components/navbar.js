@@ -7,6 +7,7 @@ import { rutaDesdeRaiz, irA } from "../core/utils.js";
 import { cerrarSesion } from "../core/auth.js";
 import { obtenerResumenCoincidencias } from "../core/servicios.js";
 import { obtenerResumenAdmin } from "../core/servicios-admin.js";
+import { obtenerResumen as obtenerResumenRefugio } from "../core/servicios-refugio.js";
 
 /* Iconos SVG propios (trazo, hereda el color del texto). Contenido estático y de confianza. */
 const PATA = '<g fill="currentColor" stroke="none"><ellipse cx="12" cy="15.5" rx="3.6" ry="2.8"/><ellipse cx="6.8" cy="11.6" rx="1.6" ry="2.1"/><ellipse cx="10" cy="8" rx="1.6" ry="2.2"/><ellipse cx="14" cy="8" rx="1.6" ry="2.2"/><ellipse cx="17.2" cy="11.6" rx="1.6" ry="2.1"/></g>';
@@ -18,6 +19,9 @@ const ICONOS = {
   inicio: svg('<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
   reportar: svg('<path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/>'),
   coincidencias: svg('<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>'),
+  favoritos: svg('<path d="M12 20s-7-4.4-7-9.6A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.4C19 15.6 12 20 12 20z"/>'),
+  mensajes: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+  requisitos: svg('<path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 11h8M8 15h5"/>'),
   // Refugio
   panel: svg('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>'),
   inventario: svg('<path d="M3 8l9-5 9 5v9l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v9"/>'),
@@ -40,12 +44,16 @@ const MENUS = {
     { id: "inicio", etiqueta: "Inicio", ruta: "pages/usuario/inicio.html" },
     { id: "reportar", etiqueta: "Reportar", ruta: "pages/usuario/reportar.html" },
     { id: "coincidencias", etiqueta: "Coincidencias", ruta: "pages/usuario/coincidencias.html", insignia: true },
+    { id: "favoritos", etiqueta: "Favoritos", ruta: "pages/usuario/favoritos.html" },
+    { id: "mensajes", etiqueta: "Mensajes", ruta: "pages/usuario/mensajes.html" },
   ],
   refugio: [
     { id: "panel", etiqueta: "Panel", ruta: "pages/refugio/panel.html" },
     { id: "inventario", etiqueta: "Inventario", ruta: "pages/refugio/inventario.html" },
     { id: "publicaciones", etiqueta: "Publicaciones", ruta: "pages/refugio/publicaciones.html" },
     { id: "adopciones", etiqueta: "Adopciones", ruta: "pages/refugio/adopciones.html" },
+    { id: "mensajes", etiqueta: "Mensajes", ruta: "pages/refugio/mensajes.html", insignia: true },
+    { id: "requisitos", etiqueta: "Requisitos", ruta: "pages/refugio/requisitos.html" },
     { id: "preguntas", etiqueta: "Preguntas", ruta: "pages/refugio/preguntas.html" },
     { id: "perfil", etiqueta: "Perfil", ruta: "pages/refugio/perfil.html" },
   ],
@@ -97,6 +105,22 @@ export async function montarNavbar({ sesion, activa }) {
 
   if (sesion.rol === "usuario") await refrescarInsigniaCoincidencias();
   if (sesion.rol === "admin") await refrescarInsigniaSolicitudes();
+  if (sesion.rol === "refugio") await refrescarInsigniaMensajes();
+}
+
+/** Número rojo de "Mensajes" del refugio (mensajes nuevos sin leer). */
+export async function refrescarInsigniaMensajes() {
+  const insignia = document.getElementById("insignia-mensajes");
+  if (!insignia) return;
+  let total = 0;
+  try {
+    total = (await obtenerResumenRefugio()).mensajesNuevos || 0;
+  } catch {
+    return; // sin conexión: la franja de aviso ya lo explica
+  }
+  insignia.textContent = String(total);
+  insignia.hidden = total === 0;
+  insignia.setAttribute("aria-label", `${total} mensajes nuevos`);
 }
 
 /** Actualiza el número rojo de "Coincidencias". Se llama al montar y tras declinar una. */

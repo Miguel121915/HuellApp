@@ -3,7 +3,7 @@
  * Cada función llama a la API del servidor; los módulos de página no saben nada de HTTP.
  * Las acciones que escribe el usuario devuelven { ok, ... } o { ok:false, error }.
  */
-import { get, post, put, intentar } from "./api.js";
+import { get, post, put, del, intentar } from "./api.js";
 
 /* ---------- Foro ---------- */
 
@@ -100,3 +100,36 @@ export const restaurarCoincidencias = () => intentar(async () => {
   await post("/coincidencias/restaurar");
   return { ok: true };
 });
+
+/* ---------- HU-12 Favoritos ---------- */
+
+/** Mis mascotas favoritas con su refugio: [{ ...mascota, refugioNombre, refugioMunicipio, guardado }] */
+export async function obtenerFavoritos() {
+  return (await get("/favoritos")).favoritos;
+}
+
+/** Guarda (activo = true) o quita (false) una mascota de favoritos. */
+export const establecerFavorito = (mascotaId, activo) => intentar(async () => {
+  if (activo) await post("/favoritos", { mascotaId });
+  else await del(`/favoritos/${encodeURIComponent(mascotaId)}`);
+  return { ok: true, activo };
+});
+
+/* ---------- HU-13 Contacto con el refugio ---------- */
+
+export async function obtenerMisMensajes() {
+  return (await get("/mensajes")).mensajes;
+}
+
+/** @param {{refugioId?:string, mascotaId?:string, mensaje:string, telefono?:string}} datos */
+export const enviarMensajeRefugio = (datos) => intentar(async () => {
+  const r = await post("/mensajes", datos);
+  return { ok: true, mensaje: r.mensaje };
+});
+
+/* ---------- HU-16 Requisitos de adopción ---------- */
+
+/** Requisitos de un refugio (también para visitantes): [{ id, texto, detalle, obligatorio }] */
+export async function obtenerRequisitosRefugio(refugioId) {
+  return (await get(`/refugios/${encodeURIComponent(refugioId)}/requisitos`)).requisitos;
+}

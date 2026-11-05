@@ -143,3 +143,26 @@
 
 /* Fotos de coincidencias más compactas en pantallas grandes */
 .coincidencia__foto img { max-height: 320px; }
+
+/* Página del refugio: botones de contacto y requisitos (HU-13, HU-16) */
+.refugio-acciones { display: flex; flex-wrap: wrap; gap: var(--e2); margin-block: var(--e3); }
+.requisitos-refugio { display: grid; gap: var(--e2); margin-block: var(--e5); }
+.adopcion__requisitos { margin-block: var(--e4); padding: var(--e4); border-radius: var(--radio-m); background: var(--aqua-suave); border: 2px solid var(--borde); }
+.adopcion__requisitos h3 { margin-bottom: var(--e3); font-size: 1rem; }
+
+/* HU-12 Favoritos y comparación */
+.favoritos-barra {
+  position: sticky; top: calc(var(--alto-encabezado) + var(--e2)); z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--e3);
+  margin-block: var(--e4); padding: var(--e3) var(--e4);
+  border-radius: var(--radio-m); background: var(--blanco); border: 2px solid var(--borde); box-shadow: var(--sombra-m);
+}
+.favorito__comparar { margin-top: var(--e2); font-weight: 700; }
+.comparacion { margin-block: var(--e4); }
+.comparacion__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); }
+.comparacion__tabla-envoltura { overflow-x: auto; }
+.comparacion__tabla { width: 100%; border-collapse: collapse; min-width: 520px; }
+.comparacion__tabla th, .comparacion__tabla td { padding: var(--e2) var(--e3); border-bottom: 1px solid var(--borde); text-align: left; vertical-align: top; }
+.comparacion__tabla thead th { background: var(--aqua); font-size: 1.05rem; }
+.comparacion__tabla tbody th { width: 140px; color: var(--tinta-suave); }
+.comparacion__fila--distinta td { background: var(--amarillo); }

@@ -96,3 +96,50 @@
 .dato-resumen { display: flex; flex-direction: column; align-items: center; gap: var(--e1); padding: var(--e5) var(--e4); text-align: center; }
 .dato-resumen__numero { font-size: 2.75rem; font-weight: 800; line-height: 1; }
 .dato-resumen__etiqueta { padding: 2px var(--e3); background: var(--amarillo); border-radius: var(--radio-s); font-size: 0.875rem; font-weight: 700; }
+
+/* HU-12 Corazón de favoritos sobre la foto de la mascota */
+.mascota__foto { position: relative; }
+.mascota__favorito {
+  position: absolute;
+  top: var(--e2); right: var(--e2);
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border: 2px solid var(--blanco);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--like-activo);
+  font-size: 1.5rem; line-height: 1;
+  box-shadow: var(--sombra-s);
+  cursor: pointer;
+}
+.mascota__favorito:hover { transform: scale(1.06); }
+.mascota__favorito:focus-visible { box-shadow: var(--foco); outline: none; }
+.mascota__favorito--activo { background: var(--like-activo); color: var(--blanco); }
+.mascota__contactar { background: var(--blanco); }
+
+/* HU-13 Mensajes (usuario y refugio) */
+.mensajes-lista { display: grid; gap: var(--e4); }
+.mensaje { display: grid; gap: var(--e3); }
+.mensaje--nuevo { border-left: 6px solid var(--like-activo); }
+.mensaje__cabecera { display: flex; align-items: flex-start; gap: var(--e3); }
+.mensaje__foto { width: 48px; height: 48px; border-radius: var(--radio-s); object-fit: cover; flex-shrink: 0; }
+.mensaje__titulo { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.mensaje__texto { white-space: pre-line; }
+.mensaje__respuesta { padding: var(--e3); border-radius: var(--radio-s); background: var(--aqua-suave); border-left: 4px solid var(--aqua-fuerte); }
+.mensaje__respuesta p { margin-block: var(--e1); white-space: pre-line; }
+.mensaje__responder { display: grid; gap: var(--e2); }
+.mensaje__acciones { display: flex; justify-content: flex-end; gap: var(--e2); flex-wrap: wrap; }
+
+/* HU-16 Requisitos de adopción */
+.requisitos-lista { display: grid; gap: var(--e2); }
+.requisito { display: flex; gap: var(--e3); align-items: flex-start; }
+.requisito__marca {
+  width: 26px; height: 26px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--aqua-fuerte); color: var(--blanco);
+  font-weight: 800;
+}
+.requisito--opcional .requisito__marca { background: var(--aqua-suave); color: var(--aqua-fuerte); border: 2px solid var(--aqua-fuerte); }
+.requisito__tipo { color: var(--tinta-suave); font-size: 0.8125rem; }
+.requisito p { margin-top: 2px; }

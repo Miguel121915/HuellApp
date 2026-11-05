@@ -94,3 +94,6 @@
   .gestion, .perfil-grid { grid-template-columns: 1fr; }
   .herramientas__nueva { margin-left: 0; }
 }
+
+/* HU-13 Mensajes del refugio */
+.filtro-mensajes { display: flex; gap: var(--e2); margin-block: var(--e4); }
