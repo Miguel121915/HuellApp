@@ -35,3 +35,8 @@ textarea.campo__control { min-height: 110px; resize: vertical; }
 @media (max-width: 720px) {
   .formulario-grid { grid-template-columns: 1fr; }
 }
+
+/* Mapa para marcar la ubicación del refugio (Leaflet) */
+.mapa-ubicacion { height: 280px; border: 2px solid var(--borde); border-radius: var(--radio-m); overflow: hidden; }
+.mapa-ubicacion__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e3); margin-top: var(--e2); }
+.datos-extra { margin-block: var(--e4); }

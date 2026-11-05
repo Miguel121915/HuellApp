@@ -1,7 +1,7 @@
 /**
  * login.js — Pantalla de inicio de sesión con selector de rol.
  */
-import { iniciarSesion } from "../../core/auth.js";
+import { iniciarSesion, entrarComoInvitado } from "../../core/auth.js";
 import { redirigirSiHaySesion, destinoDeSesion } from "../../core/router-guard.js";
 import { CUENTAS_DEMO } from "../../data/cuentas-demo.js";
 import { irA, esCorreoValido, mostrarAlerta, ocultarAlerta, marcarError } from "../../core/utils.js";
@@ -24,7 +24,9 @@ function iniciar() {
     usuario: { href: "registro-usuario.html", texto: "Regístrate" },
     refugio: { href: "registro-refugio.html", texto: "Registra tu refugio" },
     admin: null, // los administradores no se auto-registran
+    invitado: { href: "registro-usuario.html", texto: "Crea una cuenta" },
   };
+  const textoInvitado = document.getElementById("texto-invitado");
 
   function seleccionarRol(rol) {
     rolActivo = rol;
@@ -33,6 +35,12 @@ function iniciar() {
       p.setAttribute("aria-selected", String(activa));
       p.tabIndex = activa ? 0 : -1;
     });
+    // El visitante no escribe correo ni contraseña
+    const invitado = rol === "invitado";
+    campoCorreo.hidden = invitado;
+    campoPassword.hidden = invitado;
+    textoInvitado.hidden = !invitado;
+    boton.textContent = invitado ? "Entrar como visitante" : "Entrar";
     const registro = REGISTRO_POR_ROL[rol];
     enlaceRegistro.hidden = !registro;
     if (registro) {
@@ -88,6 +96,11 @@ function iniciar() {
     e.preventDefault();
     ocultarAlerta(alerta);
 
+    if (rolActivo === "invitado") {
+      irA(destinoDeSesion(entrarComoInvitado()));
+      return;
+    }
+
     const correo = formulario.correo.value.trim();
     const password = formulario.password.value;
 
@@ -108,4 +121,7 @@ function iniciar() {
   });
 
   seleccionarRol("usuario");
+  if (new URLSearchParams(window.location.search).get("motivo") === "cuenta") {
+    mostrarAlerta(alerta, "aviso", "Para usar esa sección necesitas iniciar sesión o crear una cuenta.");
+  }
 }

@@ -53,10 +53,15 @@ const MENUS = {
     { id: "solicitudes", etiqueta: "Solicitudes", ruta: "pages/admin/solicitudes.html", insignia: true },
     { id: "refugios", etiqueta: "Refugios", ruta: "pages/admin/refugios.html" },
   ],
+  // Visitante sin cuenta: solo lo que no requiere sesión
+  invitado: [
+    { id: "refugios", etiqueta: "Refugios", ruta: "pages/usuario/refugios.html" },
+    { id: "inicio", etiqueta: "Inicio", ruta: "pages/usuario/inicio.html" },
+  ],
 };
 
 const HUELLA_LOGO = "assets/img/logos/huella.svg";
-const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html" };
+const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/inicio.html" };
 
 /**
  * Dibuja el encabezado.
@@ -82,7 +87,7 @@ export async function montarNavbar({ sesion, activa }) {
       <nav class="nav" aria-label="Principal">${enlaces}</nav>
       <div class="encabezado__acciones">
         <span class="encabezado__usuario texto-pequeno" id="nombre-usuario"></span>
-        <button class="boton boton--contorno boton--pequeno" id="boton-salir" type="button">Cerrar sesión</button>
+        <button class="boton boton--contorno boton--pequeno" id="boton-salir" type="button">${sesion.rol === "invitado" ? "Iniciar sesión" : "Cerrar sesión"}</button>
       </div>
     </div>`;
 

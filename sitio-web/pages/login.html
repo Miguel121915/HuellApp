@@ -34,10 +34,13 @@
         <button type="button" class="selector-rol__opcion" role="tab" data-rol="usuario" aria-selected="true" aria-controls="form-login">Usuario</button>
         <button type="button" class="selector-rol__opcion" role="tab" data-rol="refugio" aria-selected="false" aria-controls="form-login" tabindex="-1">Refugio</button>
         <button type="button" class="selector-rol__opcion" role="tab" data-rol="admin" aria-selected="false" aria-controls="form-login" tabindex="-1">Administrador</button>
+        <button type="button" class="selector-rol__opcion" role="tab" data-rol="invitado" aria-selected="false" aria-controls="form-login" tabindex="-1">Invitado</button>
       </div>
 
       <form id="form-login" role="tabpanel" novalidate>
         <div id="alerta" role="alert" hidden></div>
+
+        <p class="login__invitado" id="texto-invitado" hidden>Explora los refugios y sus mascotas sin crear una cuenta. Para reportar una mascota, comentar en el foro o solicitar una adopción necesitarás iniciar sesión.</p>
 
         <div class="campo" id="campo-correo">
           <label class="campo__etiqueta" for="correo">Correo electrónico</label>

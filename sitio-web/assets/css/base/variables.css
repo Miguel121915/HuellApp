@@ -3,10 +3,10 @@
    Toda la paleta, radios, sombras y espaciados viven aquí.
    ========================================================== */
 :root {
-  /* Marca */
-  --aqua: #5eead4;          /* encabezado y navegación */
-  --aqua-suave: #d5f7f0;    /* fondos suaves */
-  --aqua-fuerte: #0f766e;   /* botones y texto sobre blanco (contraste AA) */
+  /* Marca — misma paleta que la app móvil (Flutter) */
+  --aqua: #75e6da;          /* encabezado y navegación (turquesa de la app) */
+  --aqua-suave: #e6f8f5;    /* fondos suaves (menta claro de la app) */
+  --aqua-fuerte: #1b4f4a;   /* botones y texto sobre blanco (verde oscuro de la app) */
   --lila: #b8b8e8;          /* tarjetas */
   --lila-suave: #e7e7f8;
   --lila-tenue: #f5f5fc;    /* fondo alterno de comentarios */
@@ -19,11 +19,11 @@
   --like-activo: #e11d48;   /* huella de "me gusta" activa */
 
   /* Neutros */
-  --tinta: #1b1f2a;
-  --tinta-suave: #475569;
+  --tinta: #14312e;
+  --tinta-suave: #3f5f5b;
   --blanco: #ffffff;
   --gris-huella: #d1d5db;   /* huellitas decorativas */
-  --borde: #b6c2d1;
+  --borde: #9ed9d1;
   --fondo: #ffffff;
 
   /* Estados */

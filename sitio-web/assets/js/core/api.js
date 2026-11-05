@@ -15,7 +15,7 @@ export class ErrorApi extends Error {
   }
 }
 
-const MENSAJE_SIN_SERVIDOR = "No hay conexión con el servidor de HuellApp. Revisa que esté encendido (en la carpeta backend ejecuta: php artisan serve) y que MySQL esté encendido en XAMPP; luego recarga la página.";
+const MENSAJE_SIN_SERVIDOR = "No hay conexión con el servidor de HuellApp. Revisa que esté encendido (en la carpeta api ejecuta: php artisan serve) y que tengas internet para llegar a la base de datos Oracle; luego recarga la página.";
 
 /** Franja de aviso visible (servidor apagado u otro error que ninguna pantalla muestra por sí sola). */
 function avisar(mensaje) {

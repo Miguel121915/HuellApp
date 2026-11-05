@@ -6,6 +6,7 @@ import { requerirRol } from "../../core/router-guard.js";
 import { obtenerMiRefugio } from "../../core/auth.js";
 import { actualizarPerfil } from "../../core/servicios-refugio.js";
 import { montarNavbar } from "../../components/navbar.js";
+import { montarDatosExtra } from "../../components/datos-extra-refugio.js";
 import { crearElemento, ETIQUETAS_DOCUMENTO, formatearTamano, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
 
 const sesion = requerirRol("refugio");
@@ -14,6 +15,7 @@ const formulario = document.getElementById("formulario-perfil");
 const alerta = document.getElementById("alerta-perfil");
 const botonGuardar = document.getElementById("boton-guardar");
 const campo = (nombre) => formulario.querySelector(`[data-campo="${nombre}"]`);
+const datosExtra = sesion ? montarDatosExtra(document.getElementById("datos-extra")) : null;
 
 if (sesion) {
   montarNavbar({ sesion, activa: "perfil" });
@@ -46,6 +48,7 @@ async function mostrarPerfil() {
   f.horaApertura.value = apertura;
   f.horaCierre.value = cierre;
   f.descripcion.value = refugio.descripcion || "";
+  datosExtra.rellenar(refugio);
 
   const lista = document.getElementById("lista-documentos");
   const documentos = refugio.documentos || [];
@@ -72,10 +75,13 @@ async function guardar(evento) {
   };
   Object.entries(errores).forEach(([nombre, mensaje]) => marcarError(campo(nombre), mensaje));
   if (Object.values(errores).some(Boolean)) { formulario.querySelector(".campo--error .campo__control")?.focus(); return; }
+  const errorExtra = datosExtra.validar();
+  if (errorExtra) { mostrarAlerta(alerta, "error", errorExtra); return; }
 
   botonGuardar.disabled = true;
   const resultado = await actualizarPerfil({
     telefono, direccion, descripcion, horario: `${f.horaApertura.value} - ${f.horaCierre.value}`,
+    ...datosExtra.leer(),
   });
   botonGuardar.disabled = false;
 

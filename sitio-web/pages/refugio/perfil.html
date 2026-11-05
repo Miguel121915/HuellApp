@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
   <link rel="stylesheet" href="../../assets/css/components/formularios.css">
   <link rel="stylesheet" href="../../assets/css/pages/refugio.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="../../assets/js/modules/refugio/perfil.js"></script>
 </head>
 <body class="pagina-refugio" data-protegida>
@@ -58,6 +60,7 @@
         </div>
         <div class="campo" data-campo="descripcion"><label class="campo__etiqueta" for="p-descripcion">Sobre el refugio (opcional)</label><textarea id="p-descripcion" name="descripcion" class="campo__control" maxlength="400" placeholder="Cuenta tu misión, cuántos animales cuidas y cómo es el proceso de adopción."></textarea><span class="campo__error" role="alert"></span></div>
         <div id="alerta-perfil" role="status" hidden></div>
+        <fieldset id="datos-extra" class="datos-extra"></fieldset>
         <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Guardar cambios</button>
       </form>
     </div>

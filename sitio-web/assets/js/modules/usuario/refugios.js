@@ -43,7 +43,8 @@ let refugioActual = null;
 const preguntasPorRefugio = new Map();  // caché de preguntas frecuentes (para el asistente)
 const solicitudesPorMascota = new Map(); // mascotaId → estado de la solicitud abierta o aprobada del usuario
 
-const sesion = requerirRol("usuario");
+const sesion = requerirRol("usuario", { permitirInvitado: true });
+const esVisitante = sesion?.rol === "invitado";
 let formularioAdopcion = null;
 
 if (sesion) {
@@ -57,6 +58,7 @@ if (sesion) {
 
 /** Las rechazadas no cuentan: el usuario puede volver a intentarlo. */
 async function cargarMisSolicitudes() {
+  if (esVisitante) return; // un visitante no tiene solicitudes
   try {
     (await obtenerMisSolicitudesAdopcion())
       .filter((s) => s.estado !== "rechazada")
@@ -65,6 +67,11 @@ async function cargarMisSolicitudes() {
 }
 
 async function abrirAdopcion(mascotaId) {
+  if (esVisitante) {
+    mostrarAlerta(alerta, "aviso", "Para solicitar una adopción inicia sesión o crea una cuenta (botón «Iniciar sesión» arriba).");
+    alerta.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   const mascota = mascotasBase.find((m) => m.id === mascotaId);
   if (!mascota || !refugioActual) return;
   if (!preguntasPorRefugio.has(refugioActual.id)) {
@@ -179,11 +186,38 @@ async function mostrarDetalle(id) {
   const tel = document.getElementById("refugio-telefono");
   tel.textContent = refugio.telefono;
   tel.href = `tel:${refugio.telefono.replace(/\D/g, "")}`;
+  mostrarContactoExtra(refugio);
 
   mascotasBase = await obtenerMascotasDisponibles(refugio.id);
   entradaTexto.value = ""; filtroEspecie.value = ""; filtroEdad.value = ""; filtroTamano.value = "";
   aplicarFiltros();
   mostrarPublicaciones(refugio.id);
+}
+
+/** WhatsApp, redes, necesidades y "Cómo llegar" (datos que también captura la app móvil). */
+function mostrarContactoExtra(refugio) {
+  const ponerFila = (id, visible) => { document.getElementById(id).hidden = !visible; };
+
+  const whatsapp = (refugio.whatsapp || "").replace(/\D/g, "");
+  ponerFila("fila-whatsapp", !!whatsapp);
+  if (whatsapp) {
+    const enlace = document.getElementById("refugio-whatsapp");
+    enlace.textContent = refugio.whatsapp;
+    enlace.href = `https://wa.me/${whatsapp.length === 10 ? "52" + whatsapp : whatsapp}`;
+  }
+
+  const redes = refugio.redes || [];
+  ponerFila("fila-redes", redes.length > 0);
+  document.getElementById("refugio-redes").textContent = redes.join(" · ");
+
+  const necesidades = refugio.necesidades || [];
+  ponerFila("fila-necesidades", necesidades.length > 0);
+  document.getElementById("refugio-necesidades").textContent = necesidades.join(", ");
+
+  const hayUbicacion = refugio.latitud !== null && refugio.latitud !== undefined && refugio.longitud !== null && refugio.longitud !== undefined;
+  const llegar = document.getElementById("refugio-como-llegar");
+  llegar.hidden = !hayUbicacion;
+  if (hayUbicacion) llegar.href = `https://www.google.com/maps/dir/?api=1&destination=${refugio.latitud},${refugio.longitud}`;
 }
 
 function aplicarFiltros() {

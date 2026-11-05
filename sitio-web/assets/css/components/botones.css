@@ -17,7 +17,7 @@
 .boton:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .boton--primario { background: var(--aqua-fuerte); color: var(--blanco); }
-.boton--primario:hover { background: #0b5c56; }
+.boton--primario:hover { background: #143b37; }
 
 .boton--secundario { background: var(--lila); color: var(--tinta); }
 .boton--secundario:hover { background: #a6a6dd; }

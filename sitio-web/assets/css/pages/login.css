@@ -135,3 +135,20 @@
 
 /* Franja que aparece si el servidor no responde (la causa más común: no estaba encendido) */
 .banner-servidor { padding: var(--e3) var(--e5); background: var(--error); color: var(--blanco); font-weight: 700; text-align: center; }
+
+/* ==========================================================
+   Aspecto de la app móvil (adelanto del Sprint 1): tarjeta limpia sobre fondo turquesa,
+   título "HuellApp" en verde oscuro y selector de rol como el de la app.
+   ========================================================== */
+.pagina-login { background: var(--aqua-suave); }
+.login { border: 0; border-radius: var(--radio-l); box-shadow: 0 12px 32px rgb(20 49 46 / 0.18); }
+.login__bienvenida { border-right: 0; background-color: var(--aqua); }
+.login__logo .logo-texto { color: var(--aqua-fuerte); }
+.login__bienvenida h1 { padding: 0; background: none; border: 0; color: var(--tinta); }
+.login__panel h2 { color: var(--aqua-fuerte); }
+.selector-rol { grid-template-columns: repeat(4, 1fr); background: transparent; border: 1px solid var(--borde); padding: 0; gap: 0; overflow: hidden; }
+.selector-rol__opcion { border-radius: 0; color: var(--tinta); font-size: 0.9rem; }
+.selector-rol__opcion + .selector-rol__opcion { border-left: 1px solid var(--borde); }
+.selector-rol__opcion[aria-selected="true"] { background: var(--aqua); color: var(--tinta); }
+.login__invitado { margin-bottom: var(--e4); color: var(--tinta-suave); }
+@media (max-width: 520px) { .selector-rol { grid-template-columns: repeat(2, 1fr); } }

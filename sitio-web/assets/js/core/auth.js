@@ -18,6 +18,15 @@ export function cerrarSesion() {
   borrar(CLAVES.SESION);
 }
 
+/** Sesión de visitante: puede ver refugios y mascotas sin cuenta (no tiene token). */
+export function entrarComoInvitado() {
+  const sesion = { id: null, nombre: "Visitante", correo: "", rol: "invitado", refugioId: null, refugioEstado: null, token: null };
+  guardar(CLAVES.SESION, sesion);
+  return sesion;
+}
+
+export const esInvitado = (sesion) => sesion?.rol === "invitado";
+
 /**
  * Inicia sesión validando correo, contraseña y rol elegido.
  * @returns {Promise<{ok:boolean, sesion?:object, error?:string}>}

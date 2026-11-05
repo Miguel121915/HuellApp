@@ -10,6 +10,7 @@
  */
 import { registrarRefugio, obtenerApelacion, enviarApelacion, refrescarSesion } from "../../core/auth.js";
 import { redirigirSiHaySesion, requerirRol, RUTA_ESTADO_REFUGIO } from "../../core/router-guard.js";
+import { montarDatosExtra } from "../../components/datos-extra-refugio.js";
 import { crearElemento, irA, esCorreoValido, mostrarAlerta, ocultarAlerta, marcarError, formatearTamano, leerComoDataUrl, validarDocumento } from "../../core/utils.js";
 
 /** Documentos que pide el formulario: [campo, tipo guardado, obligatorio] */
@@ -27,6 +28,11 @@ const alerta = document.getElementById("alerta");
 const boton = document.getElementById("boton-enviar");
 const f = formulario.elements;
 const campo = (nombre) => f[nombre].closest(".campo");
+
+// Ubicación y contacto extra (opcionales; los mismos que pide la app móvil). En la apelación no se piden.
+const fieldsetExtra = document.getElementById("datos-extra");
+const datosExtra = MODO_APELACION ? null : montarDatosExtra(fieldsetExtra);
+if (MODO_APELACION) fieldsetExtra.hidden = true;
 
 if (MODO_APELACION) {
   iniciarApelacion();
@@ -113,7 +119,9 @@ function iniciarRegistro() {
     DOCUMENTOS.forEach(([nombre, , obligatorio]) => { errores[nombre] = validarArchivo(f[nombre].files[0], obligatorio); });
     if (mostrarErrores(errores)) return;
 
-    const r = await enviar((documentos) => registrarRefugio({ ...leerDatos(), correo: f.correo.value.trim(), password: f.password.value, documentos }));
+    const errorExtra = datosExtra.validar();
+    if (errorExtra) { mostrarAlerta(alerta, "error", errorExtra); return; }
+    const r = await enviar((documentos) => registrarRefugio({ ...leerDatos(), ...datosExtra.leer(), correo: f.correo.value.trim(), password: f.password.value, documentos }));
     if (!r) return;
     mostrarAlerta(alerta, "exito", "Solicitud enviada. Tu refugio queda en estado Pendiente de verificación. Te llevamos al inicio de sesión…");
     setTimeout(() => irA("pages/login.html"), 2200);

@@ -3,7 +3,7 @@ import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { montarChatbot } from "../../components/chatbot-kiro.js";
 
-const sesion = requerirRol("usuario");
+const sesion = requerirRol("usuario", { permitirInvitado: true });
 
 if (sesion) {
   montarNavbar({ sesion, activa: "inicio" });
