@@ -7,6 +7,7 @@ import '../../widgets/foto_huellapp.dart';
 import '../../widgets/selector_ubicacion.dart';
 import '../login_screen.dart';
 import 'mascota_form_screen.dart';
+import 'panel_secciones.dart';
 
 const Color _turquoise = Color(0xFF75E6DA);
 const Color _accent = Color(0xFF1B4F4A);
@@ -24,8 +25,9 @@ const Map<String, Color> _estatusColor = {
   'adoptado': Color(0xFF5B5BB0),
 };
 
-/// Panel del refugio en la app móvil (lo que ve un refugio aprobado al iniciar sesión):
-/// Resumen, Inventario de mascotas y Perfil. Mismas funciones que el panel del sitio web.
+/// Panel del refugio en la app móvil (lo que ve un refugio aprobado al iniciar sesión).
+/// Mismas secciones que el panel del sitio web: Panel, Inventario, Publicaciones, Adopciones,
+/// Preguntas y Perfil.
 class PanelRefugioScreen extends StatefulWidget {
   const PanelRefugioScreen({super.key});
 
@@ -33,12 +35,28 @@ class PanelRefugioScreen extends StatefulWidget {
   State<PanelRefugioScreen> createState() => _PanelRefugioScreenState();
 }
 
-class _PanelRefugioScreenState extends State<PanelRefugioScreen> {
-  int _indice = 0;
+class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTickerProviderStateMixin {
+  static const _secciones = [
+    (Icons.dashboard_outlined, 'Panel'),
+    (Icons.pets_outlined, 'Inventario'),
+    (Icons.campaign_outlined, 'Publicaciones'),
+    (Icons.assignment_outlined, 'Adopciones'),
+    (Icons.help_outline, 'Preguntas'),
+    (Icons.storefront_outlined, 'Perfil'),
+  ];
+  late final TabController _tabs = TabController(length: _secciones.length, vsync: this)
+    ..addListener(() => setState(() {}));
+  int get _indice => _tabs.index;
   // Se incrementa cuando cambia el inventario, para que el Resumen se recargue
   int _version = 0;
 
   void _inventarioCambio() => setState(() => _version++);
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   Future<void> _salir() async {
     await SesionService.instancia.cerrarSesion();
@@ -57,7 +75,7 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> {
       appBar: AppBar(
         backgroundColor: _turquoise,
         elevation: 0,
-        toolbarHeight: 70,
+        toolbarHeight: 64,
         automaticallyImplyLeading: false,
         title: const Text(
           'HuellApp',
@@ -77,24 +95,28 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> {
           ),
           const SizedBox(width: 8),
         ],
+        // Secciones arriba, como la navegación del panel en el sitio web
+        bottom: TabBar(
+          controller: _tabs,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.black54,
+          indicatorColor: _accent,
+          indicatorWeight: 3,
+          tabs: [for (final (icono, texto) in _secciones) Tab(icon: Icon(icono), text: texto)],
+        ),
       ),
       body: IndexedStack(
         index: _indice,
         children: [
-          _ResumenTab(key: ValueKey('resumen-$_version'), onIrAInventario: () => setState(() => _indice = 1)),
+          _ResumenTab(key: ValueKey('resumen-$_version'), onIrAInventario: () => _tabs.animateTo(1)),
           _InventarioTab(onCambio: _inventarioCambio),
+          // Publicaciones depende del inventario (elige mascota): se recarga si éste cambia
+          PublicacionesTab(key: ValueKey('publicaciones-$_version')),
+          const AdopcionesTab(),
+          const PreguntasTab(),
           const _PerfilTab(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _indice,
-        backgroundColor: Colors.white,
-        indicatorColor: _turquoise,
-        onDestinationSelected: (i) => setState(() => _indice = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Panel'),
-          NavigationDestination(icon: Icon(Icons.pets_outlined), selectedIcon: Icon(Icons.pets), label: 'Inventario'),
-          NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: 'Perfil'),
         ],
       ),
     );
