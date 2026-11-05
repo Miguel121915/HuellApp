@@ -12,6 +12,7 @@ import {
 } from "../../core/servicios.js";
 import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
 import { montarFormularioAdopcion } from "./adopcion.js";
+import { pedirCuenta } from "../../components/aviso-cuenta.js";
 
 const LOTE = 6;
 
@@ -67,11 +68,7 @@ async function cargarMisSolicitudes() {
 }
 
 async function abrirAdopcion(mascotaId) {
-  if (esVisitante) {
-    mostrarAlerta(alerta, "aviso", "Para solicitar una adopción inicia sesión o crea una cuenta (botón «Iniciar sesión» arriba).");
-    alerta.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
-  }
+  if (esVisitante) { pedirCuenta("solicitar una adopción"); return; }
   const mascota = mascotasBase.find((m) => m.id === mascotaId);
   if (!mascota || !refugioActual) return;
   if (!preguntasPorRefugio.has(refugioActual.id)) {
@@ -144,7 +141,24 @@ async function mostrarLista() {
   vistaLista.hidden = false;
   document.title = "Refugios · HuellApp";
 
-  const refugios = await obtenerRefugiosVerificados();
+  let refugios = await obtenerRefugiosVerificados();
+
+  // Búsqueda desde Inicio (?q=texto): refugios cuyo nombre, dirección o municipio coincida,
+  // o que tengan una mascota disponible con ese nombre o raza
+  const qTexto = (new URLSearchParams(window.location.search).get("q") || "").trim();
+  const q = normalizarTexto(qTexto);
+  if (q) {
+    const conMascota = await Promise.all(refugios.map(async (r) => {
+      if (normalizarTexto(`${r.nombre} ${r.direccion} ${r.municipio || ""}`).includes(q)) return true;
+      const mascotas = await obtenerMascotasDisponibles(r.id).catch(() => []);
+      return mascotas.some((m) => normalizarTexto(`${m.nombre} ${m.raza}`).includes(q));
+    }));
+    refugios = refugios.filter((_, i) => conMascota[i]);
+    mostrarAlerta(alerta, refugios.length ? "exito" : "aviso", refugios.length
+      ? `Resultados para «${qTexto}»: ${refugios.length} refugio(s).`
+      : `No encontramos refugios ni mascotas para «${qTexto}».`);
+  }
+
   const fragmento = document.createDocumentFragment();
   refugios.forEach((r) => {
     fragmento.append(crearElemento("li", {}, crearElemento("a", {

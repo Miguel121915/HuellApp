@@ -3,12 +3,14 @@
  * <canvas>, vista previa y formulario. Si el permiso se deniega, se ofrece subir un archivo.
  */
 import { requerirRol } from "../../core/router-guard.js";
+import { protegerAcciones } from "../../components/aviso-cuenta.js";
 import { montarNavbar, refrescarInsigniaCoincidencias } from "../../components/navbar.js";
 import { iniciarCamara, detenerCamara, capturarFoto, ErrorCamara } from "../../components/camara.js";
 import { crearReporte } from "../../core/servicios.js";
 import { limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta, validarImagen } from "../../core/utils.js";
 
-const sesion = requerirRol("usuario");
+const sesion = requerirRol("usuario", { permitirInvitado: true });
+protegerAcciones(sesion, { envios: ["#formulario-reporte"], accion: "reportar una mascota" });
 
 if (sesion) {
   montarNavbar({ sesion, activa: "reportar" });

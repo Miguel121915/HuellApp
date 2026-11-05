@@ -3,11 +3,12 @@
  * similitud. El usuario puede contactar a quien encontró la mascota o declinar la coincidencia.
  */
 import { requerirRol } from "../../core/router-guard.js";
+import { pedirCuenta } from "../../components/aviso-cuenta.js";
 import { montarNavbar, refrescarInsigniaCoincidencias } from "../../components/navbar.js";
 import { obtenerCoincidencias, descartarCoincidencia, restaurarCoincidencias, obtenerResumenCoincidencias } from "../../core/servicios.js";
 import { crearElemento, resolverImagen, tiempoRelativo } from "../../core/utils.js";
 
-const sesion = requerirRol("usuario");
+const sesion = requerirRol("usuario", { permitirInvitado: true });
 
 const lista = document.getElementById("lista-coincidencias");
 const vacio = document.getElementById("sin-coincidencias");
@@ -21,7 +22,19 @@ let descartadas = 0;
 
 if (sesion) {
   montarNavbar({ sesion, activa: "coincidencias" });
-  iniciar();
+  if (sesion.rol === "invitado") mostrarParaVisitante();
+  else iniciar();
+}
+
+/** El visitante no tiene reportes: se explica la sección y se le invita a crear cuenta. */
+function mostrarParaVisitante() {
+  resumen.textContent = "Aquí verás las mascotas encontradas que se parecen a la que reportaste como perdida.";
+  const boton = crearElemento("button", { clase: "boton boton--primario", texto: "Iniciar sesión para ver mis coincidencias", atributos: { type: "button" } });
+  boton.addEventListener("click", () => pedirCuenta("ver tus coincidencias"));
+  lista.replaceChildren(crearElemento("section", { clase: "vacio tarjeta tarjeta--blanca" }, [
+    crearElemento("p", { texto: "Cuando reportes una mascota perdida, HuellApp la compara con los reportes de mascotas encontradas y te muestra las posibles coincidencias." }),
+    boton,
+  ]));
 }
 
 async function cargar() {

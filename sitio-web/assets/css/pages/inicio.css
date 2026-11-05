@@ -1,0 +1,100 @@
+/* ==========================================================
+   inicio.css — Pantalla de Inicio del usuario (y del visitante),
+   con la misma estructura y colores que la app móvil.
+   ========================================================== */
+.inicio { display: grid; gap: var(--e5); max-width: 960px; margin-inline: auto; }
+
+/* Banner de bienvenida con la búsqueda */
+.inicio-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e4);
+  padding: var(--e6) var(--e6) var(--e6) var(--e6);
+  border-radius: var(--radio-l);
+  background: #d3f4ee;
+  overflow: hidden;
+}
+.inicio-banner::after { /* círculo decorativo como en la app */
+  content: "";
+  position: absolute;
+  right: -60px;
+  bottom: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: #bdeee4;
+}
+.inicio-banner__texto { position: relative; z-index: 1; display: grid; gap: var(--e2); flex: 1; max-width: 520px; }
+.inicio-banner h1 { color: #0f4a44; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.15; }
+.inicio-banner__lema { color: #0f4a44; font-weight: 700; }
+.inicio-banner__emoji { position: relative; z-index: 1; font-size: clamp(4rem, 10vw, 7.5rem); line-height: 1; }
+
+.inicio-buscador {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin-top: var(--e3);
+  padding: var(--e1) var(--e1) var(--e1) var(--e4);
+  border-radius: 999px;
+  background: var(--blanco);
+  color: var(--aqua-fuerte);
+  box-shadow: var(--sombra-s);
+}
+.inicio-buscador input { flex: 1; min-width: 0; border: 0; outline: 0; padding: var(--e2) 0; font: inherit; background: transparent; }
+.inicio-buscador button {
+  width: 40px; height: 40px; border: 0; border-radius: 50%;
+  background: var(--aqua); color: var(--aqua-fuerte); font-size: 1.25rem; font-weight: 800; cursor: pointer;
+}
+
+/* Accesos rápidos (4 tarjetas de colores, como en la app) */
+.inicio-accesos { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--e3); }
+.inicio-acceso {
+  display: grid;
+  justify-items: center;
+  gap: var(--e2);
+  padding: var(--e4) var(--e2);
+  border-radius: var(--radio-m);
+  color: var(--tinta);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgb(27 73 67 / 0.08);
+  transition: transform 0.15s;
+}
+.inicio-acceso span { font-size: 2rem; }
+.inicio-acceso:hover { transform: translateY(-2px); }
+.inicio-acceso--adopcion { background: #cff3ec; }
+.inicio-acceso--alerta { background: #fff0c2; }
+.inicio-acceso--cerca { background: #d5f0f8; }
+.inicio-acceso--reportar { background: #e6e0fa; }
+@media (max-width: 600px) { .inicio-accesos { grid-template-columns: repeat(2, 1fr); } }
+
+/* Mascotas en adopción (lista horizontal) */
+.inicio-mascotas { display: grid; gap: var(--e3); }
+.inicio-mascotas__encabezado { display: flex; align-items: center; justify-content: space-between; }
+.inicio-mascotas__encabezado h2 { font-size: 1.2rem; color: var(--aqua-fuerte); }
+.inicio-mascotas__lista { display: grid; grid-auto-flow: column; grid-auto-columns: 180px; gap: var(--e3); overflow-x: auto; padding-bottom: var(--e2); }
+.mascota-mini {
+  display: grid;
+  border-radius: var(--radio-m);
+  background: var(--blanco);
+  color: var(--tinta);
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgb(27 73 67 / 0.12);
+}
+.mascota-mini__foto { position: relative; height: 140px; background: #d3f4ee; }
+.mascota-mini__foto img { width: 100%; height: 100%; object-fit: cover; }
+.mascota-mini__insignia {
+  position: absolute; left: 8px; top: 8px; padding: 2px 8px;
+  border-radius: 10px; background: #1f7a52; color: var(--blanco); font-size: 0.7rem; font-weight: 800;
+}
+.mascota-mini__datos { display: grid; padding: var(--e2) var(--e3); }
+.mascota-mini__nombre { font-weight: 800; }
+.mascota-mini__detalle { font-size: 0.8rem; color: var(--tinta-suave); }
+
+/* KIRO debajo, como el botón "¿Te ayudo?" de la app */
+.inicio-kiro { padding-top: var(--e5); border-top: 1px solid var(--borde); }
+.inicio-kiro__titulo { color: var(--aqua-fuerte); font-size: 1.3rem; }

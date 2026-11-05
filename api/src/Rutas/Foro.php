@@ -12,8 +12,9 @@ final class Foro
     {
         $sesion = [[Sesion::class, 'requiereSesion']];
         $soloUsuario = Sesion::requiereRol('usuario');
+        // Leer el foro es público (el visitante también lo ve); publicar, comentar y dar like piden cuenta
+        $r->get('/foro', [self::class, 'listar'], [[Sesion::class, 'sesionOpcional']]);
         $r->grupo('/foro', $sesion, static function (Enrutador $r) use ($soloUsuario): void {
-            $r->get('', [self::class, 'listar'], [Sesion::requiereRol('usuario', 'admin')]);
             $r->post('', [self::class, 'crear'], [$soloUsuario]);
             $r->post('/{id}/comentarios', [self::class, 'comentar'], [$soloUsuario]);
             $r->put('/{id}/like', [self::class, 'like'], [$soloUsuario]);
@@ -72,7 +73,7 @@ final class Foro
     public static function listar(Solicitud $s): array
     {
         $limite = Validar::entero($s->query['limite'] ?? 100, 'El límite', 1, 200);
-        return ['publicaciones' => self::cargar((int) $s->usuario['id'], null, $limite)];
+        return ['publicaciones' => self::cargar((int) ($s->usuario['id'] ?? 0), null, $limite)];
     }
 
     public static function crear(Solicitud $s): Respuesta

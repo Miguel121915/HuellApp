@@ -51,6 +51,18 @@ final class Sesion
         return $datos;
     }
 
+    /** Guardia: si viene un token válido carga al usuario; si no, sigue como visitante ($s->usuario = null). */
+    public static function sesionOpcional(Solicitud $s): void
+    {
+        if (!preg_match('/^Bearer (.+)$/', $s->cabecera('authorization') ?? '', $m)) {
+            return;
+        }
+        $carga = self::verificar($m[1]);
+        if ($carga !== null) {
+            $s->usuario = Base::uno('SELECT id, nombre, correo, telefono, rol FROM usuarios WHERE id = ?', [(int) $carga['sub']]);
+        }
+    }
+
     /** Guardia: exige un token válido y carga al usuario desde la BD (un usuario borrado pierde el acceso). */
     public static function requiereSesion(Solicitud $s): void
     {

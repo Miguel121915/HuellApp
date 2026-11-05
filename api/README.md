@@ -106,6 +106,7 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `GET /auth/apelacion` · `POST /auth/apelacion` | refugio **rechazado** | Datos y documentos actuales (con `conError`) / reenviar `{nombreRefugio, responsable, telefono, direccion, horario, documentos}`: `documentos` trae solo los archivos nuevos y cada uno reemplaza al de su tipo; los señalados con error deben reemplazarse. La solicitud vuelve a `pendiente`. Si no está rechazada → `409` con `codigo: "no-rechazado"` |
 | `GET /foro` · `POST /foro` | usuario | Listar / publicar `{texto, foto?}` |
 | `POST /foro/:id/comentarios` · `PUT /foro/:id/like` | usuario | Comentar / `{activo: true\|false}` |
+| `GET /foro` | todos, **también sin sesión** (visitante) | Publicaciones del foro (publicar, comentar y like sí piden cuenta) |
 | `GET /refugios` · `GET /refugios/:id` | todos, **también sin sesión** (visitante) | Refugios aprobados, con ubicación y datos de contacto |
 | `GET /refugios/:id/mascotas` · `/publicaciones` · `/preguntas` | todos (mascotas y publicaciones también sin sesión) | Mascotas disponibles / publicaciones / preguntas frecuentes activas |
 | `GET /adopciones` · `POST /adopciones` | usuario | Mis solicitudes de adopción / enviar una `{mascotaId, nombre, correo, telefono, direccion, ocupacion?, tipoVivienda, viviendaPropia, otrasMascotas?, motivo, aceptaTerminos, documentos}`: identificación y comprobante (uno de cada uno), de 1 a 3 fotos `vivienda` (solo imágenes) y un `otro` opcional. Solo mascotas disponibles; una solicitud abierta por mascota |

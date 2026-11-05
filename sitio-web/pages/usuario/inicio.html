@@ -14,15 +14,48 @@
   <link rel="stylesheet" href="../../assets/css/base/layout.css">
   <link rel="stylesheet" href="../../assets/css/components/navbar.css">
   <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
   <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
   <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <link rel="stylesheet" href="../../assets/css/pages/inicio.css">
   <script type="module" src="../../assets/js/modules/usuario/inicio.js"></script>
 </head>
 <body class="pagina-usuario" data-protegida>
   <header class="encabezado" id="encabezado"></header>
-  <main class="contenido">
-    <section class="kiro" aria-labelledby="titulo-kiro">
-      <h1 id="titulo-kiro" class="solo-lector">Inicio: asistente KIRO</h1>
+  <main class="contenido inicio">
+    <!-- Igual que la pantalla de Inicio de la app móvil -->
+    <section class="inicio-banner" aria-labelledby="titulo-inicio">
+      <div class="inicio-banner__texto">
+        <h1 id="titulo-inicio">Cada mascota merece un hogar</h1>
+        <p class="inicio-banner__lema">Adopta · Reporta · Comparte</p>
+        <form id="inicio-buscador" class="inicio-buscador" role="search" novalidate>
+          <label class="solo-lector" for="inicio-busqueda">Busca mascotas o refugios</label>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+          <input id="inicio-busqueda" type="search" placeholder="Busca mascotas o refugios" autocomplete="off" maxlength="80">
+          <button type="submit" aria-label="Buscar">→</button>
+        </form>
+      </div>
+      <span class="inicio-banner__emoji" aria-hidden="true">🐶</span>
+    </section>
+
+    <nav class="inicio-accesos" aria-label="Accesos rápidos">
+      <a class="inicio-acceso inicio-acceso--adopcion" href="refugios.html"><span aria-hidden="true">🐾</span>Adopción</a>
+      <a class="inicio-acceso inicio-acceso--alerta" href="reportar.html"><span aria-hidden="true">⚠️</span>Alerta Patitas</a>
+      <a class="inicio-acceso inicio-acceso--cerca" href="refugios.html"><span aria-hidden="true">📍</span>Refugios cerca de ti</a>
+      <a class="inicio-acceso inicio-acceso--reportar" href="reportar.html"><span aria-hidden="true">📷</span>Reportar</a>
+    </nav>
+
+    <section class="inicio-mascotas" aria-labelledby="titulo-mascotas">
+      <header class="inicio-mascotas__encabezado">
+        <h2 id="titulo-mascotas"><span aria-hidden="true">🐾</span> Mascotas en adopción</h2>
+        <a class="enlace" href="refugios.html">Ver más ›</a>
+      </header>
+      <div id="lista-mascotas" class="inicio-mascotas__lista" aria-live="polite"></div>
+      <p id="sin-mascotas" class="texto-suave" hidden>Aún no hay mascotas publicadas.</p>
+    </section>
+
+    <section class="kiro inicio-kiro" aria-labelledby="titulo-kiro">
+      <h2 id="titulo-kiro" class="inicio-kiro__titulo">¿Te ayudo? Habla con KIRO</h2>
 
       <div class="kiro__globo" role="status" aria-live="polite">
         <p id="kiro-globo"></p>
@@ -40,7 +73,7 @@
       </form>
 
       <section class="kiro__faq" aria-labelledby="titulo-faq">
-        <h2 id="titulo-faq" class="kiro__faq-titulo">Preguntas frecuentes</h2>
+        <h3 id="titulo-faq" class="kiro__faq-titulo">Preguntas frecuentes</h3>
         <ul id="kiro-sugerencias" class="chips"></ul>
       </section>
     </section>

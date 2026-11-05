@@ -4,6 +4,7 @@
  * IntersectionObserver (scroll infinito sencillo) y usa delegación de eventos.
  */
 import { requerirRol } from "../../core/router-guard.js";
+import { protegerAcciones } from "../../components/aviso-cuenta.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { escucharLikes } from "../../components/like-huella.js";
 import { crearTarjetaPublicacion, renderComentarios } from "../../components/tarjeta-publicacion.js";
@@ -13,7 +14,12 @@ import { limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta, re
 const LOTE = 5;
 const MAX_TEXTO = 600;
 
-const sesion = requerirRol("usuario");
+const sesion = requerirRol("usuario", { permitirInvitado: true });
+protegerAcciones(sesion, {
+  clics: [".like-huella", "#publicar-foto", 'label[for="publicar-foto"]'],
+  envios: ["#formulario-publicar", ".comentarios__form"],
+  accion: "participar en el foro",
+});
 
 if (sesion) {
   montarNavbar({ sesion, activa: "foro" });

@@ -53,12 +53,9 @@ const MENUS = {
     { id: "solicitudes", etiqueta: "Solicitudes", ruta: "pages/admin/solicitudes.html", insignia: true },
     { id: "refugios", etiqueta: "Refugios", ruta: "pages/admin/refugios.html" },
   ],
-  // Visitante sin cuenta: solo lo que no requiere sesión
-  invitado: [
-    { id: "refugios", etiqueta: "Refugios", ruta: "pages/usuario/refugios.html" },
-    { id: "inicio", etiqueta: "Inicio", ruta: "pages/usuario/inicio.html" },
-  ],
 };
+// Visitante sin cuenta: ve las mismas secciones que un usuario; al intentar hacer algo se le pide cuenta
+MENUS.invitado = MENUS.usuario.map(({ insignia, ...item }) => item);
 
 const HUELLA_LOGO = "assets/img/logos/huella.svg";
 const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/inicio.html" };
