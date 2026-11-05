@@ -21,8 +21,8 @@ if (PHP_VERSION_ID < 80100) {
     fwrite(STDERR, 'HuellApp necesita PHP 8.1 o superior (tienes ' . PHP_VERSION . "). Actualiza XAMPP.\n");
     exit(1);
 }
-if (!extension_loaded('pdo_mysql')) {
-    fwrite(STDERR, "Falta la extension pdo_mysql de PHP. En XAMPP: abre php.ini y quita el ; de la linea  extension=pdo_mysql\n");
+if (!extension_loaded('pdo_oci')) {
+    fwrite(STDERR, "Falta la extension pdo_oci de PHP. En XAMPP: abre php.ini y agrega la linea  extension=pdo_oci  (ver la guia de Oracle).\n");
     exit(1);
 }
 if (PHP_OS_FAMILY === 'Windows') {
@@ -99,7 +99,7 @@ function cmdAyuda(): void
     HuellApp - comandos disponibles
 
       php artisan serve [--port=3000] [--host=127.0.0.1]   Enciende el servidor
-      php artisan migrate [--seed]                         Crea la base de datos y las tablas
+      php artisan migrate [--seed]                         Crea las tablas en Oracle
       php artisan migrate:fresh [--seed] [--si]            Borra TODO y recrea las tablas
       php artisan db:seed [--force]                        Carga los datos de demostracion
       php artisan refugios                                 Lista los refugios y su estado
@@ -116,7 +116,7 @@ function cmdMigrate(array $args): void
 {
     conBase(static function () use ($args): void {
         Migraciones::migrar();
-        echo '[OK] Base de datos "' . Base::nombreBase() . "\" lista (puedes verla en phpMyAdmin).\n";
+        echo '[OK] Tablas listas en el esquema ' . Base::nombreBase() . " de Oracle.\n";
         if (bandera($args, 'seed')) {
             if (Migraciones::baseVacia()) {
                 sembrarDemo();
@@ -129,7 +129,7 @@ function cmdMigrate(array $args): void
 
 function cmdMigrateFresh(array $args): void
 {
-    if (!confirmar('Esto BORRA todas las tablas y datos de "' . Base::nombreBase() . '".', $args)) {
+    if (!confirmar('Esto BORRA todas las tablas y datos del esquema ' . Base::nombreBase() . ' en Oracle.', $args)) {
         echo "Cancelado. No se borro nada.\n";
         return;
     }
@@ -178,7 +178,7 @@ function cmdServe(array $args): void
     $web = Config::dirWeb();
     $hayWeb = is_dir($web);
     echo "\nHuellApp lista en http://$host:$puerto\n";
-    echo '  Base de datos: ' . Base::nombreBase() . ' en MySQL (' . Config::obtener('DB_HOST') . ':' . Config::obtener('DB_PORT') . ")\n";
+    echo '  Base de datos: esquema ' . Base::nombreBase() . ' en Oracle (servicio ' . Config::obtener('DB_TNS') . ")\n";
     echo $hayWeb ? "  Sitio web:     http://$host:$puerto  (carpeta $web)\n" : "  Sitio web:     no se encontro $web (usa tu propio servidor, ej. Live Server)\n";
     echo "  Para detenerlo: Ctrl + C\n\n";
 
@@ -213,7 +213,7 @@ function cmdRefugios(array $args): void
             salir("Uso:  php artisan refugios <aprobar|rechazar|suspender|reactivar> correo@refugio.com [motivo]\n       php artisan refugios            (para listar)");
         }
         [$nuevo, $origenes] = $destinos[$accion];
-        $refugio = Base::uno('SELECT r.id, r.nombre, r.estado FROM refugios r JOIN usuarios u ON u.id = r.usuario_id WHERE u.correo = ?', [$correo]);
+        $refugio = Base::uno('SELECT r.id, r.nombre, r.estado FROM refugios r JOIN usuarios u ON u.id = r.usuario_id WHERE u.correo = ?', [strtolower($correo)]);
         if ($refugio === null) {
             salir("No hay ningun refugio con el correo $correo.");
         }
@@ -246,8 +246,8 @@ function cmdRepublicar(): void
 }
 
 /**
- * Pruebas automaticas: crea una base APARTE ("huellapp_test"), levanta un servidor temporal y
- * ejecuta las pruebas (pruebas/api.test.js, necesitan Node.js). No toca tus datos.
+ * Pruebas automaticas: usan un esquema de Oracle APARTE (DB_TEST_USER / DB_TEST_PASS en el .env),
+ * que se BORRA en cada corrida; levanta un servidor temporal y ejecuta pruebas/api.test.js (Node.js).
  */
 function cmdTest(): void
 {
@@ -255,8 +255,16 @@ function cmdTest(): void
     if (!is_resource($nodeOk) || proc_close($nodeOk) !== 0) {
         salir('Las pruebas necesitan Node.js (https://nodejs.org). El resto del proyecto no lo necesita.');
     }
-    putenv('DB_NAME=huellapp_test');
-    echo "Preparando la base de pruebas (huellapp_test)...\n";
+    $usuarioPrueba = Config::obtener('DB_TEST_USER');
+    if ($usuarioPrueba === '' || strcasecmp($usuarioPrueba, Config::obtener('DB_USER')) === 0) {
+        salir("Las pruebas BORRAN su esquema. Crea un usuario aparte en Oracle (por ejemplo HUELLAPP_TEST)\n       y ponlo en DB_TEST_USER y DB_TEST_PASS del .env (distinto de DB_USER).");
+    }
+    $entornoPrueba = ['DB_USER' => $usuarioPrueba, 'DB_PASS' => Config::obtener('DB_TEST_PASS')];
+    foreach ($entornoPrueba as $clave => $valor) {
+        putenv("$clave=$valor");
+    }
+    Base::reiniciarConexion();
+    echo "Preparando el esquema de pruebas ($usuarioPrueba)...\n";
     conBase(static function (): void {
         Migraciones::reiniciar();
         Semilla::sembrar();
@@ -269,7 +277,7 @@ function cmdTest(): void
         [0 => ['pipe', 'r'], 1 => ['file', $bitacora, 'w'], 2 => ['file', $bitacora, 'a']],
         $tuberias,
         __DIR__,
-        array_merge(getenv(), ['DB_NAME' => 'huellapp_test']),
+        array_merge(getenv(), $entornoPrueba),
     );
     if (!is_resource($servidor)) {
         salir('No se pudo iniciar el servidor de pruebas.');

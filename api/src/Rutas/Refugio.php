@@ -81,7 +81,7 @@ final class Refugio
             'total' => (int) Base::valor('SELECT COUNT(*) FROM mascotas WHERE refugio_id = ?', [$id]),
             'disponibles' => $cuenta('disponible'), 'enProceso' => $cuenta('en proceso'), 'adoptadas' => $cuenta('adoptado'),
             'publicaciones' => (int) Base::valor('SELECT COUNT(*) FROM publicaciones_refugio WHERE refugio_id = ?', [$id]),
-            'recientes' => array_map([Serializadores::class, 'mascota'], Base::todos('SELECT * FROM mascotas WHERE refugio_id = ? ORDER BY id DESC LIMIT 4', [$id])),
+            'recientes' => array_map([Serializadores::class, 'mascota'], Base::todos('SELECT * FROM mascotas WHERE refugio_id = ? ORDER BY id DESC FETCH FIRST 4 ROWS ONLY', [$id])),
         ];
     }
 

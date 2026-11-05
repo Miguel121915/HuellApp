@@ -1,10 +1,10 @@
-# HuellApp — Servidor local (PHP + MySQL)
+# HuellApp — API (PHP + Oracle)
 
-Servidor en **PHP puro** que guarda todo en **MySQL** (la base de datos de XAMPP, la que ves en **phpMyAdmin**). Lo usan el sitio web y, más adelante, la app Flutter: los dos leen y escriben los **mismos datos**.
+Servidor en **PHP puro** que guarda todo en **Oracle** (Autonomous Database en el OCI de la escuela). Lo usan el sitio web y la app Flutter: los dos leen y escriben los **mismos datos**.
 
 ```
 App móvil (Flutter) ──┐
-                      ├──►  Servidor PHP (php artisan serve)  ──►  MySQL: base "huellapp"  (phpMyAdmin)
+                      ├──►  Servidor PHP (php artisan serve)  ──►  Oracle en OCI: esquema HUELLAPP_DEV
 Sitio web ────────────┘                                       └──►  storage/uploads/       (fotos y documentos)
 ```
 
@@ -14,12 +14,13 @@ Sitio web ────────────┘                               
 
 ## 1. Requisitos
 
-- **XAMPP** con PHP **8.1 o superior** y MySQL (las versiones actuales de XAMPP ya lo cumplen).
+- **XAMPP** (solo su PHP **8.1 o superior**; el MySQL de XAMPP ya no se usa).
+- **Oracle Instant Client**, el **wallet** de la base y las extensiones `oci8` y `pdo_oci` activas: sigue la *Guía de Oracle Cloud (OCI)* del equipo. Compruébalo con `php -m | findstr /i oci`.
 - Nada más: sin Composer, sin `npm install`.
 
 ## 2. Primera vez, paso a paso (Windows)
 
-1. Abre el **Panel de control de XAMPP** y presiona **Start** en **MySQL**. (Apache solo hace falta si quieres abrir phpMyAdmin, que también lo necesita.)
+1. Copia `.env.example` como `.env` en esta carpeta y llena `DB_TNS`, `DB_USER` y `DB_PASS` con los datos de Oracle que te pasó el equipo.
 2. **Que la terminal reconozca `php`** (solo una vez). Comprueba con `php -v`. Si dice que no se reconoce:
    - Busca "Variables de entorno" en Windows → *Variables de entorno…* → en *Path* (usuario) → *Nuevo* → escribe `C:\xampp\php` → Aceptar.
    - **Cierra y vuelve a abrir** VS Code o la terminal. (Alternativa sin tocar nada: escribir la ruta completa, `C:\xampp\php\php.exe artisan serve`).
@@ -29,10 +30,10 @@ Sitio web ────────────┘                               
 php artisan serve
 ```
 
-La primera vez crea solo la base de datos `huellapp`, las tablas y los datos de demostración.
+La primera vez crea las tablas en tu esquema de Oracle y carga los datos de demostración.
 
 4. Abre **http://localhost:3000** (el servidor también muestra el sitio web de la carpeta `../sitio-web`).
-5. Para ver los datos: **http://localhost/phpmyadmin** → base de datos **huellapp**.
+5. Para ver los datos: en la consola de OCI → tu Autonomous Database → **Database actions** → **SQL**, entrando con tu usuario (por ejemplo `HUELLAPP_DEV`).
 
 **Cuentas demo** (contraseña de todas: `Demo1234`): `ana@huellapp.mx` (usuario), `refugio@huellapp.mx` (refugio verificado), `pendiente@huellapp.mx`, `rechazado@huellapp.mx` y `admin@huellapp.mx`.
 
@@ -53,11 +54,11 @@ También funciona: el servidor acepta peticiones desde `localhost` y `127.0.0.1`
 | `php artisan refugios aprobar correo@refugio.com` | Aprueba una solicitud (también: `suspender`, `reactivar`) |
 | `php artisan refugios rechazar correo@refugio.com "Motivo"` | Rechaza una solicitud (el motivo es obligatorio) |
 | `php artisan publicaciones:republicar` | Republica ya las publicaciones a las que les toca (opcional: el servidor lo hace solo al mostrarlas) |
-| `php artisan test` | Pruebas automáticas (usan una base aparte, `huellapp_test`; necesitan Node.js) |
+| `php artisan test` | Pruebas automáticas (usan un esquema aparte, `DB_TEST_USER`, que se borra en cada corrida; necesitan Node.js) |
 
-Lo normal es revisar los refugios desde las pantallas del administrador del sitio; `refugios` es una alternativa desde la terminal (también puedes editar `refugios.estado` en phpMyAdmin).
+Lo normal es revisar los refugios desde las pantallas del administrador del sitio; `refugios` es una alternativa desde la terminal (también puedes editar `refugios.estado` desde Database actions → SQL).
 
-## 4. Ver y editar datos en phpMyAdmin
+## 4. Tablas
 
 | Tabla | Para qué sirve |
 |---|---|
@@ -74,11 +75,11 @@ Lo normal es revisar los refugios desde las pantallas del administrador del siti
 | `preguntas_refugio` | Preguntas frecuentes de cada refugio con su respuesta y palabras clave (`claves`, separadas por comas). Las usa el asistente KIRO del formulario de adopción; `activa = 0` las oculta |
 | `solicitudes_adopcion`, `documentos_adopcion` | Solicitudes de adopción (datos del solicitante y de su hogar; `estado`: pendiente · en revision · aprobada · rechazada, con `nota_refugio`) y sus documentos privados (identificación, comprobante de domicilio, fotos del espacio, otro) |
 
-Puedes editar casi todo directamente en phpMyAdmin (mascotas, estados de refugios, textos); el sitio lo refleja al recargar. El esquema completo, comentado, está en `database/esquema.sql`.
+Puedes editar casi todo directamente desde Database actions → SQL (mascotas, estados de refugios, textos); recuerda que en Oracle hay que hacer `COMMIT` después de un `UPDATE` hecho a mano. El esquema completo, comentado, está en `database/esquema.sql`.
 
-## 5. Si tu MySQL tiene contraseña u otro puerto
+## 5. Configuración de Oracle
 
-XAMPP trae `root` sin contraseña y es lo que se usa por defecto. Si cambiaste algo, copia `.env.example` como `.env` (en esta carpeta) y ajusta `DB_USER`, `DB_PASS`, `DB_PORT`… No hace falta reiniciar nada más.
+Todo se configura en `.env` (copia de `.env.example`): `DB_TNS` (servicio del `tnsnames.ora` del wallet, por ejemplo `huellapp_tp`), `DB_USER`, `DB_PASS` y, si no creaste la variable de entorno de Windows, `TNS_ADMIN` con la carpeta del wallet. Ese archivo **nunca** se sube al repositorio.
 
 ## 6. Quién puede hacer qué (seguridad)
 
@@ -134,9 +135,10 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | Mensaje | Qué hacer |
 |---|---|
 | `php no se reconoce como un comando` | Agrega `C:\xampp\php` al Path (paso 2) y reabre la terminal, o usa `C:\xampp\php\php.exe artisan serve` |
-| `No se pudo conectar con MySQL` | Presiona **Start** en MySQL en el panel de XAMPP |
-| `MySQL rechazó el usuario o la contraseña` | Revisa `DB_USER` y `DB_PASS` en `.env` (sección 5) |
-| `Falta la extension pdo_mysql` | En XAMPP: abre `php.ini` (botón *Config* de Apache) y quita el `;` de `extension=pdo_mysql` |
+| `No se pudo conectar con Oracle en OCI` | Revisa tu internet y que la base esté *Available* en la consola de OCI (si estuvo 7 días sin uso, presiona **Start**) |
+| `Oracle rechazó el usuario o la contraseña` | Revisa `DB_USER` y `DB_PASS` en `.env` (sección 5) |
+| `Oracle no encontró el servicio` | Revisa `DB_TNS` y que `TNS_ADMIN` apunte a la carpeta del wallet |
+| `Falta la extension pdo_oci` | En `C:\xampp\php\php.ini` agrega `extension=pdo_oci` y `extension=oci8_19` (sin comentarios a la derecha) |
 | `Failed to listen … Address already in use` | El puerto 3000 está ocupado: `php artisan serve --port=3001` y cambia `PUERTO_API` en `config.js` |
 | Franja roja "No hay conexión con el servidor" en el sitio | El servidor está apagado: ejecuta `php artisan serve` |
 
@@ -145,4 +147,4 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 - **Coincidencias:** la similitud se calcula comparando las palabras de las descripciones y la zona (`src/Similitud.php`). **No reconoce imágenes**; es una simulación para que la pantalla funcione.
 - `php artisan serve` usa el servidor integrado de PHP: está pensado para **desarrollo local** y atiende una petición a la vez (suficiente para probar, no para publicar).
 - Al borrar una mascota o publicación, su archivo de foto queda en `storage/uploads/imagenes`; `migrate:fresh` limpia todo.
-- Antes de publicar en internet: define `JWT_SECRET` en `.env`, usa HTTPS y un servidor web de verdad (Apache o Nginx; `public/.htaccess` ya está preparado), y crea un usuario de MySQL propio con contraseña.
+- Antes de publicar en internet: define `JWT_SECRET` en `.env`, usa HTTPS y un servidor web de verdad (Apache o Nginx; `public/.htaccess` ya está preparado), y usa el esquema `HUELLAPP_DEMO` (o uno de producción), nunca `ADMIN`.

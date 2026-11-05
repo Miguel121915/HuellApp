@@ -42,7 +42,12 @@ final class Auth
 
     private static function anotarFallo(string $clave): void
     {
-        Base::ejecutar('INSERT INTO intentos_login (clave, cuenta, desde) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE cuenta = cuenta + 1', [$clave, Base::ahora()]);
+        Base::ejecutar(
+            'MERGE INTO intentos_login t USING (SELECT ? AS clave, ? AS desde FROM dual) n ON (t.clave = n.clave)
+              WHEN MATCHED THEN UPDATE SET t.cuenta = t.cuenta + 1
+              WHEN NOT MATCHED THEN INSERT (clave, cuenta, desde) VALUES (n.clave, 1, TO_TIMESTAMP(n.desde, \'YYYY-MM-DD HH24:MI:SS.FF3\'))',
+            [$clave, Base::ahora()],
+        );
     }
 
     /** Lo que el sitio guarda como "sesión" (nunca incluye la contraseña). */
@@ -67,7 +72,7 @@ final class Auth
         $clave = substr($s->ip() . '|' . strtolower(trim($correo)), 0, 190);
         self::revisarLimite($clave);
 
-        $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [trim($correo)]);
+        $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [strtolower(trim($correo))]); // en Oracle la comparación distingue mayúsculas
         // Se verifica contra un hash falso si el correo no existe: el tiempo de respuesta no delata qué correos hay
         $valida = password_verify($password, $usuario['password_hash'] ?? '$2y$10$usesomesillystringforsaltuQ9vYd0u5nQ8K8h3m6mZ2o1Zr7h6Wa');
         if ($usuario === null || !$valida) {

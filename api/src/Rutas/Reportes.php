@@ -47,13 +47,13 @@ final class Reportes
             // Se compara con los reportes contrarios de OTRAS personas
             $contrario = $tipo === 'perdida' ? 'encontrada' : 'perdida';
             $nuevas = 0;
-            foreach (Base::todos('SELECT * FROM reportes WHERE tipo = ? AND usuario_id <> ? ORDER BY id DESC LIMIT 200', [$contrario, $usuario['id']]) as $c) {
+            foreach (Base::todos('SELECT * FROM reportes WHERE tipo = ? AND usuario_id <> ? ORDER BY id DESC FETCH FIRST 200 ROWS ONLY', [$contrario, $usuario['id']]) as $c) {
                 $similitud = Similitud::calcular(['descripcion' => $descripcion, 'zona' => $zona], $c);
                 if ($similitud < Similitud::UMBRAL) {
                     continue;
                 }
                 [$perdido, $encontrado] = $tipo === 'perdida' ? [$id, (int) $c['id']] : [(int) $c['id'], $id];
-                $nuevas += Base::ejecutar('INSERT IGNORE INTO coincidencias (reporte_perdido_id, reporte_encontrado_id, similitud) VALUES (?, ?, ?)', [$perdido, $encontrado, $similitud]);
+                $nuevas += Base::insertarSiNoExiste('INSERT INTO coincidencias (reporte_perdido_id, reporte_encontrado_id, similitud) VALUES (?, ?, ?)', [$perdido, $encontrado, $similitud]);
             }
             return ['id' => $id, 'nuevas' => $nuevas];
         });
@@ -113,7 +113,7 @@ final class Reportes
         if (!Base::uno('SELECT c.id ' . self::BASE . ' WHERE c.id = ?', [$s->usuario['id'], $id])) {
             throw new ErrorHttp(404, 'Esa coincidencia no existe.');
         }
-        Base::ejecutar('INSERT IGNORE INTO coincidencias_descartadas (usuario_id, coincidencia_id) VALUES (?, ?)', [$s->usuario['id'], $id]);
+        Base::insertarSiNoExiste('INSERT INTO coincidencias_descartadas (usuario_id, coincidencia_id) VALUES (?, ?)', [$s->usuario['id'], $id]);
         return ['ok' => true];
     }
 }

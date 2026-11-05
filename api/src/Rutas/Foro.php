@@ -26,14 +26,14 @@ final class Foro
      */
     private static function cargar(int $usuarioId, ?int $id = null, int $limite = 100): array
     {
-        $limite = max(1, min(200, $limite)); // ya es entero validado; se escribe directo porque LIMIT no admite parámetros
+        $limite = max(1, min(200, $limite)); // ya es entero validado; se escribe directo en FETCH FIRST
         $filas = Base::todos(
             "SELECT p.id, p.texto, p.foto, p.foto_alt, p.creado_en, u.nombre AS autor,
                     (SELECT COUNT(*) FROM likes_foro l WHERE l.publicacion_id = p.id) AS total_likes,
-                    EXISTS (SELECT 1 FROM likes_foro l WHERE l.publicacion_id = p.id AND l.usuario_id = ?) AS ya_dio
+                    CASE WHEN EXISTS (SELECT 1 FROM likes_foro l WHERE l.publicacion_id = p.id AND l.usuario_id = ?) THEN 1 ELSE 0 END AS ya_dio
                FROM publicaciones_foro p JOIN usuarios u ON u.id = p.usuario_id
               " . ($id ? 'WHERE p.id = ?' : '') . "
-              ORDER BY p.creado_en DESC, p.id DESC LIMIT $limite",
+              ORDER BY p.creado_en DESC, p.id DESC FETCH FIRST $limite ROWS ONLY",
             $id ? [$usuarioId, $id] : [$usuarioId],
         );
         if (!$filas) {
@@ -101,7 +101,7 @@ final class Foro
         $id = self::existe($s->parametro('id'));
         $activo = Validar::booleano($s->cuerpo()['activo'] ?? null, '«activo»');
         if ($activo) {
-            Base::ejecutar('INSERT IGNORE INTO likes_foro (publicacion_id, usuario_id) VALUES (?, ?)', [$id, $s->usuario['id']]);
+            Base::insertarSiNoExiste('INSERT INTO likes_foro (publicacion_id, usuario_id) VALUES (?, ?)', [$id, $s->usuario['id']]);
         } else {
             Base::ejecutar('DELETE FROM likes_foro WHERE publicacion_id = ? AND usuario_id = ?', [$id, $s->usuario['id']]);
         }

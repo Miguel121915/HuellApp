@@ -25,11 +25,10 @@ final class Republicacion
         $ahora = Base::ahora();
         return Base::ejecutar(
             "UPDATE publicaciones_refugio p
-               JOIN mascotas m ON m.id = p.mascota_id
                 SET p.publicado_en = ?, p.republicada_veces = p.republicada_veces + 1
               WHERE p.republicar_cada_dias IS NOT NULL
-                AND m.estatus <> 'adoptado'
-                AND p.publicado_en <= DATE_SUB(?, INTERVAL p.republicar_cada_dias DAY)"
+                AND EXISTS (SELECT 1 FROM mascotas m WHERE m.id = p.mascota_id AND m.estatus <> 'adoptado')
+                AND p.publicado_en <= TO_TIMESTAMP(?, 'YYYY-MM-DD HH24:MI:SS.FF3') - NUMTODSINTERVAL(p.republicar_cada_dias, 'DAY')"
                 . ($refugioId !== null ? ' AND p.refugio_id = ?' : ''),
             $refugioId !== null ? [$ahora, $ahora, $refugioId] : [$ahora, $ahora],
         );

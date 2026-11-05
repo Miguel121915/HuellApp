@@ -145,7 +145,7 @@ final class Semilla
                     );
                 }
                 foreach (array_slice($quienesDanLike, 0, $p['likes']) as $usuario) {
-                    Base::ejecutar('INSERT IGNORE INTO likes_foro (publicacion_id, usuario_id) VALUES (?, ?)', [$id, $usuario]);
+                    Base::insertarSiNoExiste('INSERT INTO likes_foro (publicacion_id, usuario_id) VALUES (?, ?)', [$id, $usuario]);
                 }
             }
 

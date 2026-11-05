@@ -5,16 +5,20 @@ namespace HuellApp;
 
 /**
  * Config — Lee la configuración. Orden de prioridad:
- * variable de entorno  >  archivo .env  >  valor por defecto (el de XAMPP).
+ * variable de entorno  >  archivo .env  >  valor por defecto.
  */
 final class Config
 {
     private const DEFECTOS = [
-        'DB_HOST' => '127.0.0.1',
-        'DB_PORT' => '3306',
-        'DB_NAME' => 'huellapp',
-        'DB_USER' => 'root',
+        // Oracle (Autonomous Database en OCI): nombre del servicio del tnsnames.ora del wallet
+        'DB_TNS' => 'huellapp_tp',
+        'DB_USER' => 'HUELLAPP_DEV',
         'DB_PASS' => '',
+        // Carpeta del wallet. Vacío = se usa la variable de entorno TNS_ADMIN de Windows.
+        'TNS_ADMIN' => '',
+        // Usuario aparte para "php artisan test" (se BORRA en cada prueba). Vacío = no hay pruebas.
+        'DB_TEST_USER' => '',
+        'DB_TEST_PASS' => '',
         'APP_HOST' => '127.0.0.1',
         'APP_PORT' => '3000',
         'JWT_SECRET' => 'huellapp-clave-solo-para-desarrollo-local',

@@ -2,13 +2,13 @@
 
 Plataforma para ayudar a mascotas perdidas y promover la adopción. Frontend en HTML5, CSS3 y JavaScript vanilla (módulos ES) que habla con la API del servidor local (`api/`).
 
-> **Estado: las 4 fases están completas** — autenticación, **vista de Usuario**, **panel de Refugio** y **panel de Administrador**, conectados a una base de datos MySQL local.
+> **Estado: las 4 fases están completas** — autenticación, **vista de Usuario**, **panel de Refugio** y **panel de Administrador**, conectados a la base de datos Oracle del proyecto (a través de la API).
 
-> ⚠️ **Este sitio ya no funciona solo:** guarda y lee todo de un servidor local con base de datos. Antes de usarlo, enciende **MySQL en XAMPP** y el servidor (carpeta `api/`, ver su `README.md`): `php artisan serve`. Luego abre **http://localhost:3000**.
+> ⚠️ **Este sitio ya no funciona solo:** guarda y lee todo de un servidor local con base de datos. Antes de usarlo, enciende el servidor (carpeta `api/`, ver su `README.md`): `php artisan serve`. Luego abre **http://localhost:3000**.
 
 ## Cómo ejecutarlo
 
-1. **Enciende MySQL** en el panel de XAMPP y luego **el servidor** (carpeta `api/`): `php artisan serve`. Detalles en `api/README.md`.
+1. Enciende **el servidor** (carpeta `api/`): `php artisan serve`. Detalles en `api/README.md`.
 2. Abre **http://localhost:3000**. El servidor ya muestra este sitio.
 
 También puedes abrir el sitio con **Live Server** de VS Code (clic derecho sobre `index.html` → *Open with Live Server*), siempre con el servidor encendido en el puerto 3000. Los módulos ES **no funcionan abriendo el archivo con doble clic** (`file://`). La cámara de «Reportar» funciona en `localhost`/`127.0.0.1` y en `https://`.
@@ -71,7 +71,7 @@ Los documentos de los refugios son privados: el visor los descarga con la sesió
 
 ## Dónde se guardan los datos
 
-Todo lo editable (usuarios, refugios, mascotas, publicaciones, foro, reportes, coincidencias) vive en la **base de datos MySQL `huellapp`** (la ves en phpMyAdmin), y las fotos y documentos en `api/storage/uploads/`. El navegador solo recuerda en `localStorage` la **sesión** (`huellapp:sesion`: datos básicos y el token). Para empezar de cero: `php artisan migrate:fresh --seed` en `api/`.
+Todo lo editable (usuarios, refugios, mascotas, publicaciones, foro, reportes, coincidencias) vive en la **base de datos Oracle** (esquema de `DB_USER`, ver `api/README.md`), y las fotos y documentos en `api/storage/uploads/`. El navegador solo recuerda en `localStorage` la **sesión** (`huellapp:sesion`: datos básicos y el token). Para empezar de cero: `php artisan migrate:fresh --seed` en `api/`.
 
 Las fotos se reducen a 640 px en el navegador antes de enviarse (las de la cámara, a 1024 px). Los documentos de un refugio (PDF, JPG o PNG, máx. 5 MB) se guardan en una carpeta privada que solo el administrador puede consultar.
 
