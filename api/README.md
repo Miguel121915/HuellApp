@@ -107,7 +107,7 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `GET /foro` · `POST /foro` | usuario | Listar / publicar `{texto, foto?}` |
 | `POST /foro/:id/comentarios` · `PUT /foro/:id/like` | usuario | Comentar / `{activo: true\|false}` |
 | `GET /foro` | todos, **también sin sesión** (visitante) | Publicaciones del foro (publicar, comentar y like sí piden cuenta) |
-| `GET /refugios` · `GET /refugios/:id` | todos, **también sin sesión** (visitante) | Refugios aprobados, con ubicación y datos de contacto |
+| `GET /refugios` · `GET /refugios/:id` | todos, **también sin sesión** (visitante) | Refugios aprobados, con ubicación y datos de contacto. `GET /refugios?mascotas=1` trae cada refugio con sus mascotas disponibles en una sola petición (lo usan Inicio y el catálogo) |
 | `GET /refugios/:id/mascotas` · `/publicaciones` · `/preguntas` | todos (mascotas y publicaciones también sin sesión) | Mascotas disponibles / publicaciones / preguntas frecuentes activas |
 | `GET /adopciones` · `POST /adopciones` | usuario | Mis solicitudes de adopción / enviar una `{mascotaId, nombre, correo, telefono, direccion, ocupacion?, tipoVivienda, viviendaPropia, otrasMascotas?, motivo, aceptaTerminos, documentos}`: identificación y comprobante (uno de cada uno), de 1 a 3 fotos `vivienda` (solo imágenes) y un `otro` opcional. Solo mascotas disponibles; una solicitud abierta por mascota |
 | `GET·POST /refugio/preguntas` · `PUT·DELETE /refugio/preguntas/:id` | refugio aprobado | Preguntas frecuentes `{pregunta, respuesta, claves[], activa}` (máx. 50) |
@@ -150,6 +150,8 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | Franja roja "No hay conexión con el servidor" en el sitio | El servidor está apagado: ejecuta `php artisan serve` |
 
 ## 9. Notas y límites
+
+- **Velocidad con Oracle en la nube:** la API reutiliza la conexión entre peticiones (`DB_PERSISTENTE=1`, el valor por defecto) y manda los ajustes de sesión en un solo viaje. Cada respuesta trae la cabecera `Server-Timing: api;dur=…` con los milisegundos que tardó la API (en el navegador: herramientas → Red → Tiempos; o `curl -i`). Si alguna vez la conexión persistente diera problemas, pon `DB_PERSISTENTE=0` en el `.env`.
 
 - **Coincidencias:** la similitud se calcula comparando las palabras de las descripciones y la zona (`src/Similitud.php`). **No reconoce imágenes**; es una simulación para que la pantalla funcione.
 - `php artisan serve` usa el servidor integrado de PHP: está pensado para **desarrollo local** y atiende una petición a la vez (suficiente para probar, no para publicar).

@@ -5,7 +5,7 @@
 import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { montarChatbot } from "../../components/chatbot-kiro.js";
-import { obtenerRefugiosVerificados, obtenerMascotasDisponibles } from "../../core/servicios.js";
+import { obtenerRefugiosConMascotas } from "../../core/servicios.js";
 import { crearElemento, formatearEdad, irA, resolverImagen } from "../../core/utils.js";
 
 const MAX_MASCOTAS = 8;
@@ -38,9 +38,9 @@ async function cargarMascotas() {
   const vacio = document.getElementById("sin-mascotas");
   let mascotas = [];
   try {
-    const refugios = await obtenerRefugiosVerificados();
-    const porRefugio = await Promise.all(refugios.map((r) => obtenerMascotasDisponibles(r.id).catch(() => [])));
-    mascotas = porRefugio.flat().slice(0, MAX_MASCOTAS);
+    // Una sola petición con todos los refugios y sus mascotas
+    const refugios = await obtenerRefugiosConMascotas();
+    mascotas = refugios.flatMap((r) => r.mascotas || []).slice(0, MAX_MASCOTAS);
   } catch {
     // sin conexión: la franja de aviso del sitio ya lo explica
   }

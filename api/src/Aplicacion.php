@@ -50,6 +50,7 @@ final class Aplicacion
 
     public static function manejar(): void
     {
+        $inicio = hrtime(true);
         header('X-Content-Type-Options: nosniff');
         self::cors();
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { // petición previa (preflight) del navegador
@@ -73,6 +74,8 @@ final class Aplicacion
             error_log('Error inesperado: ' . $e);
             $respuesta = new Respuesta(['error' => 'Ocurrió un error en el servidor. Inténtalo de nuevo.'], 500);
         }
+        // Cuánto tardó la API (se ve en las herramientas del navegador, pestaña Red → Tiempos)
+        header('Server-Timing: api;dur=' . round((hrtime(true) - $inicio) / 1e6, 1));
         $respuesta->enviar();
     }
 }

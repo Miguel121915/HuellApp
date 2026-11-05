@@ -41,17 +41,16 @@ class CatalogoService extends ChangeNotifier {
     notifyListeners();
     try {
       final api = ApiClient.instancia;
-      final r = await api.get('/refugios');
+      // Una sola petición: cada refugio viene con sus mascotas disponibles (?mascotas=1)
+      final r = await api.get('/refugios?mascotas=1');
       final refugiosJson = (r['refugios'] as List? ?? []).cast<Map<String, dynamic>>();
-
-      // Las mascotas de cada refugio se piden en paralelo
-      final mascotasPorRefugio = await Future.wait(refugiosJson.map((ref) async {
-        final m = await api.get('/refugios/${ref['id']}/mascotas');
-        return (m['mascotas'] as List? ?? [])
-            .cast<Map<String, dynamic>>()
-            .map((j) => MascotaRefugio.desdeApi(j, ApiConfig.urlArchivo))
-            .toList();
-      }));
+      final mascotasPorRefugio = [
+        for (final ref in refugiosJson)
+          (ref['mascotas'] as List? ?? [])
+              .cast<Map<String, dynamic>>()
+              .map((j) => MascotaRefugio.desdeApi(j, ApiConfig.urlArchivo))
+              .toList(),
+      ];
 
       final nuevos = [
         for (var i = 0; i < refugiosJson.length; i++) Refugio.desdeApi(refugiosJson[i], mascotasPorRefugio[i]),

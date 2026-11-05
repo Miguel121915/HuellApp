@@ -41,6 +41,10 @@ final class Base
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_CASE => PDO::CASE_LOWER,
             PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
+            // Conexión persistente: se reutiliza entre peticiones del mismo proceso de PHP en lugar de
+            // abrir cada vez una conexión cifrada nueva con Oracle en la nube (lo más lento: 1–3 s).
+            // Si causara problemas se apaga con DB_PERSISTENTE=0 en el .env.
+            PDO::ATTR_PERSISTENT => Config::obtener('DB_PERSISTENTE') !== '0',
         ];
     }
 
@@ -73,11 +77,14 @@ final class Base
         $dsn = 'oci:dbname=' . Config::obtener('DB_TNS') . ';charset=AL32UTF8';
         try {
             $pdo = new PDO($dsn, Config::obtener('DB_USER'), Config::obtener('DB_PASS'), self::opciones());
-            // Mismo formato de fechas y números que usaba MySQL; todas las fechas en UTC
-            $pdo->exec("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF3'");
-            $pdo->exec("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'");
-            $pdo->exec("ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,'");
-            $pdo->exec("ALTER SESSION SET TIME_ZONE = '+00:00'");
+            // Mismo formato de fechas y números que usaba MySQL; todas las fechas en UTC.
+            // Los 4 ajustes van en UN solo viaje a la nube (antes eran 4).
+            $pdo->exec("BEGIN
+                EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_TIMESTAMP_FORMAT = ''YYYY-MM-DD HH24:MI:SS.FF3''';
+                EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_DATE_FORMAT = ''YYYY-MM-DD HH24:MI:SS''';
+                EXECUTE IMMEDIATE 'ALTER SESSION SET NLS_NUMERIC_CHARACTERS = ''.,''';
+                EXECUTE IMMEDIATE 'ALTER SESSION SET TIME_ZONE = ''+00:00''';
+            END;");
         } catch (PDOException $e) {
             throw self::traducir($e);
         }
@@ -112,14 +119,26 @@ final class Base
         };
     }
 
+    /**
+     * Errores de "esa conexión ya no sirve" (la nube la cerró por inactividad, se cortó la red…).
+     * Con conexiones persistentes pueden salir al reutilizar una vieja: se reconecta y se reintenta.
+     */
+    private const CONEXION_PERDIDA = [28, 1012, 2396, 3113, 3114, 3135, 12537, 12543, 25408];
+
     /** @param array<int,mixed> $parametros */
-    private static function preparar(string $sql, array $parametros): PDOStatement
+    private static function preparar(string $sql, array $parametros, bool $reintento = false): PDOStatement
     {
         try {
             $sentencia = self::pdo()->prepare($sql);
             $sentencia->execute(array_map(static fn ($v) => is_bool($v) ? (int) $v : $v, $parametros));
             return $sentencia;
         } catch (PDOException $e) {
+            // Fuera de una transacción es seguro reintentar una vez con una conexión nueva
+            $enTransaccion = self::$pdo?->inTransaction() ?? false;
+            if (!$reintento && !$enTransaccion && in_array(self::codigoOracle($e), self::CONEXION_PERDIDA, true)) {
+                self::$pdo = null;
+                return self::preparar($sql, $parametros, true);
+            }
             throw self::traducir($e);
         }
     }

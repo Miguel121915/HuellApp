@@ -31,9 +31,25 @@ final class Refugios
         return $refugio;
     }
 
-    public static function listar(): array
+    /**
+     * Refugios aprobados. Con ?mascotas=1 cada refugio trae también sus mascotas disponibles:
+     * así la app y la web cargan el catálogo con UNA petición y 2 consultas, en vez de una por refugio.
+     */
+    public static function listar(Solicitud $s): array
     {
-        return ['refugios' => array_map([Serializadores::class, 'refugioPublico'], Base::todos("SELECT * FROM refugios WHERE estado = 'aprobado' ORDER BY id"))];
+        $refugios = array_map([Serializadores::class, 'refugioPublico'], Base::todos("SELECT * FROM refugios WHERE estado = 'aprobado' ORDER BY id"));
+        if (($s->query['mascotas'] ?? '') !== '1') {
+            return ['refugios' => $refugios];
+        }
+        $porRefugio = [];
+        $filas = Base::todos(
+            "SELECT m.* FROM mascotas m JOIN refugios r ON r.id = m.refugio_id
+              WHERE r.estado = 'aprobado' AND m.estatus = 'disponible' ORDER BY m.refugio_id, m.id",
+        );
+        foreach ($filas as $f) {
+            $porRefugio[(string) $f['refugio_id']][] = Serializadores::mascota($f);
+        }
+        return ['refugios' => array_map(static fn (array $r): array => $r + ['mascotas' => $porRefugio[(string) $r['id']] ?? []], $refugios)];
     }
 
     public static function ver(Solicitud $s): array

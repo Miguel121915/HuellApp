@@ -9,7 +9,7 @@ import { crearTarjetaMascota, marcarFavorito } from "../../components/tarjeta-ma
 import { crearTarjetaPublicacion } from "../../components/tarjeta-publicacion.js";
 import {
   obtenerRefugiosVerificados, obtenerRefugioVerificado, obtenerMascotasDisponibles, obtenerPublicacionesRefugio,
-  obtenerPreguntasRefugio, obtenerMisSolicitudesAdopcion, obtenerFavoritos, establecerFavorito,
+  obtenerPreguntasRefugio, obtenerMisSolicitudesAdopcion, obtenerFavoritos, obtenerRefugiosConMascotas, establecerFavorito,
   obtenerRequisitosRefugio, enviarMensajeRefugio,
 } from "../../core/servicios.js";
 import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
@@ -250,19 +250,15 @@ async function mostrarLista() {
   vistaLista.hidden = false;
   document.title = "Refugios · HuellApp";
 
-  let refugios = await obtenerRefugiosVerificados();
-
   // Búsqueda desde Inicio (?q=texto): refugios cuyo nombre, dirección o municipio coincida,
-  // o que tengan una mascota disponible con ese nombre o raza
+  // o que tengan una mascota disponible con ese nombre o raza (todo llega en una sola petición)
   const qTexto = (new URLSearchParams(window.location.search).get("q") || "").trim();
   const q = normalizarTexto(qTexto);
+  let refugios = q ? await obtenerRefugiosConMascotas() : await obtenerRefugiosVerificados();
   if (q) {
-    const conMascota = await Promise.all(refugios.map(async (r) => {
-      if (normalizarTexto(`${r.nombre} ${r.direccion} ${r.municipio || ""}`).includes(q)) return true;
-      const mascotas = await obtenerMascotasDisponibles(r.id).catch(() => []);
-      return mascotas.some((m) => normalizarTexto(`${m.nombre} ${m.raza}`).includes(q));
-    }));
-    refugios = refugios.filter((_, i) => conMascota[i]);
+    refugios = refugios.filter((r) =>
+      normalizarTexto(`${r.nombre} ${r.direccion} ${r.municipio || ""}`).includes(q)
+      || (r.mascotas || []).some((m) => normalizarTexto(`${m.nombre} ${m.raza}`).includes(q)));
     mostrarAlerta(alerta, refugios.length ? "exito" : "aviso", refugios.length
       ? `Resultados para «${qTexto}»: ${refugios.length} refugio(s).`
       : `No encontramos refugios ni mascotas para «${qTexto}».`);

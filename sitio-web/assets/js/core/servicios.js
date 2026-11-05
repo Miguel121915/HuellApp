@@ -44,6 +44,11 @@ export async function obtenerRefugioVerificado(id) {
   }
 }
 
+/** Refugios con sus mascotas disponibles en UNA petición: [{ ...refugio, mascotas: [...] }] */
+export async function obtenerRefugiosConMascotas() {
+  return (await get("/refugios?mascotas=1")).refugios;
+}
+
 export async function obtenerMascotasDisponibles(refugioId) {
   return (await get(`/refugios/${encodeURIComponent(refugioId)}/mascotas`)).mascotas;
 }

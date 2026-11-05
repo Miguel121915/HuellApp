@@ -16,6 +16,8 @@ final class Config
         'DB_PASS' => '',
         // Carpeta del wallet. Vacío = se usa la variable de entorno TNS_ADMIN de Windows.
         'TNS_ADMIN' => '',
+        // 1 = reutilizar la conexión con Oracle entre peticiones (mucho más rápido). 0 = una nueva cada vez.
+        'DB_PERSISTENTE' => '1',
         // Usuario aparte para "php artisan test" (se BORRA en cada prueba). Vacío = no hay pruebas.
         'DB_TEST_USER' => '',
         'DB_TEST_PASS' => '',
