@@ -26,7 +26,14 @@ final class Aplicacion
     private static function rutas(): Enrutador
     {
         $r = new Enrutador();
-        $r->get('/salud', static fn (): array => ['ok' => true, 'servicio' => 'huellapp-api']);
+        // /salud?db=1 además abre (o reutiliza) la conexión con Oracle: "php artisan serve" la usa para calentar
+        $r->get('/salud', static function (Solicitud $s): array {
+            $estado = ['ok' => true, 'servicio' => 'huellapp-api'];
+            if (($s->query['db'] ?? '') === '1') {
+                $estado['baseDeDatos'] = (int) Base::valor('SELECT 1 FROM dual') === 1;
+            }
+            return $estado;
+        });
         // Enlace de 5 minutos para abrir un documento privado fuera de la app (visor de PDF o navegador)
         $r->post('/enlaces', static function (Solicitud $s): array {
             $ruta = $s->cuerpo()['ruta'] ?? null;

@@ -191,7 +191,34 @@ function cmdServe(array $args): void
     if (!is_resource($proceso)) {
         salir('No se pudo iniciar el servidor.');
     }
+    calentarConexion($host, $puerto);
     exit(proc_close($proceso));
+}
+
+/**
+ * Abre la conexión con Oracle en cuanto arranca el servidor (tarda varios segundos la primera vez).
+ * Así esa espera pasa aquí y no en la primera pantalla que abra alguien en la app o en la web.
+ */
+function calentarConexion(string $host, string $puerto): void
+{
+    $destino = $host === '0.0.0.0' ? '127.0.0.1' : $host;
+    for ($i = 0; $i < 50; $i++) { // espera hasta 5 s a que el servidor escuche
+        $prueba = @fsockopen($destino, (int) $puerto, $errno, $errstr, 0.2);
+        if ($prueba) {
+            fclose($prueba);
+            break;
+        }
+        usleep(100000);
+    }
+    echo "  Conectando con Oracle...\n";
+    $inicio = microtime(true);
+    $contexto = stream_context_create(['http' => ['timeout' => 90, 'ignore_errors' => true]]);
+    $respuesta = @file_get_contents("http://$destino:$puerto/api/salud?db=1", false, $contexto);
+    $segundos = number_format(microtime(true) - $inicio, 1);
+    $datos = is_string($respuesta) ? json_decode($respuesta, true) : null;
+    echo ($datos['baseDeDatos'] ?? false)
+        ? "  [OK] Conexion con Oracle lista en {$segundos} s. Ya puedes abrir la app y el sitio.\n\n"
+        : "  [Aviso] No se pudo abrir la conexion con Oracle todavia; se intentara en la primera peticion.\n\n";
 }
 
 function cmdRefugios(array $args): void

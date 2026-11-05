@@ -24,9 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color _mutedColor = Color(0xFF3F5F5B);
   static const Color _borderColor = Color(0xFF9ED9D1);
 
-  // Imagen de fondo guardada en el proyecto (funciona sin internet)
-  static const String _backgroundImage = 'assets/images/fondo_login.jpg';
-
   final _formKey = GlobalKey<FormState>();
 
   // Roles de login en la app móvil: 'Usuario' y 'Refugio' (el administrador usa el sitio web)
@@ -468,12 +465,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          _backgroundImage,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Container(color: _background),
-        ),
+        // La foto de fondo (assets/images/fondo_login.jpg) no está en el proyecto: se usa el color
+        // de la marca para no pedir un archivo que no existe (daba un error 404 en la consola).
+        Container(color: _background),
         Container(color: const Color(0x9914524D)),
       ],
     );
