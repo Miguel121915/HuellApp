@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:huellapp/servicios_ia.dart';
+import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/screens/coincidencias_screen.dart'; // Ajusta la ruta a tu carpeta de screens
 import 'package:huellapp/screens/foro_screen.dart'; // Ajusta la ruta a tu carpeta de screens
 
@@ -142,6 +143,8 @@ class _ReportarScreenState extends State<ReportarScreen> {
   }
 
   void _enviarReporte() async {
+    if (!await requiereSesion(context, 'reportar una mascota')) return;
+    if (!mounted) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (_imagenBytes == null) {

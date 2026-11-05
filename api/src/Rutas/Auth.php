@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, RefugioExtra, Serializadores, Sesion, Solicitud, Validar};
 
 /** Rutas de autenticación: inicio de sesión, registros y datos de la sesión actual. */
 final class Auth
@@ -169,6 +169,7 @@ final class Auth
         $correo = Validar::correo($b['correo'] ?? null);
         $password = Validar::password($b['password'] ?? null);
 
+        $extras = RefugioExtra::leer($b); // ubicación, WhatsApp, redes… (los manda la app móvil)
         [$documentos, $tipos] = self::leerDocumentos($b);
         self::revisarObligatorios($tipos);
         if (Base::uno('SELECT 1 FROM usuarios WHERE correo = ?', [$correo])) {
@@ -180,7 +181,7 @@ final class Auth
         $guardados = self::guardarArchivos($documentos);
         try {
             // 2) Se crean cuenta, refugio y documentos en una sola transacción
-            Base::transaccion(static function () use ($responsable, $correo, $telefono, $hash, $nombreRefugio, $direccion, $horario, $guardados): void {
+            Base::transaccion(static function () use ($responsable, $correo, $telefono, $hash, $nombreRefugio, $direccion, $horario, $guardados, $extras): void {
                 $idUsuario = Base::insertar(
                     "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en) VALUES (?, ?, ?, ?, 'refugio', ?)",
                     [$responsable, $correo, $telefono, $hash, Base::ahora()],
@@ -189,6 +190,7 @@ final class Auth
                     'INSERT INTO refugios (usuario_id, nombre, responsable, telefono, direccion, horario, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?)',
                     [$idUsuario, $nombreRefugio, $responsable, $telefono, $direccion, $horario, Base::ahora()],
                 );
+                RefugioExtra::guardar($idRefugio, $extras);
                 foreach ($guardados as $g) {
                     Base::insertar(
                         'INSERT INTO documentos_refugio (refugio_id, tipo, nombre, archivo, mime, tamano) VALUES (?, ?, ?, ?, ?, ?)',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:huellapp/models/refugio.dart';
+import 'package:huellapp/core/requiere_sesion.dart';
 
 /// Hoja con el perfil de una mascota (fotos, descripción, salud y botón de
 /// adopción). La usan la lista de refugios y el perfil del refugio.
@@ -159,7 +160,9 @@ void mostrarPerfilMascota(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
+                                  if (!await requiereSesion(context, 'solicitar una adopción')) return;
+                                  if (!context.mounted) return;
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

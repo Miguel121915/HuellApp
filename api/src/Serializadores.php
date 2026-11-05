@@ -36,7 +36,8 @@ final class Serializadores
     public static function refugioPublico(array $r): array
     {
         return ['id' => (string) $r['id'], 'nombre' => $r['nombre'], 'responsable' => $r['responsable'], 'telefono' => $r['telefono'],
-            'direccion' => $r['direccion'], 'horario' => $r['horario'], 'descripcion' => $r['descripcion'], 'estado' => $r['estado']];
+            'direccion' => $r['direccion'], 'horario' => $r['horario'], 'descripcion' => $r['descripcion'], 'estado' => $r['estado']]
+            + RefugioExtra::serializar($r);
     }
 
     /** Datos completos para el propio refugio y para el administrador. */

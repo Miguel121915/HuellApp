@@ -116,7 +116,23 @@
           "tipo": "identificacion",
           "nombre": "identificacion-responsable.pdf"
         }
-      ]
+      ],
+      "extras": {
+        "latitud": 19.4006,
+        "longitud": -99.0148,
+        "municipio": "Nezahualcóyotl",
+        "codigoPostal": "57000",
+        "whatsapp": "55 1234 5678",
+        "redes": [
+          "Facebook: Centro Fernandino"
+        ],
+        "necesidades": [
+          "Croquetas para adulto",
+          "Cobijas"
+        ],
+        "tienePerros": true,
+        "tieneGatos": true
+      }
     },
     {
       "clave": "ref-2",
@@ -141,7 +157,20 @@
           "tipo": "identificacion",
           "nombre": "identificacion-responsable.pdf"
         }
-      ]
+      ],
+      "extras": {
+        "latitud": 19.4153,
+        "longitud": -99.027,
+        "municipio": "Nezahualcóyotl",
+        "codigoPostal": "57170",
+        "whatsapp": "",
+        "redes": [],
+        "necesidades": [
+          "Desparasitantes"
+        ],
+        "tienePerros": true,
+        "tieneGatos": false
+      }
     },
     {
       "clave": "ref-3",
@@ -166,7 +195,23 @@
           "tipo": "identificacion",
           "nombre": "identificacion-responsable.pdf"
         }
-      ]
+      ],
+      "extras": {
+        "latitud": 19.417,
+        "longitud": -99.0012,
+        "municipio": "Nezahualcóyotl",
+        "codigoPostal": "57100",
+        "whatsapp": "",
+        "redes": [
+          "Instagram: @petfriend"
+        ],
+        "necesidades": [
+          "Arena para gato",
+          "Croquetas para cachorro"
+        ],
+        "tienePerros": true,
+        "tieneGatos": true
+      }
     },
     {
       "clave": "ref-4",
@@ -191,7 +236,20 @@
           "tipo": "identificacion",
           "nombre": "identificacion-responsable.pdf"
         }
-      ]
+      ],
+      "extras": {
+        "latitud": 19.3945,
+        "longitud": -99.0325,
+        "municipio": "Nezahualcóyotl",
+        "codigoPostal": "57700",
+        "whatsapp": "",
+        "redes": [],
+        "necesidades": [
+          "Arena para gato"
+        ],
+        "tienePerros": false,
+        "tieneGatos": true
+      }
     },
     {
       "clave": "ref-5",
@@ -229,9 +287,19 @@
       "estado": "rechazado",
       "motivoRechazo": "El comprobante de domicilio tiene más de 3 meses de antigüedad. Sube uno reciente.",
       "documentos": [
-        { "tipo": "acta", "nombre": "acta-hogar-peludo.pdf" },
-        { "tipo": "domicilio", "nombre": "recibo-luz-enero.pdf", "conError": true },
-        { "tipo": "identificacion", "nombre": "ine-rosa-camacho.pdf" }
+        {
+          "tipo": "acta",
+          "nombre": "acta-hogar-peludo.pdf"
+        },
+        {
+          "tipo": "domicilio",
+          "nombre": "recibo-luz-enero.pdf",
+          "conError": true
+        },
+        {
+          "tipo": "identificacion",
+          "nombre": "ine-rosa-camacho.pdf"
+        }
       ]
     }
   ],
@@ -587,26 +655,111 @@
     }
   ],
   "preguntasRefugio": [
-    { "refugio": "ref-1", "pregunta": "¿Qué documentos necesito para adoptar?", "claves": ["requisitos", "papeles", "documentacion"],
-      "respuesta": "Necesitamos tu identificación oficial vigente (INE o pasaporte), un comprobante de domicilio y de 1 a 3 fotos del espacio donde vivirá la mascota. Puedes subirlos en PDF, JPG o PNG." },
-    { "refugio": "ref-1", "pregunta": "¿Qué comprobantes de domicilio aceptan?", "claves": ["recibo", "luz", "agua", "predial", "antiguedad"],
-      "respuesta": "Aceptamos recibo de luz, agua, teléfono, internet o predial a tu nombre o de un familiar directo, con una antigüedad máxima de 3 meses." },
-    { "refugio": "ref-1", "pregunta": "¿Cómo deben ser las fotos del espacio?", "claves": ["fotos", "patio", "casa", "departamento", "imagenes"],
-      "respuesta": "Toma fotos claras de las áreas donde estará la mascota: patio, jardín, azotea o interior. Si vives en departamento, incluye una foto de las ventanas o del balcón con protección." },
-    { "refugio": "ref-1", "pregunta": "¿Puedo adoptar si rento mi vivienda?", "claves": ["renta", "rentada", "arrendador", "casero"],
-      "respuesta": "Sí. Solo te pediremos que confirmes que en tu contrato de renta se permiten mascotas; si no estás seguro, pregúntale a tu arrendador antes de enviar la solicitud." },
-    { "refugio": "ref-1", "pregunta": "¿Cuánto tarda la revisión de mi solicitud?", "claves": ["tiempo", "cuando", "respuesta", "dias", "tarda"],
-      "respuesta": "Revisamos las solicitudes en un máximo de 5 días hábiles. Si todo está en orden te llamaremos para agendar una entrevista y una visita para conocer a la mascota." },
-    { "refugio": "ref-1", "pregunta": "¿La adopción tiene algún costo?", "claves": ["costo", "precio", "pagar", "cuota", "donativo"],
-      "respuesta": "La adopción no tiene costo. Al entregar la mascota pedimos un donativo voluntario que nos ayuda a cubrir vacunas y esterilizaciones de otros animales." },
-    { "refugio": "ref-2", "pregunta": "¿Qué necesito para adoptar en PetCare?", "claves": ["requisitos", "documentos", "papeles"],
-      "respuesta": "Identificación oficial, comprobante de domicilio reciente y fotos del lugar donde vivirá la mascota. Además, todos los adultos de la casa deben estar de acuerdo con la adopción." }
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿Qué documentos necesito para adoptar?",
+      "claves": [
+        "requisitos",
+        "papeles",
+        "documentacion"
+      ],
+      "respuesta": "Necesitamos tu identificación oficial vigente (INE o pasaporte), un comprobante de domicilio y de 1 a 3 fotos del espacio donde vivirá la mascota. Puedes subirlos en PDF, JPG o PNG."
+    },
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿Qué comprobantes de domicilio aceptan?",
+      "claves": [
+        "recibo",
+        "luz",
+        "agua",
+        "predial",
+        "antiguedad"
+      ],
+      "respuesta": "Aceptamos recibo de luz, agua, teléfono, internet o predial a tu nombre o de un familiar directo, con una antigüedad máxima de 3 meses."
+    },
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿Cómo deben ser las fotos del espacio?",
+      "claves": [
+        "fotos",
+        "patio",
+        "casa",
+        "departamento",
+        "imagenes"
+      ],
+      "respuesta": "Toma fotos claras de las áreas donde estará la mascota: patio, jardín, azotea o interior. Si vives en departamento, incluye una foto de las ventanas o del balcón con protección."
+    },
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿Puedo adoptar si rento mi vivienda?",
+      "claves": [
+        "renta",
+        "rentada",
+        "arrendador",
+        "casero"
+      ],
+      "respuesta": "Sí. Solo te pediremos que confirmes que en tu contrato de renta se permiten mascotas; si no estás seguro, pregúntale a tu arrendador antes de enviar la solicitud."
+    },
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿Cuánto tarda la revisión de mi solicitud?",
+      "claves": [
+        "tiempo",
+        "cuando",
+        "respuesta",
+        "dias",
+        "tarda"
+      ],
+      "respuesta": "Revisamos las solicitudes en un máximo de 5 días hábiles. Si todo está en orden te llamaremos para agendar una entrevista y una visita para conocer a la mascota."
+    },
+    {
+      "refugio": "ref-1",
+      "pregunta": "¿La adopción tiene algún costo?",
+      "claves": [
+        "costo",
+        "precio",
+        "pagar",
+        "cuota",
+        "donativo"
+      ],
+      "respuesta": "La adopción no tiene costo. Al entregar la mascota pedimos un donativo voluntario que nos ayuda a cubrir vacunas y esterilizaciones de otros animales."
+    },
+    {
+      "refugio": "ref-2",
+      "pregunta": "¿Qué necesito para adoptar en PetCare?",
+      "claves": [
+        "requisitos",
+        "documentos",
+        "papeles"
+      ],
+      "respuesta": "Identificación oficial, comprobante de domicilio reciente y fotos del lugar donde vivirá la mascota. Además, todos los adultos de la casa deben estar de acuerdo con la adopción."
+    }
   ],
   "documentosMascota": [
-    { "mascota": "mas-1", "tipo": "vacunacion", "nombre": "cartilla-vacunacion-max.pdf", "verificado": true },
-    { "mascota": "mas-1", "tipo": "esterilizacion", "nombre": "constancia-esterilizacion-max.pdf", "verificado": false },
-    { "mascota": "mas-2", "tipo": "vacunacion", "nombre": "cartilla-vacunacion-luna.pdf", "verificado": false },
-    { "mascota": "mas-7", "tipo": "pedigree", "nombre": "pedigree-rocky.pdf", "verificado": false }
+    {
+      "mascota": "mas-1",
+      "tipo": "vacunacion",
+      "nombre": "cartilla-vacunacion-max.pdf",
+      "verificado": true
+    },
+    {
+      "mascota": "mas-1",
+      "tipo": "esterilizacion",
+      "nombre": "constancia-esterilizacion-max.pdf",
+      "verificado": false
+    },
+    {
+      "mascota": "mas-2",
+      "tipo": "vacunacion",
+      "nombre": "cartilla-vacunacion-luna.pdf",
+      "verificado": false
+    },
+    {
+      "mascota": "mas-7",
+      "tipo": "pedigree",
+      "nombre": "pedigree-rocky.pdf",
+      "verificado": false
+    }
   ],
   "foro": [
     {

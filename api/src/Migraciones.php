@@ -21,7 +21,21 @@ final class Migraciones
         2275, // ORA-02275: ya existe esa llave foránea
     ];
 
-    /** Crea todas las tablas, secuencias e índices que falten. */
+    /**
+     * Columnas agregadas después de la primera versión del esquema en Oracle. CREATE TABLE no las
+     * agrega a una tabla que ya existe; aquí se agregan las que falten (es seguro repetirlo).
+     */
+    private const COLUMNAS_NUEVAS = [
+        'refugios' => [
+            'latitud' => 'NUMBER(9,6)', 'longitud' => 'NUMBER(9,6)', 'municipio' => 'VARCHAR2(100 CHAR)',
+            'codigo_postal' => 'VARCHAR2(5 CHAR)', 'rfc' => 'VARCHAR2(13 CHAR)', 'tipo_organizacion' => 'VARCHAR2(60 CHAR)',
+            'anio_fundacion' => 'NUMBER(4)', 'whatsapp' => 'VARCHAR2(25 CHAR)', 'redes' => 'VARCHAR2(1000 CHAR)',
+            'necesidades' => 'VARCHAR2(1000 CHAR)', 'tiene_perros' => 'NUMBER(1) DEFAULT 1 NOT NULL',
+            'tiene_gatos' => 'NUMBER(1) DEFAULT 1 NOT NULL',
+        ],
+    ];
+
+    /** Crea todas las tablas, secuencias e índices que falten, y las columnas nuevas. */
     public static function migrar(): void
     {
         $pdo = Base::pdo();
@@ -31,6 +45,22 @@ final class Migraciones
             } catch (\PDOException $e) {
                 if (!in_array(Base::codigoOracle($e), self::YA_EXISTE, true)) {
                     throw Base::traducir($e);
+                }
+            }
+        }
+        self::actualizar();
+    }
+
+    private static function actualizar(): void
+    {
+        foreach (self::COLUMNAS_NUEVAS as $tabla => $columnas) {
+            foreach ($columnas as $columna => $definicion) {
+                $existe = (int) Base::valor(
+                    'SELECT COUNT(*) FROM user_tab_columns WHERE table_name = ? AND column_name = ?',
+                    [strtoupper($tabla), strtoupper($columna)],
+                ) > 0;
+                if (!$existe) {
+                    Base::pdo()->exec("ALTER TABLE $tabla ADD ($columna $definicion)");
                 }
             }
         }

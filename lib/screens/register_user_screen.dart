@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../core/api_client.dart';
+import '../core/sesion_service.dart';
+import '../navigation.dart';
+
 class RegisterUserScreen extends StatefulWidget {
   const RegisterUserScreen({super.key});
 
@@ -23,7 +27,9 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _obscurePassword = true;
+  bool _enviando = false;
   bool _acceptTerms = false;
   bool _showTermsError = false;
 
@@ -32,6 +38,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -110,7 +117,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         controller: _usernameController,
                         textInputAction: TextInputAction.next,
                         decoration: _inputDecoration(
-                          'Nombre de usuario',
+                          'Nombre completo',
                           Icons.person_outline,
                         ),
                         validator: (v) {
@@ -119,6 +126,9 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                           }
                           if (v.trim().length < 3) {
                             return 'Mínimo 3 caracteres';
+                          }
+                          if (v.trim().length > 80) {
+                            return 'Máximo 80 caracteres';
                           }
                           return null;
                         },
@@ -140,6 +150,26 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                           }
                           if (!v.contains('@') || !v.contains('.')) {
                             return 'Ingresa un correo válido';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Teléfono (opcional)
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        textInputAction: TextInputAction.next,
+                        decoration: _inputDecoration(
+                          'Teléfono (opcional)',
+                          Icons.phone_outlined,
+                        ),
+                        validator: (v) {
+                          final t = (v ?? '').trim();
+                          if (t.isEmpty) return null;
+                          if (!RegExp(r'^[\d\s+()\-]{8,}$').hasMatch(t)) {
+                            return 'Al menos 8 dígitos (números, espacios, + - y paréntesis)';
                           }
                           return null;
                         },
@@ -203,7 +233,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
 
                       // Botón Crear Cuenta
                       ElevatedButton(
-                        onPressed: _crearCuenta,
+                        onPressed: _enviando ? null : _crearCuenta,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _turquoise,
                           foregroundColor: _textColor,
@@ -212,7 +242,13 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: _enviando
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: _textColor),
+                              )
+                            : const Text(
                           'Crear cuenta 🐾',
                           style: TextStyle(
                             fontSize: 16,
@@ -294,7 +330,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     );
   }
 
-  void _crearCuenta() {
+  Future<void> _crearCuenta() async {
+    FocusScope.of(context).unfocus();
     final formOk = _formKey.currentState!.validate();
 
     if (!_acceptTerms) {
@@ -302,9 +339,36 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     }
     if (!formOk || !_acceptTerms) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('¡Cuenta creada exitosamente!')),
-    );
-    Navigator.pop(context);
+    setState(() => _enviando = true);
+    final sesion = SesionService.instancia;
+    try {
+      await sesion.registrarUsuario(
+        nombre: _usernameController.text,
+        correo: _emailController.text,
+        password: _passwordController.text,
+        telefono: _phoneController.text,
+      );
+      // La cuenta ya existe: se inicia sesión de una vez
+      await sesion.iniciarSesion(
+        correo: _emailController.text,
+        password: _passwordController.text,
+        rol: 'usuario',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('¡Cuenta creada! Bienvenido a HuellApp.')),
+      );
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const AppNavigation()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _enviando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700),
+      );
+    }
   }
+
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/sesion_service.dart';
 import 'package:huellapp/screens/coincidencias_screen.dart';
 import 'package:huellapp/screens/inicio_screen.dart';
 import 'package:huellapp/screens/login_screen.dart';
@@ -24,6 +25,55 @@ class _AppShellState extends State<AppShell> {
 
   void _irA(int indice) => setState(() => _indice = indice);
 
+  void _abrirLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
+  void _mostrarCuenta(Sesion sesion) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (hoja) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                backgroundColor: _turquoise,
+                child: Icon(Icons.person, color: Colors.black),
+              ),
+              title: Text(sesion.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('${sesion.correo} · ${sesion.esRefugio ? 'Refugio' : 'Usuario'}'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.logout),
+              label: const Text('Cerrar sesión'),
+              onPressed: () async {
+                Navigator.pop(hoja);
+                await SesionService.instancia.cerrarSesion();
+                if (!mounted) return;
+                // Vuelve al inicio de sesión (fuera de la estructura principal de la app)
+                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,13 +94,18 @@ class _AppShellState extends State<AppShell> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              tooltip: 'Iniciar sesión',
-              icon: const Icon(Icons.pets, color: Colors.black, size: 32),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+            child: ListenableBuilder(
+              listenable: SesionService.instancia,
+              builder: (context, _) {
+                final sesion = SesionService.instancia.actual;
+                return IconButton(
+                  tooltip: sesion == null ? 'Iniciar sesión' : 'Mi cuenta',
+                  icon: Icon(
+                    sesion == null ? Icons.pets : Icons.account_circle,
+                    color: Colors.black,
+                    size: 32,
+                  ),
+                  onPressed: () => sesion == null ? _abrirLogin() : _mostrarCuenta(sesion),
                 );
               },
             ),

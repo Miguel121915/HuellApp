@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/api_client.dart';
+import '../core/sesion_service.dart';
 import '../navigation.dart';
 import 'register_shelter_screen.dart';
 import 'register_user_screen.dart';
@@ -27,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-  // Los 3 roles de login: 'Usuario', 'Refugio', 'Admin'
+  // Roles de login en la app móvil: 'Usuario' y 'Refugio' (el administrador usa el sitio web)
   String _selectedRole = 'Usuario';
 
   final TextEditingController _userOrEmailController = TextEditingController();
@@ -48,13 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
   // ---------- Textos e íconos según el rol ----------
 
   String get _userFieldLabel {
-    if (_selectedRole == 'Admin') return 'Usuario Admin';
-    if (_selectedRole == 'Refugio') return 'Correo o usuario del refugio';
-    return 'Nombre de usuario o correo';
+    if (_selectedRole == 'Refugio') return 'Correo del refugio';
+    return 'Correo electrónico';
   }
 
   IconData get _userFieldIcon {
-    if (_selectedRole == 'Admin') return Icons.badge_outlined;
     if (_selectedRole == 'Refugio') return Icons.maps_home_work_outlined;
     return Icons.person_outline;
   }
@@ -68,13 +68,68 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: reemplazar por la validación real con el servidor
-    // (usuario, contraseña y rol seleccionado).
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final sesion = await SesionService.instancia.iniciarSesion(
+        correo: _userOrEmailController.text,
+        password: _passwordController.text,
+        rol: _selectedRole == 'Refugio' ? 'refugio' : 'usuario',
+      );
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      // Un refugio que todavía no está aprobado no puede usar su panel
+      if (sesion.esRefugio && !sesion.refugioAprobado) {
+        await _avisarEstadoRefugio(sesion.refugioEstado);
+        await SesionService.instancia.cerrarSesion();
+        return;
+      }
+      _entrar();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700),
+      );
+    }
+  }
+
+  void _entrarComoVisitante() {
+    SesionService.instancia.entrarComoInvitado();
     _entrar();
+  }
+
+  Future<void> _avisarEstadoRefugio(String? estado) {
+    final (titulo, texto) = switch (estado) {
+      'pendiente' => (
+          'Solicitud en revisión',
+          'El administrador todavía está revisando los documentos de tu refugio. '
+              'Te avisaremos por correo cuando sea aprobado.',
+        ),
+      'rechazado' => (
+          'Solicitud rechazada',
+          'Tu solicitud fue rechazada. Por ahora revisa el motivo y envía tu apelación '
+              'desde el sitio web de HuellApp.',
+        ),
+      'suspendido' => (
+          'Refugio suspendido',
+          'Tu refugio está suspendido. Comunícate con el administrador de HuellApp.',
+        ),
+      _ => ('Refugio no disponible', 'Tu refugio todavía no puede usar el panel.'),
+    };
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(titulo),
+        content: Text(texto),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido', style: TextStyle(color: _accent)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _entrar() {
@@ -84,10 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.popUntil(context, (route) => route.isFirst);
       return;
     }
-    // TODO: cuando existan los paneles, enviar a cada rol a su pantalla:
-    //   'Usuario' -> AppNavigation()
-    //   'Refugio' -> panel del refugio
-    //   'Admin'   -> panel del administrador
+    // TODO (Sprint 1): el rol 'refugio' irá a su panel cuando exista en la app.
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const AppNavigation()),
@@ -208,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Selector de rol: Usuario, Refugio y Admin
+                          // Selector de rol: Usuario y Refugio (el administrador usa el sitio web)
                           SegmentedButton<String>(
                             showSelectedIcon: false,
                             style: SegmentedButton.styleFrom(
@@ -234,17 +286,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 icon: Icon(Icons.pets, size: 16),
                               ),
-                              ButtonSegment(
-                                value: 'Admin',
-                                label: Text(
-                                  'Admin',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                                icon: Icon(
-                                  Icons.admin_panel_settings,
-                                  size: 16,
-                                ),
-                              ),
                             ],
                             selected: {_selectedRole},
                             onSelectionChanged: (Set<String> newSelection) {
@@ -266,7 +307,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
-                                return 'Escribe tu usuario o correo';
+                                return 'Escribe tu correo';
+                              }
+                              if (!v.contains('@')) {
+                                return 'Escribe un correo válido';
                               }
                               return null;
                             },
@@ -372,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             height: 48,
                             child: OutlinedButton.icon(
-                              onPressed: _entrar,
+                              onPressed: _entrarComoVisitante,
                               icon: const Icon(Icons.visibility_outlined),
                               label: const Text(
                                 'Entrar como visitante',

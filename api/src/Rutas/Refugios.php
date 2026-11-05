@@ -13,7 +13,8 @@ final class Refugios
 {
     public static function registrar(Enrutador $r): void
     {
-        $r->grupo('/refugios', [[Sesion::class, 'requiereSesion']], static function (Enrutador $r): void {
+        // Públicas: un visitante sin cuenta también puede ver refugios aprobados y sus mascotas
+        $r->grupo('/refugios', [], static function (Enrutador $r): void {
             $r->get('', [self::class, 'listar']);
             $r->get('/{id}', [self::class, 'ver']);
             $r->get('/{id}/mascotas', [self::class, 'mascotas']);

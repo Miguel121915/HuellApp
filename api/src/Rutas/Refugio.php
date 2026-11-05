@@ -66,7 +66,9 @@ final class Refugio
         $direccion = Validar::texto($b['direccion'] ?? null, 'La dirección', min: 5, max: 160);
         $horario = Validar::horario($b['horario'] ?? null);
         $descripcion = Validar::texto($b['descripcion'] ?? null, 'La descripción', max: 400, opcional: true);
+        $extras = \HuellApp\RefugioExtra::leer($b); // solo los campos que vengan (la app móvil manda ubicación, WhatsApp…)
         Base::ejecutar('UPDATE refugios SET telefono = ?, direccion = ?, horario = ?, descripcion = ? WHERE id = ?', [$telefono, $direccion, $horario, $descripcion, $s->refugio['id']]);
+        \HuellApp\RefugioExtra::guardar((int) $s->refugio['id'], $extras);
         $fila = Base::uno('SELECT r.*, u.correo FROM refugios r JOIN usuarios u ON u.id = r.usuario_id WHERE r.id = ?', [$s->refugio['id']]);
         return ['ok' => true, 'refugio' => Serializadores::refugioCompleto($fila, self::documentos((int) $fila['id']))];
     }

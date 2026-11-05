@@ -83,6 +83,7 @@ final class Semilla
                     [$idUsuario[$r['correoDueno']], $r['nombre'], $r['responsable'], $r['telefono'], $r['direccion'], $r['horario'], $r['estado'], $r['motivoRechazo'], self::hace(400 - $i * 24)],
                 );
                 $idRefugio[$r['clave']] = $id;
+                RefugioExtra::guardar($id, RefugioExtra::leer($r['extras'] ?? []));
                 foreach ($r['documentos'] as $d) {
                     $contenido = self::pdfDeEjemplo(self::TITULOS[$d['tipo']]);
                     $archivo = "demo-$id-{$d['tipo']}-" . self::sufijo() . '.pdf';
