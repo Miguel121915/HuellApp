@@ -26,6 +26,17 @@ final class Migraciones
      * agrega a una tabla que ya existe; aquí se agregan las que falten (es seguro repetirlo).
      */
     private const COLUMNAS_NUEVAS = [
+        // Verificación en dos pasos (Google Authenticator) y cuenta de Google vinculada
+        'usuarios' => [
+            'totp_secreto' => 'VARCHAR2(200 CHAR)', 'totp_activo' => 'NUMBER(1) DEFAULT 0 NOT NULL',
+            'totp_ultimo_paso' => 'NUMBER(12)', 'google_sub' => 'VARCHAR2(64 CHAR)',
+        ],
+        // Reportes (HU-5): especie y nombre opcionales, y lo que detectó la IA (JSON)
+        'reportes' => [
+            'especie' => 'VARCHAR2(10 CHAR)', 'nombre' => 'VARCHAR2(60 CHAR)', 'analisis_ia' => 'VARCHAR2(1000 CHAR)',
+        ],
+        // Coincidencias (HU-8): 1 si la IA comparó las fotos
+        'coincidencias' => ['por_ia' => 'NUMBER(1) DEFAULT 0 NOT NULL'],
         'refugios' => [
             'latitud' => 'NUMBER(9,6)', 'longitud' => 'NUMBER(9,6)', 'municipio' => 'VARCHAR2(100 CHAR)',
             'codigo_postal' => 'VARCHAR2(5 CHAR)', 'rfc' => 'VARCHAR2(13 CHAR)', 'tipo_organizacion' => 'VARCHAR2(60 CHAR)',

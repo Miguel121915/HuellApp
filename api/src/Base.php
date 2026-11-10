@@ -31,7 +31,7 @@ final class Base
     /** Columnas numéricas por nombre, por si el driver no informa el tipo de la columna. */
     private const NUMERICAS = [
         'id', 'cuenta', 'tamano', 'edad_meses', 'apelaciones', 'verificado', 'con_error', 'activa',
-        'similitud', 'republicar_cada_dias', 'republicada_veces', 'total', 'verificados', 'total_likes', 'ya_dio', 'obligatorio', 'mensajes_nuevos',
+        'similitud', 'republicar_cada_dias', 'republicada_veces', 'total', 'verificados', 'total_likes', 'ya_dio', 'obligatorio', 'mensajes_nuevos', 'totp_activo', 'totp_ultimo_paso', 'por_ia',
     ];
 
     private static function opciones(): array

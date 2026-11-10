@@ -52,6 +52,14 @@
 .intro-kiro { display: flex; align-items: center; gap: var(--e4); max-width: 760px; margin: 0 auto var(--e6); }
 .intro-kiro img { flex-shrink: 0; width: 96px; height: auto; }
 
+/* Mapa de refugios (HU-11) */
+.mapa-refugios { margin-bottom: var(--e6); display: grid; gap: var(--e3); }
+.mapa-refugios__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
+.mapa-refugios__cabecera .seccion-titulo { margin: 0; }
+.mapa-refugios__mapa { height: 380px; border-radius: var(--radio-m); border: 2px solid var(--aqua); z-index: 0; }
+.marcador-refugio { font-size: 26px; line-height: 34px; text-align: center; filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.35)); }
+.mapa-popup { display: grid; gap: 4px; min-width: 180px; font-size: 0.875rem; }
+@media (max-width: 700px) { .mapa-refugios__mapa { height: 300px; } }
 .refugios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--e5); }
 .refugio-tarjeta {
   display: flex;

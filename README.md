@@ -15,12 +15,11 @@ Sitio web (HTML/JS) ──┘
 | raíz (`lib/`, `android/`, `ios/`, `pubspec.yaml`…) | App móvil en Flutter | `flutter pub get` y `flutter run` desde la raíz |
 | `api/` | API en PHP (sin frameworks) que usan la app y el sitio | `php artisan serve` dentro de `api/` (ver `api/README.md`) |
 | `sitio-web/` | Sitio web en HTML, CSS y JavaScript | Lo muestra la API en http://localhost:3000 (ver `sitio-web/README.md`) |
-| `backend/` | Servidor Node/Express que usa hoy la pantalla Reportar de la app (análisis con Gemini) | `npm install` y `node server.js` dentro de `backend/`. Se retirará cuando la IA pase a `api/` |
+| `backend/` | **Ya no se usa.** Era el servidor Node/Express de Reportar con Gemini y MySQL; la IA ahora está en `api/` (ver `api/README.md`) | Se puede borrar cuando el equipo lo confirme |
 | `database/` | Esquemas de base de datos | — |
 
 Cada parte se ejecuta por separado: cambiar el sitio web no afecta a la app y viceversa. Lo único que comparten es la API; si cambias una ruta o un campo de la API, avisa al equipo.
 
-> La API PHP y el servidor Node usan el puerto 3000 por defecto. Si necesitas los dos a la vez, inicia uno en otro puerto (por ejemplo `php artisan serve --port=8000`).
 
 ## Presentar en vivo (demo)
 

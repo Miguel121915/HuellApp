@@ -97,6 +97,9 @@ function crearTarjeta(c) {
         crearElemento("figure", { clase: "coincidencia__foto" }, imagen(hallazgo.foto, hallazgo.fotoAlt || "Mascota encontrada")),
         crearElemento("p", { clase: "coincidencia__texto", texto: hallazgo.descripcion }),
         crearElemento("p", { clase: "texto-pequeno", texto: `Zona: ${hallazgo.zona} · Reportado ${tiempoRelativo(c.fecha)}` }),
+        crearElemento("p", { clase: "texto-pequeno texto-suave", texto: c.porIA
+          ? "🤖 La IA comparó las fotos de las dos mascotas."
+          : "Comparado por descripción y zona (sin IA)." }),
         crearElemento("div", { clase: "coincidencia__acciones" }, [
           crearElemento("button", { clase: "boton boton--primario", texto: "Contactar", atributos: { type: "button", "data-accion": "contactar" } }),
           crearElemento("button", { clase: "boton boton--peligro", texto: "Declinar", atributos: { type: "button", "data-accion": "declinar" } }),

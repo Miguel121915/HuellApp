@@ -48,8 +48,9 @@ class ApiClient {
   Future<Map<String, dynamic>> get(String ruta, {Map<String, String>? query}) =>
       _enviar(() => http.get(_uri(ruta, query), headers: _cabeceras));
 
-  Future<Map<String, dynamic>> post(String ruta, [Map<String, dynamic>? cuerpo]) =>
-      _enviar(() => http.post(_uri(ruta), headers: _cabeceras, body: jsonEncode(cuerpo ?? {})));
+  /// [espera]: tiempo máximo (por defecto 25 s; los reportes con IA usan más).
+  Future<Map<String, dynamic>> post(String ruta, [Map<String, dynamic>? cuerpo, Duration? espera]) =>
+      _enviar(() => http.post(_uri(ruta), headers: _cabeceras, body: jsonEncode(cuerpo ?? {})), espera);
 
   Future<Map<String, dynamic>> put(String ruta, [Map<String, dynamic>? cuerpo]) =>
       _enviar(() => http.put(_uri(ruta), headers: _cabeceras, body: jsonEncode(cuerpo ?? {})));
@@ -60,10 +61,10 @@ class ApiClient {
   Future<Map<String, dynamic>> delete(String ruta) =>
       _enviar(() => http.delete(_uri(ruta), headers: _cabeceras));
 
-  Future<Map<String, dynamic>> _enviar(Future<http.Response> Function() peticion) async {
+  Future<Map<String, dynamic>> _enviar(Future<http.Response> Function() peticion, [Duration? espera]) async {
     final http.Response respuesta;
     try {
-      respuesta = await peticion().timeout(_espera);
+      respuesta = await peticion().timeout(espera ?? _espera);
     } on TimeoutException {
       throw ApiException('El servidor tardó demasiado en responder. Inténtalo de nuevo.');
     } catch (_) {

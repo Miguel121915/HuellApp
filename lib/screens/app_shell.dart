@@ -9,6 +9,7 @@ import 'package:huellapp/screens/mis_mensajes_screen.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/screens/refugios_screen.dart';
 import 'package:huellapp/screens/reportar_screen.dart';
+import 'package:huellapp/screens/seguridad_screen.dart';
 import 'package:huellapp/widgets/barra_inferior.dart';
 
 /// Estructura principal de la app: la barra de arriba (HuellApp) y la de
@@ -82,6 +83,16 @@ class _AppShellState extends State<AppShell> {
               onTap: () {
                 Navigator.pop(hoja);
                 _abrir('ver tus mensajes', const MisMensajesScreen());
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.verified_user_outlined),
+              title: const Text('Seguridad'),
+              subtitle: const Text('Verificación en dos pasos con Google Authenticator'),
+              onTap: () {
+                Navigator.pop(hoja);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SeguridadScreen()));
               },
             ),
             const SizedBox(height: 12),

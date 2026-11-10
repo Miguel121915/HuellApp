@@ -68,8 +68,9 @@ export async function api(metodo, ruta, cuerpo, { blob = false } = {}) {
   try { datos = await respuesta.json(); } catch { /* respuesta sin cuerpo JSON */ }
   if (respuesta.ok) return datos;
 
-  // Sesión vencida o inválida: se limpia y se manda al login (excepto al intentar iniciar sesión)
-  if (respuesta.status === 401 && !ruta.startsWith("/auth/login")) {
+  // Sesión vencida o inválida: se limpia y se manda al login (excepto en los pasos del propio inicio de sesión)
+  const esPasoDeLogin = ["/auth/login", "/auth/google", "/auth/2fa/verificar"].some((r) => ruta.startsWith(r));
+  if (respuesta.status === 401 && !esPasoDeLogin) {
     borrar(CLAVES.SESION);
     irA("pages/login.html");
   }

@@ -63,6 +63,61 @@ final class Sesion
         }
     }
 
+    /* ---------- Verificación en dos pasos ----------
+     * Si la cuenta tiene activado Google Authenticator, la contraseña (o Google) correcta NO da la
+     * sesión: da un "desafío" de 5 minutos que solo sirve para POST /auth/2fa/verificar junto con el
+     * código de 6 dígitos. Se firma con otra etiqueta, así que nunca vale como token de sesión.
+     */
+    private const VIGENCIA_DESAFIO = 300;
+
+    public static function crearDesafio(int $usuarioId): string
+    {
+        $carga = self::b64(json_encode(['sub' => (string) $usuarioId, 'exp' => time() + self::VIGENCIA_DESAFIO]));
+        return "$carga." . self::b64(hash_hmac('sha256', "desafio-2fa|$carga", Config::obtener('JWT_SECRET'), true));
+    }
+
+    /** Id del usuario del desafío, o null si es falso o ya venció. */
+    public static function verificarDesafio(string $desafio): ?int
+    {
+        $partes = explode('.', $desafio);
+        if (count($partes) !== 2) {
+            return null;
+        }
+        [$carga, $firma] = $partes;
+        $esperada = self::b64(hash_hmac('sha256', "desafio-2fa|$carga", Config::obtener('JWT_SECRET'), true));
+        if (!hash_equals($esperada, $firma)) {
+            return null;
+        }
+        $datos = json_decode((string) self::b64Inverso($carga), true);
+        return is_array($datos) && ($datos['exp'] ?? 0) >= time() ? (int) ($datos['sub'] ?? 0) : null;
+    }
+
+    /** El secreto de Google Authenticator se guarda cifrado (AES-256-GCM con una clave derivada de JWT_SECRET). */
+    private static function claveSecretos(): string
+    {
+        return hash_hmac('sha256', 'secretos-2fa', Config::obtener('JWT_SECRET'), true);
+    }
+
+    public static function cifrar(string $texto): string
+    {
+        $iv = random_bytes(12);
+        $cifrado = openssl_encrypt($texto, 'aes-256-gcm', self::claveSecretos(), OPENSSL_RAW_DATA, $iv, $etiqueta);
+        return 'v1:' . base64_encode($iv . $etiqueta . $cifrado);
+    }
+
+    public static function descifrar(string $guardado): ?string
+    {
+        if (!str_starts_with($guardado, 'v1:')) {
+            return null;
+        }
+        $bin = base64_decode(substr($guardado, 3), true);
+        if ($bin === false || strlen($bin) < 29) {
+            return null;
+        }
+        $texto = openssl_decrypt(substr($bin, 28), 'aes-256-gcm', self::claveSecretos(), OPENSSL_RAW_DATA, substr($bin, 0, 12), substr($bin, 12, 16));
+        return $texto === false ? null : $texto;
+    }
+
     /* ---------- Enlaces firmados para abrir documentos privados ----------
      * Un navegador o visor externo no puede mandar la cabecera Authorization. Para que la app
      * abra un documento privado, la API firma un enlace de 5 minutos SOLO para esa ruta GET de

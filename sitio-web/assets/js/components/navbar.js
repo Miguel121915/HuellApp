@@ -92,6 +92,7 @@ export async function montarNavbar({ sesion, activa }) {
       <nav class="nav" aria-label="Principal">${enlaces}</nav>
       <div class="encabezado__acciones">
         <span class="encabezado__usuario texto-pequeno" id="nombre-usuario"></span>
+        ${sesion.rol === "invitado" ? "" : '<button class="boton boton--contorno boton--pequeno" id="boton-seguridad" type="button" title="Verificación en dos pasos">🔒 Seguridad</button>'}
         <button class="boton boton--contorno boton--pequeno" id="boton-salir" type="button">${sesion.rol === "invitado" ? "Iniciar sesión" : "Cerrar sesión"}</button>
       </div>
     </div>`;
@@ -101,6 +102,10 @@ export async function montarNavbar({ sesion, activa }) {
   encabezado.querySelector("#boton-salir").addEventListener("click", () => {
     cerrarSesion();
     irA("pages/login.html");
+  });
+  encabezado.querySelector("#boton-seguridad")?.addEventListener("click", async () => {
+    const { abrirSeguridad } = await import("./seguridad-cuenta.js"); // se carga solo cuando se usa
+    abrirSeguridad();
   });
 
   if (sesion.rol === "usuario") await refrescarInsigniaCoincidencias();

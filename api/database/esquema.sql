@@ -22,6 +22,12 @@ CREATE TABLE usuarios (
   password_hash VARCHAR2(255 CHAR) NOT NULL,
   rol           VARCHAR2(10 CHAR) NOT NULL,
   creado_en     TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  -- Verificación en dos pasos: secreto de Google Authenticator (cifrado), si está activa y el último código usado
+  totp_secreto     VARCHAR2(200 CHAR),
+  totp_activo      NUMBER(1) DEFAULT 0 NOT NULL,
+  totp_ultimo_paso NUMBER(12),
+  -- Cuenta de Google vinculada («Continuar con Google»): identificador "sub" de Google
+  google_sub       VARCHAR2(64 CHAR),
   CONSTRAINT pk_usuarios PRIMARY KEY (id),
   CONSTRAINT uq_usuarios_correo UNIQUE (correo),
   CONSTRAINT ck_usuarios_rol CHECK (rol IN ('usuario', 'refugio', 'admin'))
@@ -201,6 +207,10 @@ CREATE TABLE reportes (
   foto        VARCHAR2(200 CHAR) NOT NULL,
   foto_alt    VARCHAR2(160 CHAR),
   creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  -- Opcionales: especie (perro/gato/otro), nombre de la mascota y rasgos que detectó la IA (JSON)
+  especie     VARCHAR2(10 CHAR),
+  nombre      VARCHAR2(60 CHAR),
+  analisis_ia VARCHAR2(1000 CHAR),
   CONSTRAINT pk_reportes PRIMARY KEY (id),
   CONSTRAINT ck_reportes_tipo CHECK (tipo IN ('perdida', 'encontrada')),
   CONSTRAINT fk_reportes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
@@ -215,6 +225,7 @@ CREATE TABLE coincidencias (
   reporte_encontrado_id NUMBER(10) NOT NULL,
   similitud             NUMBER(3) NOT NULL,
   creado_en             TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  por_ia                NUMBER(1) DEFAULT 0 NOT NULL, -- 1 = la IA comparó las fotos
   CONSTRAINT pk_coincidencias PRIMARY KEY (id),
   CONSTRAINT uq_coincidencia UNIQUE (reporte_perdido_id, reporte_encontrado_id),
   CONSTRAINT fk_coin_perdido FOREIGN KEY (reporte_perdido_id) REFERENCES reportes (id) ON DELETE CASCADE,

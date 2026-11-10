@@ -15,6 +15,7 @@ import {
 import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
 import { montarFormularioAdopcion } from "./adopcion.js";
 import { pedirCuenta } from "../../components/aviso-cuenta.js";
+import { dibujarMapaRefugios, ubicarPersona, distanciaKm } from "../../components/mapa-refugios.js";
 
 const LOTE = 6;
 
@@ -51,13 +52,8 @@ let requisitosActuales = [];             // requisitos de adopción del refugio 
 const sesion = requerirRol("usuario", { permitirInvitado: true });
 const esVisitante = sesion?.rol === "invitado";
 let formularioAdopcion = null;
-
-if (sesion) {
-  montarNavbar({ sesion, activa: "refugios" });
-  formularioAdopcion = montarFormularioAdopcion({ sesion, alEnviar: solicitudEnviada });
-  enlazarEventos();
-  Promise.all([cargarMisSolicitudes(), cargarFavoritos()]).then(mostrarSegunUrl);
-}
+// El arranque está AL FINAL del archivo: enlazarEventos() usa constantes declaradas más abajo
+// (formularioContacto, miUbicacion…) y usarlas antes de su declaración rompía la página.
 
 /* ---------- Adopción ---------- */
 
@@ -213,6 +209,7 @@ function enlazarEventos() {
     irARefugio(enlace.dataset.refugio);
   });
   document.getElementById("volver").addEventListener("click", (evento) => { evento.preventDefault(); irARefugio(null); });
+  document.getElementById("boton-cerca").addEventListener("click", buscarCercaDeMi);
 
   // Botón "Adoptar" de cada tarjeta (delegación: las tarjetas se crean y recrean por lotes)
   rejilla.addEventListener("click", (evento) => {
@@ -264,6 +261,13 @@ async function mostrarLista() {
       : `No encontramos refugios ni mascotas para «${qTexto}».`);
   }
 
+  // «Cerca de mí»: distancia a cada refugio con ubicación y los más cercanos primero
+  if (miUbicacion) {
+    refugios = refugios
+      .map((r) => ({ ...r, distanciaKm: r.latitud != null && r.longitud != null && r.latitud !== "" ? distanciaKm(miUbicacion, [Number(r.latitud), Number(r.longitud)]) : null }))
+      .sort((a, b) => (a.distanciaKm ?? Infinity) - (b.distanciaKm ?? Infinity));
+  }
+
   const fragmento = document.createDocumentFragment();
   refugios.forEach((r) => {
     fragmento.append(crearElemento("li", {}, crearElemento("a", {
@@ -273,10 +277,31 @@ async function mostrarLista() {
       crearElemento("span", { clase: "refugio-tarjeta__nombre", texto: r.nombre }),
       crearElemento("span", { clase: "refugio-tarjeta__dato", texto: r.direccion }),
       crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `Horario: ${r.horario}` }),
+      r.distanciaKm != null ? crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `📍 A ${r.distanciaKm.toFixed(1)} km` }) : null,
       crearElemento("span", { clase: "refugio-tarjeta__accion", texto: "Ver mascotas →" }),
-    ])));
+    ].filter(Boolean))));
   });
   listaRefugios.replaceChildren(fragmento);
+
+  // Mapa (HU-11)
+  dibujarMapaRefugios(document.getElementById("mapa"), refugios, { alElegir: irARefugio, aviso: document.getElementById("mapa-aviso") });
+}
+
+let miUbicacion = null; // [lat, lon] después de «Cerca de mí»
+
+async function buscarCercaDeMi() {
+  const boton = document.getElementById("boton-cerca");
+  const aviso = document.getElementById("mapa-aviso");
+  boton.disabled = true;
+  aviso.textContent = "Buscando tu ubicación…";
+  try {
+    miUbicacion = await ubicarPersona();
+    await mostrarLista();
+  } catch (error) {
+    aviso.textContent = error.message;
+  } finally {
+    boton.disabled = false;
+  }
 }
 
 /* ---------- Vista: detalle de un refugio ---------- */
@@ -375,4 +400,12 @@ async function mostrarPublicaciones(refugioId) {
   const fragmento = document.createDocumentFragment();
   publicaciones.forEach((p) => fragmento.append(crearTarjetaPublicacion({ ...p, likes: 0, comentarios: [] }, { conLikes: false, conComentarios: false })));
   lista.replaceChildren(fragmento);
+}
+
+/* ---------- Arranque ---------- */
+if (sesion) {
+  montarNavbar({ sesion, activa: "refugios" });
+  formularioAdopcion = montarFormularioAdopcion({ sesion, alEnviar: solicitudEnviada });
+  enlazarEventos();
+  Promise.all([cargarMisSolicitudes(), cargarFavoritos()]).then(mostrarSegunUrl);
 }

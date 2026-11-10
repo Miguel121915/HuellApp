@@ -27,16 +27,47 @@ export function entrarComoInvitado() {
 
 export const esInvitado = (sesion) => sesion?.rol === "invitado";
 
-/**
- * Inicia sesión validando correo, contraseña y rol elegido.
- * @returns {Promise<{ok:boolean, sesion?:object, error?:string}>}
- */
-export const iniciarSesion = ({ rol, correo, password }) => intentar(async () => {
-  const r = await post("/auth/login", { rol, correo: correo.trim(), password });
+/** Guarda la sesión que devolvió el servidor, o avisa que falta el código de dos pasos. */
+function recibirLogin(r) {
+  if (r.requiere2fa) return { ok: true, requiere2fa: true, desafio: r.desafio };
   const sesion = { ...r.sesion, token: r.token };
   guardar(CLAVES.SESION, sesion);
   return { ok: true, sesion };
-});
+}
+
+/**
+ * Inicia sesión validando correo, contraseña y rol elegido.
+ * Si la cuenta tiene verificación en dos pasos devuelve { ok, requiere2fa, desafio }:
+ * falta llamar a verificarCodigo2fa con el código de Google Authenticator.
+ * @returns {Promise<{ok:boolean, sesion?:object, requiere2fa?:boolean, desafio?:string, error?:string}>}
+ */
+export const iniciarSesion = ({ rol, correo, password }) => intentar(async () =>
+  recibirLogin(await post("/auth/login", { rol, correo: correo.trim(), password })));
+
+/** «Continuar con Google»: `idToken` es la credencial que entrega el botón de Google. */
+export const iniciarSesionGoogle = ({ rol, idToken }) => intentar(async () =>
+  recibirLogin(await post("/auth/google", { rol, idToken })));
+
+/** Segundo paso: el código de 6 dígitos de Google Authenticator. */
+export const verificarCodigo2fa = ({ desafio, codigo }) => intentar(async () =>
+  recibirLogin(await post("/auth/2fa/verificar", { desafio, codigo: codigo.replace(/\s+/g, "") })));
+
+/** Configuración pública del login (por ahora, el Client ID de Google; "" = sin botón de Google). */
+export async function obtenerConfigAuth() {
+  try {
+    return await get("/auth/config");
+  } catch {
+    return { googleClientId: "" };
+  }
+}
+
+/* ---------- Verificación en dos pasos de la cuenta (con sesión) ---------- */
+
+export const estado2fa = async () => (await get("/auth/2fa")).activo;
+/** Genera un secreto nuevo: { secreto, enlace } (el enlace otpauth:// va en el código QR). */
+export const preparar2fa = () => post("/auth/2fa/preparar");
+export const activar2fa = (codigo) => intentar(async () => ({ ok: true, ...(await post("/auth/2fa/activar", { codigo })) }));
+export const desactivar2fa = (codigo) => intentar(async () => ({ ok: true, ...(await post("/auth/2fa/desactivar", { codigo })) }));
 
 /**
  * Vuelve a pedir al servidor los datos de la sesión (el estado de un refugio puede haber

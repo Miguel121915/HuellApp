@@ -55,6 +55,25 @@
         </div>
 
         <button class="boton boton--primario boton--bloque" id="boton-entrar" type="submit">Entrar</button>
+
+        <!-- «Continuar con Google»: solo aparece si la API tiene GOOGLE_CLIENT_ID -->
+        <div class="login__google" id="zona-google" hidden>
+          <div class="login__separador" aria-hidden="true"><span>o</span></div>
+          <div id="boton-google"></div>
+        </div>
+      </form>
+
+      <!-- Segundo paso: código de Google Authenticator (cuentas con verificación en dos pasos) -->
+      <form id="form-2fa" class="login__dos-pasos" novalidate hidden>
+        <div id="alerta-2fa" role="alert" hidden></div>
+        <p class="login__dos-pasos-texto">Tu cuenta tiene <strong>verificación en dos pasos</strong>. Abre <strong>Google Authenticator</strong> en tu teléfono y escribe el código de 6 dígitos de HuellApp.</p>
+        <div class="campo" id="campo-codigo">
+          <label class="campo__etiqueta" for="codigo">Código de verificación</label>
+          <input class="campo__control campo__control--codigo" id="codigo" name="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="123456">
+          <span class="campo__error" role="status"></span>
+        </div>
+        <button class="boton boton--primario boton--bloque" id="boton-verificar" type="submit">Verificar</button>
+        <button class="boton boton--contorno boton--bloque" id="boton-volver" type="button">Volver</button>
       </form>
 
       <p class="login__registro" id="enlace-registro">¿No tienes cuenta? <a class="enlace" href="registro-usuario.html">Regístrate</a></p>

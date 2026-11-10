@@ -26,6 +26,11 @@ final class Config
         'JWT_SECRET' => 'huellapp-clave-solo-para-desarrollo-local',
         'WEB_DIR' => '',
         'ORIGENES_PERMITIDOS' => '',
+        // Client ID de OAuth de Google Cloud para «Continuar con Google». Vacío = botón oculto.
+        'GOOGLE_CLIENT_ID' => '',
+        // IA de Google (análisis y comparación de fotos de reportes). Vacío = sin IA (compara texto).
+        'GEMINI_API_KEY' => '',
+        'GEMINI_MODEL' => '',
     ];
 
     /** @var array<string,string> */

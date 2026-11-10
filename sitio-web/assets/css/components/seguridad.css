@@ -1,0 +1,12 @@
+/* seguridad.css — Ventana «Seguridad»: verificación en dos pasos con Google Authenticator */
+.seguridad #seguridad-contenido { display: grid; gap: var(--e3); }
+.seguridad__pasos { margin: 0; padding-left: 1.25rem; display: grid; gap: var(--e2); }
+.seguridad__qr { justify-self: center; width: 220px; padding: var(--e2); background: var(--blanco); border: 2px solid var(--borde); border-radius: var(--radio-m); }
+.seguridad__qr svg { display: block; width: 100%; height: auto; }
+.seguridad__clave { margin: 0; padding: var(--e2) var(--e3); background: var(--aqua-suave); border-radius: var(--radio-s); font-family: ui-monospace, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.05em; text-align: center; overflow-wrap: anywhere; user-select: all; }
+.seguridad__codigo { display: grid; gap: var(--e2); }
+.seguridad__fila { display: flex; gap: var(--e3); }
+.seguridad__fila .campo__control { flex: 1; min-width: 0; }
+.seguridad__quitar summary { cursor: pointer; font-weight: 700; }
+.seguridad__quitar[open] { display: grid; gap: var(--e3); }
+.campo__control--codigo { font-size: 1.4rem; letter-spacing: 0.35em; text-align: center; font-variant-numeric: tabular-nums; }

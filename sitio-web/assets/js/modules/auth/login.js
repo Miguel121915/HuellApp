@@ -1,12 +1,49 @@
 /**
  * login.js — Pantalla de inicio de sesión con selector de rol.
  */
-import { iniciarSesion, entrarComoInvitado } from "../../core/auth.js";
+import { iniciarSesion, iniciarSesionGoogle, verificarCodigo2fa, obtenerConfigAuth, entrarComoInvitado } from "../../core/auth.js";
 import { redirigirSiHaySesion, destinoDeSesion } from "../../core/router-guard.js";
 import { CUENTAS_DEMO } from "../../data/cuentas-demo.js";
 import { irA, esCorreoValido, mostrarAlerta, ocultarAlerta, marcarError } from "../../core/utils.js";
 
 if (!redirigirSiHaySesion()) iniciar();
+
+/**
+ * Dibuja el botón oficial de Google si la API tiene un Client ID configurado.
+ * `alRecibir(idToken)` se llama cuando la persona elige su cuenta de Google.
+ */
+async function montarBotonGoogle(alRecibir) {
+  const { googleClientId } = await obtenerConfigAuth();
+  if (!googleClientId) return; // sin GOOGLE_CLIENT_ID en api/.env no se muestra
+  try {
+    await cargarScript("https://accounts.google.com/gsi/client");
+  } catch {
+    return; // sin internet: se sigue entrando con correo y contraseña
+  }
+  const zona = document.getElementById("zona-google");
+  window.google.accounts.id.initialize({
+    client_id: googleClientId,
+    callback: (respuesta) => alRecibir(respuesta.credential),
+    ux_mode: "popup",
+    use_fedcm_for_prompt: true,
+  });
+  zona.hidden = false;
+  window.google.accounts.id.renderButton(document.getElementById("boton-google"), {
+    type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", locale: "es",
+    width: Math.min(360, zona.clientWidth || 360),
+  });
+}
+
+function cargarScript(src) {
+  return new Promise((resolver, rechazar) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolver;
+    script.onerror = rechazar;
+    document.head.append(script);
+  });
+}
 
 function iniciar() {
   const formulario = document.getElementById("form-login");
@@ -39,6 +76,7 @@ function iniciar() {
     const invitado = rol === "invitado";
     campoCorreo.hidden = invitado;
     campoPassword.hidden = invitado;
+    document.getElementById("zona-google").classList.toggle("login__google--oculto", invitado);
     textoInvitado.hidden = !invitado;
     boton.textContent = invitado ? "Entrar como visitante" : "Entrar";
     const registro = REGISTRO_POR_ROL[rol];
@@ -115,9 +153,67 @@ function iniciar() {
     const resultado = await iniciarSesion({ rol: rolActivo, correo, password });
     boton.disabled = false;
     boton.textContent = "Entrar";
+    terminarPaso(resultado);
+  });
 
+  /** Después de la contraseña o de Google: entra, o pide el código de dos pasos. */
+  function terminarPaso(resultado) {
     if (!resultado.ok) { mostrarAlerta(alerta, "error", resultado.error); return; }
+    if (resultado.requiere2fa) { mostrarPaso2fa(resultado.desafio); return; }
     irA(destinoDeSesion(resultado.sesion));
+  }
+
+  /* ---------- Segundo paso: código de Google Authenticator ---------- */
+  const form2fa = document.getElementById("form-2fa");
+  const alerta2fa = document.getElementById("alerta-2fa");
+  const campoCodigo = document.getElementById("campo-codigo");
+  const botonVerificar = document.getElementById("boton-verificar");
+  const ocultosEn2fa = [formulario, document.getElementById("selector-rol"), enlaceRegistro, document.querySelector(".demo")];
+  let desafio = null;
+
+  function mostrarPaso2fa(nuevoDesafio) {
+    desafio = nuevoDesafio;
+    ocultosEn2fa.forEach((el) => { el.hidden = true; });
+    form2fa.hidden = false;
+    ocultarAlerta(alerta2fa);
+    form2fa.codigo.value = "";
+    marcarError(campoCodigo, "");
+    form2fa.codigo.focus();
+  }
+
+  function volverAlLogin(mensaje) {
+    desafio = null;
+    form2fa.hidden = true;
+    ocultosEn2fa.forEach((el) => { el.hidden = false; });
+    seleccionarRol(rolActivo);
+    if (mensaje) mostrarAlerta(alerta, "aviso", mensaje);
+  }
+
+  document.getElementById("boton-volver").addEventListener("click", () => volverAlLogin());
+
+  form2fa.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    ocultarAlerta(alerta2fa);
+    const codigo = form2fa.codigo.value.replace(/\s+/g, "");
+    const error = /^\d{6}$/.test(codigo) ? "" : "Escribe los 6 dígitos que muestra Google Authenticator.";
+    marcarError(campoCodigo, error);
+    if (error) return;
+
+    botonVerificar.disabled = true;
+    botonVerificar.textContent = "Verificando…";
+    const resultado = await verificarCodigo2fa({ desafio, codigo });
+    botonVerificar.disabled = false;
+    botonVerificar.textContent = "Verificar";
+    if (resultado.ok) { irA(destinoDeSesion(resultado.sesion)); return; }
+    if (/5 minutos|Vuelve a iniciar sesión/.test(resultado.error)) { volverAlLogin(resultado.error); return; }
+    mostrarAlerta(alerta2fa, "error", resultado.error);
+    form2fa.codigo.select();
+  });
+
+  /* ---------- «Continuar con Google» (Google Identity Services) ---------- */
+  montarBotonGoogle(async (idToken) => {
+    ocultarAlerta(alerta);
+    terminarPaso(await iniciarSesionGoogle({ rol: rolActivo === "invitado" ? "usuario" : rolActivo, idToken }));
   });
 
   seleccionarRol("usuario");

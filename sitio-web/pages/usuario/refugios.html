@@ -19,6 +19,9 @@
   <link rel="stylesheet" href="../../assets/css/components/modal.css">
   <link rel="stylesheet" href="../../assets/css/components/adopcion.css">
   <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <!-- Mapa de refugios (HU-11): Leaflet + OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="../../assets/js/modules/usuario/refugios.js"></script>
 </head>
 <body class="pagina-usuario" data-protegida>
@@ -33,6 +36,14 @@
         <img src="../../assets/img/kiro/kiro.svg" alt="" width="96" height="100">
         <p><strong>Bienvenido al apartado de refugios.</strong><br>Aquí encontrarás los diferentes refugios que se encuentran cerca de ti. Todos están verificados por HuellApp.</p>
       </div>
+      <section class="mapa-refugios tarjeta tarjeta--blanca" aria-labelledby="titulo-mapa">
+        <div class="mapa-refugios__cabecera">
+          <h2 id="titulo-mapa" class="seccion-titulo">Mapa de refugios</h2>
+          <button id="boton-cerca" class="boton boton--secundario boton--pequeno" type="button">📍 Cerca de mí</button>
+        </div>
+        <p id="mapa-aviso" class="texto-pequeno texto-suave" role="status"></p>
+        <div id="mapa" class="mapa-refugios__mapa" role="region" aria-label="Mapa con la ubicación de los refugios verificados"></div>
+      </section>
       <ul id="lista-refugios" class="refugios-grid"></ul>
     </section>
 

@@ -125,14 +125,20 @@ function iniciarReportar() {
     }
 
     botonEnviar.disabled = true;
+    const textoBoton = botonEnviar.textContent;
+    botonEnviar.textContent = "La IA está analizando la foto…";
     const resultado = await crearReporte({ tipo, descripcion, zona, foto });
     botonEnviar.disabled = false;
+    botonEnviar.textContent = textoBoton;
 
-    if (!resultado.ok) { mostrarAlerta(alerta, "error", "No pudimos enviar tu reporte. Inténtalo de nuevo."); return; }
+    if (!resultado.ok) { mostrarAlerta(alerta, "error", resultado.error || "No pudimos enviar tu reporte. Inténtalo de nuevo."); return; }
     const n = resultado.coincidenciasNuevas;
-    mostrarAlerta(alerta, "exito", n > 0
-      ? `¡Reporte enviado! Encontramos ${n === 1 ? "1 posible coincidencia" : `${n} posibles coincidencias`}: revísalas en «Coincidencias».`
-      : "¡Reporte enviado! Te avisaremos en «Coincidencias» si aparece una mascota parecida.");
+    const ia = resultado.analisisIA;
+    const rasgos = ia ? [ia.raza, ia.color, ia.tamano].filter((v) => v && v !== "No se distingue").join(" · ") : "";
+    mostrarAlerta(alerta, "exito", (n > 0
+      ? `¡Reporte enviado y publicado en el foro! Encontramos ${n === 1 ? "1 posible coincidencia" : `${n} posibles coincidencias`}: revísalas en «Coincidencias».`
+      : "¡Reporte enviado y publicado en el foro! Te avisaremos en «Coincidencias» si aparece una mascota parecida.")
+      + (rasgos ? ` La IA detectó: ${rasgos}.` : ""));
     refrescarInsigniaCoincidencias();
     formulario.reset();
     repetir();

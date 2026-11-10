@@ -1,12 +1,11 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:huellapp/servicios_ia.dart';
+import 'package:huellapp/core/api_client.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
-import 'package:huellapp/screens/coincidencias_screen.dart'; // Ajusta la ruta a tu carpeta de screens
-import 'package:huellapp/screens/foro_screen.dart'; // Ajusta la ruta a tu carpeta de screens
+import 'package:huellapp/screens/coincidencias_screen.dart';
+import 'package:huellapp/screens/muro_huellapp_screen.dart';
+import 'package:huellapp/services/comunidad_service.dart';
 
 /// Colores que cambian según el tipo de reporte
 class _Paleta {
@@ -72,7 +71,6 @@ class _ReportarScreenState extends State<ReportarScreen> {
   static const double _anchoMaximo = 640;
 
   final _formKey = GlobalKey<FormState>();
-  final ServiciosIA _serviciosIA = ServiciosIA();
 
   String _tipoReporte = 'Extraviada';
   String _tipoMascota = 'Perro';
@@ -102,9 +100,12 @@ class _ReportarScreenState extends State<ReportarScreen> {
   }
 
   Future<void> _seleccionarImagen(ImageSource source) async {
+    // Se reduce la foto: la API acepta hasta 3 MB y así la IA responde más rápido
     final XFile? image = await _picker.pickImage(
       source: source,
       imageQuality: 80,
+      maxWidth: 1600,
+      maxHeight: 1600,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
@@ -159,89 +160,113 @@ class _ReportarScreenState extends State<ReportarScreen> {
       return;
     }
 
-    // Activar loader en pantalla
-    setState(() {
-      _estaCargando = true;
-    });
+    setState(() => _estaCargando = true);
 
-    final String textoParaAnalizar =
-        "Tipo: $_tipoMascota, "
-        "Nombre: ${_nombreMascotaController.text.isEmpty ? 'No proporcionado' : _nombreMascotaController.text}, "
-        "Raza o tipo estimado: ${_razaController.text}, "
-        "Señas particulares y descripción: ${_descripcionController.text}, "
-        "Ubicación: ${_ubicacionController.text}";
-
-    Map<String, dynamic>? respuestaBackend;
+    // La API pide una sola descripción: se arma con la raza y las señas
+    final raza = _razaController.text.trim();
+    final senas = _descripcionController.text.trim();
+    var descripcion = [
+      if (raza.isNotEmpty) '$_tipoMascota $raza.',
+      if (senas.isNotEmpty) senas,
+    ].join(' ');
+    if (descripcion.length < 15) descripcion = '$descripcion (sin más señas)';
 
     try {
-      respuestaBackend = await _serviciosIA.analizarMascotaConIA(
-        textoParaAnalizar,
-        bytesImagen: _imagenBytes,
-        tipoReporte: _tipoReporte,
-        tipoMascota: _tipoMascota,
-        nombreMascota: _nombreMascotaController.text,
-        zonaUbicacion: _ubicacionController.text,
+      final r = await ComunidadService.instancia.crearReporte(
+        tipo: _tipoReporte == 'Extraviada' ? 'perdida' : 'encontrada',
+        descripcion: descripcion.length > 600 ? descripcion.substring(0, 600) : descripcion,
+        zona: _ubicacionController.text.trim(),
+        foto: _imagenBytes!,
+        especie: switch (_tipoMascota) { 'Perro' => 'perro', 'Gato' => 'gato', _ => 'otro' },
+        nombre: _nombreMascotaController.text,
       );
-    } catch (e) {
-      debugPrint('❌ Error al procesar reporte: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _estaCargando = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() => _estaCargando = false);
+      await _mostrarResultado(r);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _estaCargando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red),
+      );
     }
+  }
 
+  /// Resultado del reporte: lo que vio la IA y cuántas coincidencias hubo.
+  Future<void> _mostrarResultado(ResultadoReporte r) async {
+    final a = r.analisis;
+    final hay = r.coincidenciasNuevas > 0;
+    String rasgo(String clave) => (a?[clave] as String? ?? '').trim();
+    final rasgos = a == null
+        ? <String>[]
+        : [
+            if (rasgo('raza').isNotEmpty) 'Raza: ${rasgo('raza')}',
+            if (rasgo('color').isNotEmpty) 'Color: ${rasgo('color')}',
+            if (rasgo('tamano').isNotEmpty) 'Tamaño: ${rasgo('tamano')}',
+            if (rasgo('senas').isNotEmpty) 'Señas: ${rasgo('senas')}',
+          ];
+
+    final destino = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(hay ? '¡Encontramos posibles coincidencias!' : '¡Alerta publicada!'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hay
+                    ? 'Hay ${r.coincidenciasNuevas == 1 ? '1 mascota parecida' : '${r.coincidenciasNuevas} mascotas parecidas'} en los reportes de la comunidad.'
+                    : 'Tu alerta ya está en el muro. Te avisaremos en «Coincidencias» si aparece una mascota parecida.',
+              ),
+              if (rasgos.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Row(children: [
+                  Icon(Icons.auto_awesome, size: 16, color: Color(0xFF5C4300)),
+                  SizedBox(width: 6),
+                  Text('Lo que detectó la IA', style: TextStyle(fontWeight: FontWeight.w800)),
+                ]),
+                const SizedBox(height: 6),
+                ...rasgos.map((t) => Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text('• $t', style: const TextStyle(fontSize: 13)),
+                    )),
+              ] else if (!r.iaUsada) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'La IA no estuvo disponible: comparamos por descripción y zona.',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, 'muro'), child: const Text('Ver en el muro')),
+          if (hay)
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, 'coincidencias'),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryTurquoise, foregroundColor: darkBorderColor),
+              child: const Text('Ver coincidencias'),
+            ),
+        ],
+      ),
+    );
     if (!mounted) return;
 
-    if (respuestaBackend != null && respuestaBackend['exito'] == true) {
-      final List coincidencias = respuestaBackend['coincidencias'] ?? [];
+    _formKey.currentState?.reset();
+    _nombreMascotaController.clear();
+    _razaController.clear();
+    _descripcionController.clear();
+    _ubicacionController.clear();
+    setState(() => _imagenBytes = null);
 
-      if (coincidencias.isNotEmpty) {
-        // 🔀 ESCENARIO A: HAY COINCIDENCIAS -> Ir a CoincidenciasScreen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '¡Coincidencia detectada! Redirigiendo a las similitudes...',
-            ),
-            backgroundColor: darkBorderColor,
-          ),
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CoincidenciasScreen(
-              dynamicCoincidencias: coincidencias,
-              reporteId: respuestaBackend!['reporteId'],
-            ),
-          ),
-        );
-      } else {
-        // 🔀 ESCENARIO B: NO HAY COINCIDENCIAS -> Ir a ForoScreen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Reporte publicado exitosamente en el Foro comunitario.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ForoScreen()),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Ocurrió un problema al procesar la solicitud. Revisa la terminal del servidor.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (destino == 'coincidencias') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const CoincidenciasScreen()));
+    } else if (destino == 'muro') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const MuroHuellAppScreen()));
     }
   }
 
@@ -322,7 +347,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
                       CircularProgressIndicator(color: darkBorderColor),
                       SizedBox(height: 16),
                       Text(
-                        'Gemini está analizando los rasgos y buscando coincidencias...',
+                        'La IA está analizando la foto y buscando coincidencias…\nPuede tardar unos segundos.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,

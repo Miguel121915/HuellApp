@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
+import 'google_login.dart';
 
 /// Datos de la cuenta que inició sesión (lo que devuelve /api/auth/login y /api/auth/yo).
 class Sesion {
@@ -49,6 +50,17 @@ class Sesion {
         'refugioId': refugioId,
         'refugioEstado': refugioEstado,
       };
+}
+
+/// Resultado del primer paso del inicio de sesión: o ya hay [sesion], o falta el código
+/// de Google Authenticator para el [desafio] (válido 5 minutos).
+class ResultadoLogin {
+  const ResultadoLogin({this.sesion, this.desafio});
+
+  final Sesion? sesion;
+  final String? desafio;
+
+  bool get requiereCodigo => desafio != null;
 }
 
 /// Maneja el inicio y cierre de sesión y la guarda en el teléfono para no pedirla cada vez.
@@ -101,7 +113,9 @@ class SesionService extends ChangeNotifier {
   }
 
   /// Inicia sesión. [rol] es 'usuario' o 'refugio' (la app móvil no permite administradores).
-  Future<Sesion> iniciarSesion({
+  /// Si la cuenta tiene verificación en dos pasos, el resultado trae [ResultadoLogin.desafio]
+  /// y falta llamar a [verificarCodigo] con el código de Google Authenticator.
+  Future<ResultadoLogin> iniciarSesion({
     required String correo,
     required String password,
     required String rol,
@@ -111,13 +125,54 @@ class SesionService extends ChangeNotifier {
       'password': password,
       'rol': rol,
     });
+    return _recibir(r);
+  }
+
+  /// «Continuar con Google»: [idToken] es el que entrega Google al elegir la cuenta.
+  Future<ResultadoLogin> iniciarSesionGoogle({required String idToken, required String rol}) async {
+    final r = await _api.post('/auth/google', {'idToken': idToken, 'rol': rol});
+    return _recibir(r);
+  }
+
+  /// Segundo paso: código de 6 dígitos de Google Authenticator.
+  Future<Sesion> verificarCodigo({required String desafio, required String codigo}) async {
+    final r = await _api.post('/auth/2fa/verificar', {
+      'desafio': desafio,
+      'codigo': codigo.replaceAll(RegExp(r'\s'), ''),
+    });
+    return (await _recibir(r)).sesion!;
+  }
+
+  Future<ResultadoLogin> _recibir(Map<String, dynamic> r) async {
+    if (r['requiere2fa'] == true) return ResultadoLogin(desafio: r['desafio'] as String);
     _api.token = r['token'] as String?;
     _actual = Sesion.desdeJson(r['sesion'] as Map<String, dynamic>);
     _invitado = false;
     await _guardar();
     notifyListeners();
-    return _actual!;
+    return ResultadoLogin(sesion: _actual);
   }
+
+  /// Client ID web de Google configurado en la API ('' = sin botón de Google).
+  Future<String> googleClientId() async {
+    try {
+      final r = await _api.get('/auth/config');
+      return (r['googleClientId'] as String?) ?? '';
+    } on ApiException {
+      return '';
+    }
+  }
+
+  /* ---------- Verificación en dos pasos de la cuenta (con sesión) ---------- */
+
+  Future<bool> dosPasosActivo() async => (await _api.get('/auth/2fa'))['activo'] == true;
+
+  /// Secreto nuevo: {secreto, enlace}. El enlace otpauth:// va en el QR o abre Google Authenticator.
+  Future<Map<String, dynamic>> prepararDosPasos() => _api.post('/auth/2fa/preparar');
+
+  Future<void> activarDosPasos(String codigo) => _api.post('/auth/2fa/activar', {'codigo': codigo});
+
+  Future<void> desactivarDosPasos(String codigo) => _api.post('/auth/2fa/desactivar', {'codigo': codigo});
 
   /// Crea una cuenta de usuario. No inicia sesión: después hay que llamar a [iniciarSesion].
   Future<void> registrarUsuario({
@@ -151,6 +206,7 @@ class SesionService extends ChangeNotifier {
 
   Future<void> cerrarSesion() async {
     await _borrar();
+    await GoogleLogin.instancia.salir();
     _invitado = false;
     notifyListeners();
   }

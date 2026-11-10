@@ -81,6 +81,29 @@ Puedes editar casi todo directamente desde Database actions → SQL (mascotas, e
 
 Todo se configura en `.env` (copia de `.env.example`): `DB_TNS` (servicio del `tnsnames.ora` del wallet, por ejemplo `huellapp_tp`), `DB_USER`, `DB_PASS` y, si no creaste la variable de entorno de Windows, `TNS_ADMIN` con la carpeta del wallet. Ese archivo **nunca** se sube al repositorio.
 
+### Inicio de sesión con Google y verificación en dos pasos
+
+**Verificación en dos pasos (Google Authenticator).** No necesita configuración. Cada cuenta la activa si quiere: en el sitio, botón **🔒 Seguridad** del encabezado; en la app, **Seguridad** en el menú de la cuenta. Se escanea el QR con Google Authenticator y se confirma con un código. Desde entonces, después de la contraseña (o de Google) se pide el código de 6 dígitos. El secreto se guarda cifrado con una clave que sale de `JWT_SECRET`: **si cambias `JWT_SECRET`, las cuentas con dos pasos tendrán que volver a activarla** (un administrador la quita con `UPDATE usuarios SET totp_activo = 0, totp_secreto = NULL WHERE correo = '...'`).
+
+**«Continuar con Google».** El botón solo aparece si `GOOGLE_CLIENT_ID` está en el `.env`. Para obtenerlo (una sola vez, la cuenta de Google del equipo):
+
+1. Entra a <https://console.cloud.google.com/>, crea un proyecto «HuellApp» y en **APIs y servicios → Pantalla de consentimiento de OAuth** elige *Externo*, llena el nombre y el correo de soporte y agrega como *usuarios de prueba* los correos del equipo.
+2. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicación web.** En *Orígenes de JavaScript autorizados* agrega `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:8080` y `http://127.0.0.1:8080` (sitio web y app de la demo). Copia el ID.
+3. En `api/.env`: `GOOGLE_CLIENT_ID=<ese id>.apps.googleusercontent.com` y reinicia `php artisan serve`.
+4. (Solo para el APK de Android) Crea otro ID de cliente tipo **Android** con el paquete `com.example.huellapp` y la huella SHA-1 de tu llave (`cd android` y `gradlew signingReport`). No hace falta copiarlo a ningún lado: la app usa el ID **web** que le da la API.
+
+### IA de Gemini en los reportes (HU-5 y HU-8)
+
+Antes la pantalla Reportar de la app usaba el servidor Node de `backend/` con MySQL. Ahora **todo pasa por esta API** con Oracle: el servidor Node ya no hace falta.
+
+Al crear un reporte (`POST /reportes`, desde la app o el sitio):
+
+1. Gemini mira la foto y detecta especie, raza, color, tamaño y señas (se guarda en `reportes.analisis_ia`).
+2. Se buscan coincidencias entre los reportes contrarios de otras personas: primero por texto y zona (`Similitud.php`, con los rasgos de la IA) y, a los 5 más parecidos, **Gemini les compara las fotos**. El porcentaje final es 75 % foto y 25 % texto; se guardan las que pasan de 40 %. `coincidencias.por_ia = 1` indica que se compararon fotos.
+3. La alerta se publica en el foro («🔎 SE BUSCA…» / «🐾 ENCONTRÉ…»): aparece en el muro de la app y en el foro del sitio.
+
+Configuración: `GEMINI_API_KEY` en `api/.env` (clave en <https://aistudio.google.com/apikey>). **Sin clave todo sigue funcionando**: no se analiza la foto y las coincidencias se calculan solo por texto y zona. Si Gemini falla o tarda, igual se guarda el reporte. Un reporte con IA tarda de 5 a 20 segundos.
+
 ## 6. Quién puede hacer qué (seguridad)
 
 Los permisos se validan **en el servidor** (las guardias de ruta del sitio solo mejoran la experiencia):
@@ -99,7 +122,12 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 
 | Método y ruta | Rol | Descripción |
 |---|---|---|
-| `POST /auth/login` | — | `{correo, password, rol}` → `{token, sesion}` |
+| `POST /auth/login` | — | `{correo, password, rol}` → `{token, sesion}`, o `{requiere2fa: true, desafio}` si la cuenta tiene verificación en dos pasos |
+| `GET /auth/config` | — | `{googleClientId}` (vacío = no hay botón de Google) |
+| `POST /auth/google` | — | «Continuar con Google»: `{idToken, rol}` → igual que `/auth/login`. Si no existe la cuenta se crea una de **usuario** (los refugios se registran con su formulario y luego pueden entrar con Google) |
+| `POST /auth/2fa/verificar` | — | Segundo paso: `{desafio, codigo}` → `{token, sesion}`. El desafío dura 5 minutos (`401` con `codigo: "desafio-vencido"`); código incorrecto → `400`; 5 fallos en 10 minutos → `429` |
+| `GET /auth/2fa` · `POST /auth/2fa/preparar` | todos | ¿Está activa? `{activo}` / secreto nuevo `{secreto, enlace}` (`enlace` = `otpauth://…` para el QR) |
+| `POST /auth/2fa/activar` · `POST /auth/2fa/desactivar` | todos | `{codigo}` de Google Authenticator para confirmar |
 | `POST /auth/registro-usuario` | — | Alta de usuario |
 | `POST /auth/registro-refugio` | — | Alta de refugio con `documentos: [{tipo, nombre, dataUrl}]`. Opcionales (app móvil): `latitud`, `longitud`, `municipio`, `codigoPostal`, `rfc`, `tipoOrganizacion`, `anioFundacion`, `whatsapp`, `redes[]`, `necesidades[]`, `tienePerros`, `tieneGatos` (también en `PUT /refugio/perfil`) |
 | `GET /auth/yo` | todos | Sesión actualizada (y estado del refugio) |
@@ -112,7 +140,7 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `GET /adopciones` · `POST /adopciones` | usuario | Mis solicitudes de adopción / enviar una `{mascotaId, nombre, correo, telefono, direccion, ocupacion?, tipoVivienda, viviendaPropia, otrasMascotas?, motivo, aceptaTerminos, documentos}`: identificación y comprobante (uno de cada uno), de 1 a 3 fotos `vivienda` (solo imágenes) y un `otro` opcional. Solo mascotas disponibles; una solicitud abierta por mascota |
 | `GET·POST /refugio/preguntas` · `PUT·DELETE /refugio/preguntas/:id` | refugio aprobado | Preguntas frecuentes `{pregunta, respuesta, claves[], activa}` (máx. 50) |
 | `GET /refugio/adopciones` · `PATCH /refugio/adopciones/:id` · `GET …/:id/documentos/:doc/archivo` | refugio aprobado | Solicitudes recibidas / responder `{estado, nota}` (rechazar exige nota) / ver un documento |
-| `POST /reportes` | usuario | `{tipo, descripcion, zona, foto}` → también calcula coincidencias |
+| `POST /reportes` | usuario | `{tipo, descripcion, zona, foto, especie?, nombre?}` → `{reporte, coincidenciasNuevas, iaUsada, analisisIA}`. Analiza la foto con IA, calcula coincidencias y publica la alerta en el foro |
 | `GET /coincidencias` · `/coincidencias/resumen` | usuario | Mis coincidencias / contadores |
 | `POST /coincidencias/:id/descartar` · `/coincidencias/restaurar` | usuario | Declinar / restaurar |
 | `POST /enlaces` | con sesión | `{ruta}` de un documento propio (`/refugio/adopciones/:id/documentos/:doc/archivo` o `/refugio/mascotas/:id/documentos/:doc/archivo`) → `{url}` firmada, válida 5 minutos, para abrirlo fuera de la app (navegador o visor de PDF). Al abrirla se revisan los mismos permisos |

@@ -83,8 +83,9 @@ export const enviarSolicitudAdopcion = (datos) => intentar(async () => {
 
 /** @param {{tipo:"perdida"|"encontrada", descripcion:string, zona:string, foto:string}} datos */
 export const crearReporte = ({ tipo, descripcion, zona, foto }) => intentar(async () => {
+  // La API analiza la foto con IA, busca coincidencias y publica la alerta en el foro
   const r = await post("/reportes", { tipo, descripcion, zona, foto });
-  return { ok: true, reporte: r.reporte, coincidenciasNuevas: r.coincidenciasNuevas };
+  return { ok: true, reporte: r.reporte, coincidenciasNuevas: r.coincidenciasNuevas, analisisIA: r.analisisIA || null, iaUsada: Boolean(r.iaUsada) };
 });
 
 export async function obtenerCoincidencias() {

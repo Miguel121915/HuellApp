@@ -1,124 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../core/api_client.dart';
+import '../core/api_config.dart';
+import '../core/requiere_sesion.dart';
+import '../core/sesion_service.dart';
+import '../services/comunidad_service.dart';
+import '../widgets/foto_huellapp.dart';
+
+/// Coincidencias (HU-8): mascotas encontradas por otras personas que se parecen a las que TÚ
+/// reportaste como perdidas. Las calcula la API al crear cada reporte: compara las fotos con IA
+/// (Gemini) y, si no hay IA, la descripción y la zona. Es la misma lista que ve el sitio web.
 class CoincidenciasScreen extends StatefulWidget {
-  final List dynamicCoincidencias;
-  final int? reporteId;
-
-  const CoincidenciasScreen({
-    super.key,
-    this.dynamicCoincidencias = const [],
-    this.reporteId,
-  });
+  const CoincidenciasScreen({super.key});
 
   @override
   State<CoincidenciasScreen> createState() => _CoincidenciasScreenState();
 }
 
 class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
-  static const Color primaryTurquoise = Color(0xFF75E6DA);
-  static const Color darkBorderColor = Color(0xFF1B4943);
-  static const Color backgroundLight = Color(0xFFE8F9F8);
+  static const Color _turquesa = Color(0xFF75E6DA);
+  static const Color _oscuro = Color(0xFF1B4943);
+  static const Color _fondo = Color(0xFFE8F9F8);
 
-  late List<Map<String, dynamic>> _coincidencias;
+  ComunidadService get _servicio => ComunidadService.instancia;
+
+  List<Map<String, dynamic>> _coincidencias = [];
+  int _descartadas = 0;
+  bool _cargando = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _cargarDatos();
+    _cargar();
   }
 
-  void _cargarDatos() {
-    if (widget.dynamicCoincidencias.isNotEmpty) {
-      // Mapear la lista dinámica recibida de Node.js / Gemini
-      _coincidencias = widget.dynamicCoincidencias.map((c) {
-        return {
-          'id': c['id'] ?? c['post_id'] ?? 0,
-          'nombre': c['titulo'] ?? 'Mascota detectada en Foro',
-          'raza': c['raza'] ?? 'Ver detalles en publicación',
-          'ubicacion': c['ubicacion'] ?? 'Ubicación reportada en foro',
-          'porcentajeSimilitud':
-              (c['porcentaje_similitud'] ?? c['porcentajeSimilitud'] ?? 80)
-                  .toInt(),
-          'fechaReporte': 'Reciente',
-          'descripcion':
-              c['contenido'] ??
-              c['descripcion'] ??
-              'Coincidencia detectada con publicación activa en el Foro.',
-          'contacto': '5512345678',
-          'postIdForo': 'FORO-${c['post_id'] ?? c['id'] ?? 1}',
-          'imagenUrl':
-              c['imagen_url'] ??
-              'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500',
-        };
-      }).toList();
-    } else {
-      _coincidencias = [];
+  Future<void> _cargar() async {
+    if (!SesionService.instancia.haySesion) {
+      setState(() => _cargando = false);
+      return;
+    }
+    setState(() {
+      _cargando = _coincidencias.isEmpty;
+      _error = null;
+    });
+    try {
+      final lista = await _servicio.coincidencias();
+      final resumen = await _servicio.resumenCoincidencias();
+      if (!mounted) return;
+      setState(() {
+        _coincidencias = lista;
+        _descartadas = resumen['descartadas'] ?? 0;
+        _cargando = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.mensaje;
+        _cargando = false;
+      });
     }
   }
 
-  void _verPublicacionEnForo(String postId) {
+  void _aviso(String texto, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Redirigiendo a la publicación $postId en el Foro...'),
-        backgroundColor: darkBorderColor,
-      ),
+      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade700 : _oscuro),
     );
   }
 
-  void _contactarReportante(String contacto, String nombre) {
+  Future<void> _descartar(Map<String, dynamic> c) async {
+    final id = '${c['id']}';
+    setState(() => _coincidencias.removeWhere((x) => '${x['id']}' == id));
+    try {
+      await _servicio.descartarCoincidencia(id);
+      if (!mounted) return;
+      setState(() => _descartadas++);
+      _aviso('Coincidencia descartada. Puedes recuperarla abajo.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _aviso(e.mensaje, error: true);
+      _cargar();
+    }
+  }
+
+  Future<void> _restaurar() async {
+    try {
+      await _servicio.restaurarCoincidencias();
+      await _cargar();
+    } on ApiException catch (e) {
+      if (mounted) _aviso(e.mensaje, error: true);
+    }
+  }
+
+  Future<void> _abrir(Uri uri) async {
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) => false);
+    if (!ok && mounted) _aviso('No se pudo abrir ${uri.scheme == 'tel' ? 'el teléfono' : 'el correo'} en este dispositivo.', error: true);
+  }
+
+  void _contactar(Map<String, dynamic> c) {
+    final hallazgo = c['hallazgo'] as Map<String, dynamic>;
+    final contacto = (hallazgo['contacto'] as Map?)?.cast<String, dynamic>() ?? {};
+    final nombre = contacto['nombre'] as String? ?? 'quien la encontró';
+    final telefono = (contacto['telefono'] as String? ?? '').replaceAll(RegExp(r'[^\d+]'), '');
+    final correo = contacto['correo'] as String? ?? '';
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Contactar sobre $nombre',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: darkBorderColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.phone, color: darkBorderColor),
-              title: const Text('Llamar por teléfono'),
-              subtitle: Text(contacto),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Iniciando llamada a $contacto...'),
-                    backgroundColor: darkBorderColor,
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.chat_bubble_outline,
-                color: darkBorderColor,
-              ),
-              title: const Text('Enviar mensaje directo'),
-              subtitle: const Text('Abrir chat interno en HuellApp'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Abriendo chat interno...'),
-                    backgroundColor: darkBorderColor,
-                  ),
-                );
-              },
-            ),
-          ],
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (hoja) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Contactar a $nombre',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _oscuro)),
+              const SizedBox(height: 6),
+              const Text('Pregunta por señas que solo tú conoces antes de ir por tu mascota.',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 12),
+              if (telefono.length >= 8)
+                ListTile(
+                  leading: const Icon(Icons.phone, color: _oscuro),
+                  title: const Text('Llamar'),
+                  subtitle: Text(contacto['telefono'] as String),
+                  onTap: () {
+                    Navigator.pop(hoja);
+                    _abrir(Uri(scheme: 'tel', path: telefono));
+                  },
+                ),
+              if (telefono.length >= 10)
+                ListTile(
+                  leading: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                  title: const Text('WhatsApp'),
+                  onTap: () {
+                    Navigator.pop(hoja);
+                    final numero = telefono.length == 10 ? '52$telefono' : telefono.replaceAll('+', '');
+                    _abrir(Uri.parse('https://wa.me/$numero?text=${Uri.encodeComponent('Hola, vi en HuellApp que encontraste una mascota que podría ser la mía.')}'));
+                  },
+                ),
+              if (correo.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.email_outlined, color: _oscuro),
+                  title: const Text('Enviar correo'),
+                  subtitle: Text(correo),
+                  onTap: () {
+                    Navigator.pop(hoja);
+                    _abrir(Uri(scheme: 'mailto', path: correo, query: 'subject=${Uri.encodeComponent('Mascota encontrada (HuellApp)')}'));
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -127,360 +161,210 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundLight,
+      backgroundColor: _fondo,
       appBar: AppBar(
-        title: const Text(
-          'Coincidencias Detectadas',
-          style: TextStyle(color: darkBorderColor, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Coincidencias', style: TextStyle(color: _oscuro, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0.5,
-        iconTheme: const IconThemeData(color: darkBorderColor),
+        iconTheme: const IconThemeData(color: _oscuro),
+        actions: [IconButton(tooltip: 'Actualizar', icon: const Icon(Icons.refresh), onPressed: _cargar)],
       ),
-      body: _coincidencias.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 60,
-                    color: darkBorderColor,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'No hay coincidencias pendientes',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: darkBorderColor,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Te avisaremos cuando la IA encuentre similitudes con tus publicaciones en el Foro.',
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: primaryTurquoise,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome,
-                            color: darkBorderColor,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Coincidencias con el Foro',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: darkBorderColor,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'La IA comparó los reportes con las publicaciones realizadas por los usuarios en la comunidad.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    'Similitudes encontradas:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: darkBorderColor,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  ..._coincidencias.map((item) {
-                    final int porcentaje = item['porcentajeSimilitud'];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: primaryTurquoise, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(15),
-                                ),
-                                child: Image.network(
-                                  item['imagenUrl'],
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                        height: 180,
-                                        color: Colors.grey.shade200,
-                                        child: const Icon(
-                                          Icons.pets,
-                                          size: 50,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade600,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.verified,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$porcentaje% Similitud',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        item['nombre'],
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: darkBorderColor,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      item['fechaReporte'],
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.category,
-                                      size: 16,
-                                      color: darkBorderColor,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      item['raza'],
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on,
-                                      size: 16,
-                                      color: Colors.redAccent,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        item['ubicacion'],
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  item['descripcion'],
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                TextButton.icon(
-                                  onPressed: () =>
-                                      _verPublicacionEnForo(item['postIdForo']),
-                                  icon: const Icon(
-                                    Icons.forum_outlined,
-                                    size: 18,
-                                    color: darkBorderColor,
-                                  ),
-                                  label: Text(
-                                    'Ver publicación en el Foro (${item['postIdForo']})',
-                                    style: const TextStyle(
-                                      color: darkBorderColor,
-                                      fontWeight: FontWeight.bold,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.red.shade700,
-                                          side: BorderSide(
-                                            color: Colors.red.shade300,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _coincidencias.removeWhere(
-                                              (element) =>
-                                                  element['id'] == item['id'],
-                                            );
-                                          });
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Coincidencia descartada.',
-                                                  ),
-                                                ),
-                                              );
-                                        },
-                                        child: const Text('Descartar'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: primaryTurquoise,
-                                          foregroundColor: darkBorderColor,
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            side: const BorderSide(
-                                              color: darkBorderColor,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: () => _contactarReportante(
-                                          item['contacto'],
-                                          item['nombre'],
-                                        ),
-                                        child: const Text(
-                                          'Contactar',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
+      body: RefreshIndicator(
+        onRefresh: _cargar,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: ListView(padding: const EdgeInsets.all(16), children: _contenido()),
+          ),
+        ),
+      ),
     );
   }
+
+  List<Widget> _contenido() {
+    if (_cargando) {
+      return const [Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))];
+    }
+    if (!SesionService.instancia.haySesion) {
+      return [
+        _vacio(Icons.lock_outline, 'Inicia sesión para ver tus coincidencias',
+            'Cuando reportes una mascota perdida, aquí verás las mascotas encontradas que se le parecen.'),
+        const SizedBox(height: 12),
+        Center(
+          child: ElevatedButton(
+            onPressed: () async {
+              if (await requiereSesion(context, 'ver tus coincidencias')) _cargar();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _turquesa, foregroundColor: _oscuro),
+            child: const Text('Iniciar sesión'),
+          ),
+        ),
+      ];
+    }
+    if (_error != null) {
+      return [
+        _vacio(Icons.cloud_off, 'No se pudieron cargar', _error!),
+        Center(child: OutlinedButton(onPressed: _cargar, child: const Text('Reintentar'))),
+      ];
+    }
+    return [
+      _encabezado(),
+      const SizedBox(height: 16),
+      if (_coincidencias.isEmpty)
+        _vacio(Icons.check_circle_outline, 'No hay coincidencias pendientes',
+            'Te avisaremos aquí cuando alguien reporte una mascota encontrada parecida a la tuya.')
+      else
+        ..._coincidencias.map(_tarjeta),
+      if (_descartadas > 0)
+        Center(
+          child: TextButton.icon(
+            onPressed: _restaurar,
+            icon: const Icon(Icons.restore, color: _oscuro),
+            label: Text('Recuperar $_descartadas descartada${_descartadas == 1 ? '' : 's'}', style: const TextStyle(color: _oscuro)),
+          ),
+        ),
+    ];
+  }
+
+  Widget _encabezado() => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+        child: const Row(children: [
+          CircleAvatar(backgroundColor: _turquesa, child: Icon(Icons.auto_awesome, color: _oscuro)),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Comparamos las fotos de tus reportes de mascotas perdidas con las mascotas que otras personas encontraron.',
+              style: TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+          ),
+        ]),
+      );
+
+  Widget _vacio(IconData icono, String titulo, String texto) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        child: Column(children: [
+          Icon(icono, size: 56, color: _oscuro),
+          const SizedBox(height: 12),
+          Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+          const SizedBox(height: 6),
+          Text(texto, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black54)),
+        ]),
+      );
+
+  Widget _tarjeta(Map<String, dynamic> c) {
+    final mio = (c['miReporte'] as Map).cast<String, dynamic>();
+    final hallazgo = (c['hallazgo'] as Map).cast<String, dynamic>();
+    final similitud = (c['similitud'] as num?)?.toInt() ?? 0;
+    final porIA = c['porIA'] == true;
+    final analisis = (hallazgo['analisisIA'] as Map?)?.cast<String, dynamic>();
+    final colorSimilitud = similitud >= 75 ? Colors.green.shade600 : similitud >= 55 ? Colors.orange.shade700 : Colors.blueGrey;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _turquesa, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Las dos fotos lado a lado: tu mascota y la que encontraron
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            child: SizedBox(
+              height: 170,
+              child: Row(children: [
+                Expanded(child: _foto(mio['foto'] as String? ?? '', 'Tu reporte')),
+                const SizedBox(width: 2),
+                Expanded(child: _foto(hallazgo['foto'] as String? ?? '', 'Encontrada')),
+              ]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(spacing: 8, runSpacing: 6, children: [
+                  _chip('$similitud % de parecido', colorSimilitud, Icons.verified),
+                  _chip(porIA ? 'Fotos comparadas con IA' : 'Por descripción y zona',
+                      porIA ? const Color(0xFF8A6D00) : Colors.blueGrey, porIA ? Icons.auto_awesome : Icons.text_snippet_outlined),
+                ]),
+                const SizedBox(height: 12),
+                const Text('Mascota encontrada', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
+                  const SizedBox(width: 4),
+                  Expanded(child: Text(hallazgo['zona'] as String? ?? '', style: const TextStyle(fontSize: 13))),
+                ]),
+                const SizedBox(height: 6),
+                Text(hallazgo['descripcion'] as String? ?? '', style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                if (analisis != null && (analisis['raza'] ?? '') != '') ...[
+                  const SizedBox(height: 6),
+                  Text('IA: ${[analisis['raza'], analisis['color'], analisis['tamano']].where((v) => v != null && v != '').join(' · ')}',
+                      style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                ],
+                const SizedBox(height: 8),
+                Text('Tu reporte: ${mio['descripcion'] ?? ''}',
+                    maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade300),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => _descartar(c),
+                      child: const Text('No es mi mascota'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _turquesa,
+                        foregroundColor: _oscuro,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: const BorderSide(color: _oscuro)),
+                      ),
+                      onPressed: () => _contactar(c),
+                      child: const Text('Contactar', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _foto(String ruta, String etiqueta) => Stack(fit: StackFit.expand, children: [
+        FotoHuellApp(ApiConfig.urlArchivo(ruta), fit: BoxFit.cover),
+        Positioned(
+          left: 8,
+          bottom: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10)),
+            child: Text(etiqueta, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ]);
+
+  Widget _chip(String texto, Color color, IconData icono) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icono, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(texto, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+        ]),
+      );
 }

@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/api_client.dart';
 import '../core/destino.dart';
+import '../core/google_login.dart';
 import '../core/sesion_service.dart';
+import '../widgets/boton_google.dart';
+import '../widgets/dialogo_codigo.dart';
 import 'register_shelter_screen.dart';
 import 'register_user_screen.dart';
 
@@ -38,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _tokensGoogle?.cancel();
     _userOrEmailController.dispose();
     _passwordController.dispose();
     _recoveryEmailController.dispose();
@@ -66,21 +72,90 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final sesion = await SesionService.instancia.iniciarSesion(
+      final resultado = await SesionService.instancia.iniciarSesion(
         correo: _userOrEmailController.text,
         password: _passwordController.text,
-        rol: _selectedRole == 'Refugio' ? 'refugio' : 'usuario',
+        rol: _rolApi,
       );
       if (!mounted) return;
       setState(() => _isLoading = false);
-      // Usuario → la app; refugio aprobado → su panel; refugio no aprobado → estado de su solicitud
-      _entrar(sesion);
+      await _terminar(resultado);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700),
+      _mostrarError(e.mensaje);
+    }
+  }
+
+  String get _rolApi => _selectedRole == 'Refugio' ? 'refugio' : 'usuario';
+
+  void _mostrarError(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje), backgroundColor: Colors.red.shade700),
+    );
+  }
+
+  /// Después de la contraseña o de Google: entra, o pide el código de Google Authenticator.
+  Future<void> _terminar(ResultadoLogin resultado) async {
+    if (resultado.requiereCodigo) {
+      Sesion? sesion;
+      final ok = await pedirCodigoDosPasos(
+        context,
+        alEnviar: (codigo) async {
+          sesion = await SesionService.instancia.verificarCodigo(desafio: resultado.desafio!, codigo: codigo);
+        },
       );
+      if (!ok || !mounted || sesion == null) return;
+      _entrar(sesion);
+      return;
+    }
+    // Usuario → la app; refugio aprobado → su panel; refugio no aprobado → estado de su solicitud
+    _entrar(resultado.sesion);
+  }
+
+  // ---------- «Continuar con Google» ----------
+
+  bool _hayGoogle = false;
+  bool _cargandoGoogle = false;
+  StreamSubscription<String>? _tokensGoogle;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepararGoogle();
+  }
+
+  Future<void> _prepararGoogle() async {
+    if (!GoogleLogin.plataformaCompatible) return;
+    final clientId = await SesionService.instancia.googleClientId();
+    final listo = await GoogleLogin.instancia.preparar(clientId);
+    if (!mounted || !listo) return;
+    _tokensGoogle = GoogleLogin.instancia.idTokens.listen(_entrarConGoogle); // botón web
+    setState(() => _hayGoogle = true);
+  }
+
+  Future<void> _elegirCuentaGoogle() async { // Android
+    try {
+      final token = await GoogleLogin.instancia.elegirCuenta();
+      if (token != null) await _entrarConGoogle(token);
+    } catch (e) {
+      if (mounted) _mostrarError('No se pudo abrir Google. Inténtalo de nuevo.');
+    }
+  }
+
+  Future<void> _entrarConGoogle(String idToken) async {
+    if (_cargandoGoogle || !mounted) return;
+    setState(() => _cargandoGoogle = true);
+    try {
+      final resultado = await SesionService.instancia.iniciarSesionGoogle(idToken: idToken, rol: _rolApi);
+      if (!mounted) return;
+      setState(() => _cargandoGoogle = false);
+      await _terminar(resultado);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _cargandoGoogle = false);
+      await GoogleLogin.instancia.salir(); // para poder elegir otra cuenta
+      _mostrarError(e.mensaje);
     }
   }
 
@@ -367,6 +442,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
+
+                          // «Continuar con Google» (solo si la API tiene GOOGLE_CLIENT_ID)
+                          if (_hayGoogle) ...[
+                            BotonGoogle(alPresionar: _elegirCuentaGoogle, cargando: _cargandoGoogle),
+                            const SizedBox(height: 12),
+                          ],
 
                           // Botón Entrar como Visitante
                           SizedBox(

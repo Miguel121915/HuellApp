@@ -1,33 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-class ModeloPublicacion {
-  final String id;
-  String usuario;
-  String tiempo;
-  String texto;
-  String? urlImagen;
-  Uint8List? bytesImagen;
-  int meGusta;
-  bool leGusta;
-  int compartidos;
-  List<String> comentarios;
+import '../core/api_client.dart';
+import '../core/requiere_sesion.dart';
+import '../services/comunidad_service.dart';
+import '../widgets/foto_huellapp.dart';
 
-  ModeloPublicacion({
-    required this.id,
-    required this.usuario,
-    required this.tiempo,
-    required this.texto,
-    this.urlImagen,
-    this.bytesImagen,
-    this.meGusta = 0,
-    this.leGusta = false,
-    this.compartidos = 0,
-    List<String>? comentarios,
-  }) : comentarios = comentarios ?? [];
-}
-
+/// Muro de la comunidad (HU-5): las publicaciones del foro de la API, incluidas las alertas de
+/// mascotas perdidas y encontradas que se crean desde «Reportar». Es el mismo foro del sitio web.
 class MuroHuellAppScreen extends StatefulWidget {
   const MuroHuellAppScreen({super.key});
 
@@ -36,75 +17,117 @@ class MuroHuellAppScreen extends StatefulWidget {
 }
 
 class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
+  static const Color _turquesa = Color(0xFF75E6DA);
+  static const Color _oscuro = Color(0xFF1B4943);
+
+  ComunidadService get _servicio => ComunidadService.instancia;
+
   final TextEditingController _publicacionController = TextEditingController();
-  Uint8List? _bytesImagenWeb;
+  Uint8List? _foto;
+  bool _publicando = false;
 
-  final List<ModeloPublicacion> _publicaciones = [
-    ModeloPublicacion(
-      id: '1',
-      usuario: 'HuellApp Oficial',
-      tiempo: 'Hace 5 h · 🌐',
-      texto: 'La familia nunca apaga tu brillo... ❤️️✨',
-      meGusta: 121,
-      compartidos: 12,
-      comentarios: ['¡Qué gran mensaje!', 'Saludos a la comunidad HuellApp.'],
-    ),
-    ModeloPublicacion(
-      id: '2',
-      usuario: 'AdoptaChalco',
-      tiempo: 'Hace 2 h · 🌐',
-      texto: 'Se busca hogar para esta hermosa gatita rescatada ayer por la tarde.',
-      meGusta: 46,
-      compartidos: 5,
-      comentarios: ['¿Dónde se puede ir a ver?', 'Compartido.'],
-    ),
-  ];
+  List<PublicacionForo> _publicaciones = [];
+  bool _cargando = true;
+  String? _error;
 
-  Future<void> _seleccionarFoto() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? imagen = await picker.pickImage(source: ImageSource.gallery);
+  /// Filtro: 'todo', 'alertas'
+  String _filtro = 'todo';
 
-    if (imagen != null) {
-      final bytes = await imagen.readAsBytes();
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  @override
+  void dispose() {
+    _publicacionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = _publicaciones.isEmpty;
+      _error = null;
+    });
+    try {
+      final lista = await _servicio.publicaciones();
+      if (!mounted) return;
       setState(() {
-        _bytesImagenWeb = bytes;
+        _publicaciones = lista;
+        _cargando = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.mensaje;
+        _cargando = false;
       });
     }
   }
 
-  void _crearPublicacion() {
-    if (_publicacionController.text.trim().isEmpty && _bytesImagenWeb == null) {
+  void _aviso(String texto, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(texto), backgroundColor: error ? Colors.red.shade700 : null),
+    );
+  }
+
+  Future<void> _seleccionarFoto() async {
+    final imagen = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (imagen == null) return;
+    final bytes = await imagen.readAsBytes();
+    if (mounted) setState(() => _foto = bytes);
+  }
+
+  Future<void> _publicar() async {
+    final texto = _publicacionController.text.trim();
+    if (texto.length < 5) {
+      _aviso('Escribe al menos 5 caracteres.', error: true);
       return;
     }
-
-    setState(() {
-      _publicaciones.insert(
-        0,
-        ModeloPublicacion(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          usuario: 'Usuario HuellApp',
-          tiempo: 'Hace un momento · 🌐',
-          texto: _publicacionController.text.trim(),
-          bytesImagen: _bytesImagenWeb,
-        ),
-      );
-      _publicacionController.clear();
-      _bytesImagenWeb = null;
-    });
+    if (!await requiereSesion(context, 'publicar en el muro')) return;
+    setState(() => _publicando = true);
+    try {
+      final nueva = await _servicio.publicar(texto, foto: _foto);
+      if (!mounted) return;
+      setState(() {
+        _publicaciones.insert(0, nueva);
+        _publicacionController.clear();
+        _foto = null;
+        _publicando = false;
+      });
+      FocusScope.of(context).unfocus();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _publicando = false);
+      _aviso(e.mensaje, error: true);
+    }
   }
 
-  void _alternarMeGusta(ModeloPublicacion publicacion) {
-    setState(() {
-      publicacion.leGusta = !publicacion.leGusta;
-      if (publicacion.leGusta) {
-        publicacion.meGusta++;
-      } else {
-        publicacion.meGusta--;
-      }
-    });
+  Future<void> _alternarMeGusta(PublicacionForo p) async {
+    if (!await requiereSesion(context, 'dar «me gusta»')) return;
+    final nuevo = !p.leGusta;
+    setState(() => p.leGusta = nuevo); // se ve al instante; si falla se regresa
+    try {
+      await _servicio.meGusta(p.id, nuevo);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => p.leGusta = !nuevo);
+      _aviso(e.mensaje, error: true);
+    }
   }
 
-  void _abrirImagenPantallaCompleta(ModeloPublicacion publicacion) {
+  Future<void> _compartir(PublicacionForo p) async {
+    await Clipboard.setData(ClipboardData(text: '${p.texto}\n\n— Compartido desde HuellApp'));
+    if (mounted) _aviso('Texto copiado: pégalo en WhatsApp o tus redes para que más gente lo vea.');
+  }
+
+  void _abrirFoto(PublicacionForo p) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -113,21 +136,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            InteractiveViewer(
-              child: publicacion.bytesImagen != null
-                  ? Image.memory(
-                      publicacion.bytesImagen!,
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                    )
-                  : Image.network(
-                      publicacion.urlImagen!,
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-            ),
+            InteractiveViewer(child: FotoHuellApp(p.fotoUrl, fit: BoxFit.contain, width: double.infinity, height: double.infinity)),
             Positioned(
               top: 40,
               right: 20,
@@ -145,578 +154,326 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
     );
   }
 
-  void _editarPublicacion(ModeloPublicacion publicacion) {
-    final TextEditingController editarController = TextEditingController(
-      text: publicacion.texto,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar publicación'),
-        content: TextField(
-          controller: editarController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Edita el contenido...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF75E6DA),
-            ),
-            onPressed: () {
-              setState(() {
-                publicacion.texto = editarController.text.trim();
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Publicación actualizada')),
-              );
-            },
-            child: const Text('Guardar', style: TextStyle(color: Colors.black)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _borrarPublicacion(ModeloPublicacion publicacion) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Eliminar publicación?'),
-        content: const Text('Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              setState(() {
-                _publicaciones.removeWhere((item) => item.id == publicacion.id);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Publicación eliminada')),
-              );
-            },
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarComentarios(ModeloPublicacion publicacion) {
-    final TextEditingController comentarioController = TextEditingController();
-
+  void _mostrarComentarios(PublicacionForo p) {
+    final controller = TextEditingController();
+    var enviando = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                top: 16,
-                left: 16,
-                right: 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Comentarios',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  SizedBox(
-                    height: 250,
-                    child: publicacion.comentarios.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No hay comentarios aún. ¡Sé el primero!',
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: publicacion.comentarios.length,
-                            itemBuilder: (context, index) {
-                              return ListTile(
-                                leading: const CircleAvatar(
-                                  backgroundColor: Color(0xFF75E6DA),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                title: Text(publicacion.comentarios[index]),
-                              );
-                            },
-                          ),
-                  ),
-                  const Divider(),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: comentarioController,
-                          minLines: 1,
-                          maxLines: 3,
-                          keyboardType: TextInputType.multiline,
-                          decoration: const InputDecoration(
-                            hintText: 'Escribe un comentario...',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (hoja) => StatefulBuilder(
+        builder: (hoja, setHoja) {
+          Future<void> enviar() async {
+            final texto = controller.text.trim();
+            if (texto.isEmpty || enviando) return;
+            if (!await requiereSesion(context, 'comentar')) return;
+            setHoja(() => enviando = true);
+            try {
+              final comentarios = await _servicio.comentar(p.id, texto);
+              if (!mounted) return;
+              setState(() => p.comentarios = comentarios);
+              setHoja(() => enviando = false);
+              controller.clear();
+            } on ApiException catch (e) {
+              setHoja(() => enviando = false);
+              if (mounted) _aviso(e.mensaje, error: true);
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(hoja).viewInsets.bottom, top: 16, left: 16, right: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Comentarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(hoja)),
+                  ],
+                ),
+                const Divider(),
+                SizedBox(
+                  height: 250,
+                  child: p.comentarios.isEmpty
+                      ? const Center(child: Text('No hay comentarios aún. ¡Sé el primero!'))
+                      : ListView.builder(
+                          itemCount: p.comentarios.length,
+                          itemBuilder: (_, i) => ListTile(
+                            leading: const CircleAvatar(backgroundColor: _turquesa, child: Icon(Icons.person, color: Colors.white)),
+                            title: Text(p.comentarios[i].autor, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                            subtitle: Text(p.comentarios[i].texto),
                           ),
                         ),
+                ),
+                const Divider(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        minLines: 1,
+                        maxLines: 3,
+                        maxLength: 300,
+                        decoration: const InputDecoration(
+                          hintText: 'Escribe un comentario...',
+                          border: OutlineInputBorder(),
+                          counterText: '',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: Color(0xFF75E6DA)),
-                        onPressed: () {
-                          if (comentarioController.text.trim().isNotEmpty) {
-                            setState(() {
-                              publicacion.comentarios.add(
-                                comentarioController.text.trim(),
-                              );
-                            });
-                            setModalState(() {});
-                            comentarioController.clear();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _compartirPublicacion(ModeloPublicacion publicacion) {
-    setState(() {
-      publicacion.compartidos++;
-    });
-
-    final String enlaceSimulado = 'https://huellapp.com/post/${publicacion.id}';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Enlace copiado al portapapeles: $enlaceSimulado'),
-        duration: const Duration(seconds: 3),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: enviando
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.send, color: _oscuro),
+                      onPressed: enviar,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
       ),
-    );
+    ).whenComplete(controller.dispose);
   }
 
-  Widget _renderizarImagen(ModeloPublicacion publicacion) {
-    if (publicacion.bytesImagen != null ||
-        (publicacion.urlImagen != null && publicacion.urlImagen!.isNotEmpty)) {
-      return GestureDetector(
-        onTap: () => _abrirImagenPantallaCompleta(publicacion),
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(maxHeight: 380),
-          decoration: BoxDecoration(
-            color: Colors.black12,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: publicacion.bytesImagen != null
-                ? Image.memory(
-                    publicacion.bytesImagen!,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                  )
-                : Image.network(
-                    publicacion.urlImagen!,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                  ),
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
+  String _hace(DateTime? fecha) {
+    if (fecha == null) return '';
+    final d = DateTime.now().difference(fecha);
+    if (d.inMinutes < 1) return 'Hace un momento';
+    if (d.inMinutes < 60) return 'Hace ${d.inMinutes} min';
+    if (d.inHours < 24) return 'Hace ${d.inHours} h';
+    if (d.inDays < 7) return 'Hace ${d.inDays} d';
+    return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final visibles = _filtro == 'alertas'
+        ? _publicaciones.where((p) => p.esAlertaPerdida || p.esAlertaEncontrada).toList()
+        : _publicaciones;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text(
-          'Foro de Comunidad',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Muro de la comunidad', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [IconButton(tooltip: 'Actualizar', icon: const Icon(Icons.refresh), onPressed: _cargar)],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12.0),
+      body: RefreshIndicator(
+        onRefresh: _cargar,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                _cajaPublicar(),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, children: [
+                  ChoiceChip(
+                    label: const Text('Todo'),
+                    selected: _filtro == 'todo',
+                    onSelected: (_) => setState(() => _filtro = 'todo'),
+                  ),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.campaign_outlined, size: 18),
+                    label: const Text('Solo alertas'),
+                    selected: _filtro == 'alertas',
+                    onSelected: (_) => setState(() => _filtro = 'alertas'),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                if (_cargando)
+                  const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+                else if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(children: [
+                      Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700)),
+                      const SizedBox(height: 12),
+                      OutlinedButton(onPressed: _cargar, child: const Text('Reintentar')),
+                    ]),
+                  )
+                else if (visibles.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text('Todavía no hay publicaciones aquí.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+                  )
+                else
+                  ...visibles.map(_tarjeta),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cajaPublicar() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Caja para redactar publicación
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const CircleAvatar(
-                          backgroundColor: Color(0xFF75E6DA),
-                          child: Icon(Icons.person, color: Colors.white),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: _publicacionController,
-                            maxLines: null, // Permite que el campo crezca dinámicamente con cada Enter
-                            minLines: 1, // Inicia con altura de 1 línea
-                            keyboardType: TextInputType
-                                .multiline, // Habilita el teclado multilínea
-                            decoration: const InputDecoration(
-                              hintText: '¿Qué quieres reportar o publicar en HuellApp?',
-                              border: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_bytesImagenWeb != null) ...[
-                      const SizedBox(height: 10),
-                      Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(
-                              _bytesImagenWeb!,
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.cancel, color: Colors.red),
-                            onPressed: () {
-                              setState(() {
-                                _bytesImagenWeb = null;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton.icon(
-                          onPressed: _seleccionarFoto,
-                          icon: const Icon(
-                            Icons.photo_library,
-                            color: Colors.green,
-                          ),
-                          label: const Text(
-                            'Foto',
-                            style: TextStyle(color: Colors.black87),
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF75E6DA),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          onPressed: _crearPublicacion,
-                          child: const Text(
-                            'Publicar',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            Row(children: [
+              const CircleAvatar(backgroundColor: _turquesa, child: Icon(Icons.person, color: Colors.white)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _publicacionController,
+                  maxLines: null,
+                  minLines: 1,
+                  maxLength: 600,
+                  keyboardType: TextInputType.multiline,
+                  decoration: const InputDecoration(
+                    hintText: '¿Qué quieres compartir con la comunidad?',
+                    border: InputBorder.none,
+                    counterText: '',
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Lista de publicaciones
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _publicaciones.length,
-              itemBuilder: (context, index) {
-                final pub = _publicaciones[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            ]),
+            if (_foto != null) ...[
+              const SizedBox(height: 10),
+              Stack(alignment: Alignment.topRight, children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(_foto!, height: 160, width: double.infinity, fit: BoxFit.contain),
+                ),
+                IconButton(icon: const Icon(Icons.cancel, color: Colors.red), onPressed: () => setState(() => _foto = null)),
+              ]),
+            ],
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton.icon(
+                  onPressed: _seleccionarFoto,
+                  icon: const Icon(Icons.photo_library, color: Colors.green),
+                  label: const Text('Foto', style: TextStyle(color: Colors.black87)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _turquesa,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.purple.shade100,
-                              child: const Icon(
-                                Icons.pets,
-                                color: Colors.purple,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    pub.usuario,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Text(
-                                    pub.tiempo,
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_horiz,
-                                color: Colors.grey,
-                              ),
-                              onSelected: (value) {
-                                if (value == 'editar') {
-                                  _editarPublicacion(pub);
-                                } else if (value == 'borrar') {
-                                  _borrarPublicacion(pub);
-                                }
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem(
-                                  value: 'editar',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.edit,
-                                        color: Colors.blue,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Editar publicación'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'borrar',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Borrar publicación'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        if (pub.texto.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Text(pub.texto, style: const TextStyle(fontSize: 14)),
-                        ],
-                        if (pub.bytesImagen != null ||
-                            pub.urlImagen != null) ...[
-                          const SizedBox(height: 10),
-                          _renderizarImagen(pub),
-                        ],
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 10,
-                                  backgroundColor: Colors.blue,
-                                  child: Icon(
-                                    Icons.thumb_up,
-                                    size: 10,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${pub.meGusta}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '${pub.comentarios.length} comentarios · ${pub.compartidos} compartidos',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            InkWell(
-                              onTap: () => _alternarMeGusta(pub),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      pub.leGusta
-                                          ? Icons.thumb_up
-                                          : Icons.thumb_up_alt_outlined,
-                                      size: 18,
-                                      color: pub.leGusta
-                                          ? Colors.blue
-                                          : Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Me gusta',
-                                      style: TextStyle(
-                                        color: pub.leGusta
-                                            ? Colors.blue
-                                            : Colors.grey.shade700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => _mostrarComentarios(pub),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.chat_bubble_outline,
-                                      size: 18,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Comentar',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => _compartirPublicacion(pub),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.share_outlined,
-                                      size: 18,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Compartir',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                  onPressed: _publicando ? null : _publicar,
+                  child: _publicando
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Publicar', style: TextStyle(color: Colors.black)),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _tarjeta(PublicacionForo p) {
+    final alerta = p.esAlertaPerdida || p.esAlertaEncontrada;
+    final colorAlerta = p.esAlertaPerdida ? const Color(0xFFFFC83D) : const Color(0xFF3DBE8B);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: alerta ? BorderSide(color: colorAlerta, width: 2) : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              CircleAvatar(
+                backgroundColor: alerta ? colorAlerta.withValues(alpha: 0.25) : Colors.purple.shade100,
+                child: Icon(alerta ? Icons.campaign : Icons.pets, color: alerta ? _oscuro : Colors.purple),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.autor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(_hace(p.fecha), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ]),
+              ),
+              if (alerta)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: colorAlerta, borderRadius: BorderRadius.circular(12)),
+                  child: Text(
+                    p.esAlertaPerdida ? 'SE BUSCA' : 'ENCONTRADA',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF14312E)),
+                  ),
+                ),
+            ]),
+            if (p.texto.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(p.texto, style: const TextStyle(fontSize: 14, height: 1.35)),
+            ],
+            if (p.fotoUrl.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => _abrirFoto(p),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 380),
+                    width: double.infinity,
+                    color: Colors.black12,
+                    child: FotoHuellApp(p.fotoUrl, fit: BoxFit.contain, width: double.infinity, height: 300),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('❤ ${p.meGusta}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('${p.comentarios.length} comentarios', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _accion(
+                  p.leGusta ? Icons.favorite : Icons.favorite_border,
+                  'Me gusta',
+                  () => _alternarMeGusta(p),
+                  color: p.leGusta ? Colors.red : null,
+                ),
+                _accion(Icons.chat_bubble_outline, 'Comentar', () => _mostrarComentarios(p)),
+                _accion(Icons.share_outlined, 'Compartir', () => _compartir(p)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _accion(IconData icono, String texto, VoidCallback alTocar, {Color? color}) {
+    return InkWell(
+      onTap: alTocar,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+        child: Row(children: [
+          Icon(icono, size: 18, color: color ?? Colors.grey),
+          const SizedBox(width: 6),
+          Text(texto, style: TextStyle(color: color ?? Colors.grey.shade700, fontSize: 13)),
+        ]),
       ),
     );
   }

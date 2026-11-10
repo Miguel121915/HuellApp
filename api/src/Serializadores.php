@@ -78,6 +78,8 @@ final class Serializadores
     public static function reporte(array $r): array
     {
         return ['id' => (string) $r['id'], 'tipo' => $r['tipo'], 'descripcion' => $r['descripcion'], 'zona' => $r['zona'],
-            'foto' => $r['foto'], 'fotoAlt' => $r['foto_alt'] ?: 'Foto del reporte', 'fecha' => self::fecha($r['creado_en'])];
+            'foto' => $r['foto'], 'fotoAlt' => $r['foto_alt'] ?: 'Foto del reporte', 'fecha' => self::fecha($r['creado_en']),
+            'especie' => $r['especie'] ?? null, 'nombre' => $r['nombre'] ?? null,
+            'analisisIA' => ($r['analisis_ia'] ?? '') !== '' ? json_decode($r['analisis_ia'], true) : null];
     }
 }

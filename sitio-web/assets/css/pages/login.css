@@ -152,3 +152,12 @@
 .selector-rol__opcion[aria-selected="true"] { background: var(--aqua); color: var(--tinta); }
 .login__invitado { margin-bottom: var(--e4); color: var(--tinta-suave); }
 @media (max-width: 520px) { .selector-rol { grid-template-columns: repeat(2, 1fr); } }
+
+/* «Continuar con Google» y segundo paso (código de Google Authenticator) */
+.login__google { margin-top: var(--e4); display: grid; gap: var(--e4); justify-items: center; }
+.login__google--oculto { display: none; }
+.login__separador { display: flex; align-items: center; gap: var(--e3); width: 100%; color: var(--tinta-suave); }
+.login__separador::before, .login__separador::after { content: ""; flex: 1; border-top: 1px solid var(--borde); }
+.login__dos-pasos { display: grid; gap: var(--e3); }
+.login__dos-pasos-texto { color: var(--tinta-suave); }
+.campo__control--codigo { font-size: 1.6rem; letter-spacing: 0.4em; text-align: center; font-variant-numeric: tabular-nums; }

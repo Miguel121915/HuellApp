@@ -6,6 +6,7 @@ import '../../services/refugio_service.dart';
 import '../../widgets/foto_huellapp.dart';
 import '../../widgets/selector_ubicacion.dart';
 import '../login_screen.dart';
+import '../seguridad_screen.dart';
 import 'mascota_form_screen.dart';
 import 'panel_secciones.dart';
 
@@ -91,9 +92,13 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
             icon: const Icon(Icons.account_circle, color: Colors.black, size: 32),
             onSelected: (v) {
               if (v == 'salir') _salir();
+              if (v == 'seguridad') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SeguridadScreen()));
+              }
             },
             itemBuilder: (_) => [
               PopupMenuItem(enabled: false, child: Text(sesion?.nombre ?? 'Refugio')),
+              const PopupMenuItem(value: 'seguridad', child: ListTile(leading: Icon(Icons.verified_user_outlined), title: Text('Seguridad'))),
               const PopupMenuItem(value: 'salir', child: ListTile(leading: Icon(Icons.logout), title: Text('Cerrar sesión'))),
             ],
           ),
