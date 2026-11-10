@@ -210,6 +210,9 @@ test("coincidencias: listar, declinar, restaurar y proteger las ajenas", async (
   const lista = (await api("GET", "/api/coincidencias", { token: ana.token })).datos.coincidencias;
   assert.deepEqual(lista.map((c) => c.similitud), [92, 74, 58]);
   assert.equal(lista[0].hallazgo.contacto.nombre, "Carlos Vega");
+  assert.equal(lista[0].lado, "perdida", "Ana perdió a su mascota");
+  assert.deepEqual(lista[0].otroReporte, lista[0].hallazgo, "para quien perdió, otroReporte es el hallazgo");
+  assert.ok(lista.every((c) => typeof c.otroReporte.contacto.telefono === "string"), "el teléfono siempre es texto ('' si no lo dio)");
   assert.deepEqual((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos, { pendientes: 3, descartadas: 0 });
 
   assert.equal((await api("POST", `/api/coincidencias/${lista[0].id}/descartar`, { token: otro.token })).estado, 404, "no puede declinar la de otra persona");
@@ -234,6 +237,18 @@ test("reportes: un hallazgo parecido genera una coincidencia nueva para el dueñ
   assert.ok(r.datos.coincidenciasNuevas >= 1);
   const resumen = (await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos;
   assert.equal(resumen.pendientes, 4);
+
+  // Quien encontró la mascota también ve la coincidencia, con el contacto de quien la perdió
+  const delOtro = (await api("GET", "/api/coincidencias", { token: otro.token })).datos.coincidencias;
+  const conAna = delOtro.find((c) => c.otroReporte.contacto.nombre === "Ana López");
+  assert.ok(conAna, "quien encontró ve la coincidencia con la pérdida de Ana");
+  assert.equal(conAna.lado, "encontrada");
+  assert.equal(conAna.miReporte.tipo, "encontrada");
+  assert.equal(conAna.otroReporte.tipo, "perdida");
+  // Cada quien descarta por su lado: si quien encontró la descarta, Ana la sigue viendo
+  await api("POST", `/api/coincidencias/${conAna.id}/descartar`, { token: otro.token });
+  assert.equal((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos.pendientes, 4);
+  await api("POST", "/api/coincidencias/restaurar", { token: otro.token });
 
   const irrelevante = await api("POST", "/api/reportes", { token: otro.token, cuerpo: { tipo: "encontrada", zona: "Monterrey Nuevo León", foto: PNG, descripcion: "Perro labrador negro con collar morado muy grande" } });
   assert.equal(irrelevante.datos.coincidenciasNuevas, 0, "un reporte sin parecido no genera coincidencias");

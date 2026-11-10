@@ -12,8 +12,14 @@ use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, Gemini, Respuesta, Serializa
  */
 final class Reportes
 {
-    // Coincidencias donde el REPORTE DE PÉRDIDA es del usuario que consulta
-    private const BASE = 'FROM coincidencias c JOIN reportes rp ON rp.id = c.reporte_perdido_id AND rp.usuario_id = ?';
+    // Coincidencias en las que participa el usuario que consulta, de cualquiera de los dos lados:
+    // dueño del reporte de PÉRDIDA (rp) o del de HALLAZGO (re). Así las dos personas pueden encontrarse.
+    private const DESDE = 'FROM coincidencias c
+          JOIN reportes rp ON rp.id = c.reporte_perdido_id
+          JOIN reportes re ON re.id = c.reporte_encontrado_id';
+    /** Condición de "es mía". Parámetros: [usuario, usuario] */
+    private const MIA = '(rp.usuario_id = ? OR re.usuario_id = ?)';
+    // Cada persona descarta por su cuenta (coincidencias_descartadas es por usuario). Parámetro: [usuario]
     private const DESCARTADA = 'EXISTS (SELECT 1 FROM coincidencias_descartadas d WHERE d.coincidencia_id = c.id AND d.usuario_id = ?)';
 
     public static function registrar(Enrutador $r): void
@@ -148,42 +154,67 @@ final class Reportes
         }
     }
 
+    /**
+     * GET /api/coincidencias — Las coincidencias del usuario, de los dos lados:
+     *  - lado "perdida":    yo perdí la mascota; otroReporte es el hallazgo de otra persona.
+     *  - lado "encontrada": yo encontré una mascota; otroReporte es la pérdida de su posible dueño.
+     * miReporte es siempre el reporte propio y otroReporte trae el contacto de la otra persona.
+     * "hallazgo" se conserva igual que antes (el reporte de la mascota encontrada, con contacto)
+     * para no romper clientes viejos; los nuevos deben usar lado + otroReporte.
+     */
     public static function listar(Solicitud $s): array
     {
-        $u = $s->usuario['id'];
+        $u = (int) $s->usuario['id'];
+        $columnas = static fn (string $a): string => "$a.id AS {$a}_id, $a.usuario_id AS {$a}_usuario, $a.tipo AS {$a}_tipo,
+                    $a.descripcion AS {$a}_descripcion, $a.zona AS {$a}_zona, $a.foto AS {$a}_foto, $a.foto_alt AS {$a}_alt,
+                    $a.creado_en AS {$a}_fecha, $a.especie AS {$a}_especie, $a.nombre AS {$a}_nombre, $a.analisis_ia AS {$a}_analisis";
         $filas = Base::todos(
-            'SELECT c.id, c.similitud, c.por_ia, c.creado_en, rp.id AS rp_id, re.especie AS re_especie, re.nombre AS re_nombre, re.analisis_ia AS re_analisis, rp.tipo AS rp_tipo, rp.descripcion AS rp_descripcion, rp.zona AS rp_zona,
-                    rp.foto AS rp_foto, rp.foto_alt AS rp_alt, rp.creado_en AS rp_fecha,
-                    re.descripcion AS re_descripcion, re.zona AS re_zona, re.foto AS re_foto, re.foto_alt AS re_alt,
+            'SELECT c.id, c.similitud, c.por_ia, c.creado_en, ' . $columnas('rp') . ', ' . $columnas('re') . ',
+                    up.nombre AS up_nombre, up.telefono AS up_telefono, up.correo AS up_correo,
                     ue.nombre AS ue_nombre, ue.telefono AS ue_telefono, ue.correo AS ue_correo
-               ' . self::BASE . '
-               JOIN reportes re ON re.id = c.reporte_encontrado_id
+               ' . self::DESDE . '
+               JOIN usuarios up ON up.id = rp.usuario_id
                JOIN usuarios ue ON ue.id = re.usuario_id
-              WHERE NOT ' . self::DESCARTADA . '
+              WHERE ' . self::MIA . ' AND NOT ' . self::DESCARTADA . '
               ORDER BY c.similitud DESC, c.id',
-            [$u, $u],
+            [$u, $u, $u],
         );
-        return ['coincidencias' => array_map(static fn (array $f): array => [
-            'id' => (string) $f['id'], 'similitud' => (int) $f['similitud'], 'porIA' => (int) ($f['por_ia'] ?? 0) === 1, 'fecha' => Serializadores::fecha($f['creado_en']), 'reporteId' => (string) $f['rp_id'],
-            'miReporte' => [
-                'id' => (string) $f['rp_id'], 'tipo' => $f['rp_tipo'], 'descripcion' => $f['rp_descripcion'], 'zona' => $f['rp_zona'],
-                'foto' => $f['rp_foto'], 'fotoAlt' => $f['rp_alt'] ?: 'Tu reporte', 'fecha' => Serializadores::fecha($f['rp_fecha']),
-            ],
-            'hallazgo' => [
-                'descripcion' => $f['re_descripcion'], 'zona' => $f['re_zona'], 'foto' => $f['re_foto'], 'fotoAlt' => $f['re_alt'] ?: 'Mascota encontrada',
-                'especie' => $f['re_especie'] ?? null, 'nombre' => $f['re_nombre'] ?? null,
-                'analisisIA' => ($f['re_analisis'] ?? '') !== '' ? json_decode($f['re_analisis'], true) : null,
-                'contacto' => ['nombre' => $f['ue_nombre'], 'telefono' => $f['ue_telefono'] ?: 'No indicó teléfono', 'correo' => $f['ue_correo']],
-            ],
-        ], $filas)];
+
+        // Un reporte (rp = pérdida, re = hallazgo) en el formato que ven la app y el sitio
+        $reporte = static fn (array $f, string $a, string $alt): array => [
+            'id' => (string) $f["{$a}_id"], 'tipo' => $f["{$a}_tipo"], 'descripcion' => $f["{$a}_descripcion"], 'zona' => $f["{$a}_zona"],
+            'foto' => $f["{$a}_foto"], 'fotoAlt' => $f["{$a}_alt"] ?: $alt, 'fecha' => Serializadores::fecha($f["{$a}_fecha"]),
+            'especie' => $f["{$a}_especie"] ?? null, 'nombre' => $f["{$a}_nombre"] ?? null,
+            'analisisIA' => ($f["{$a}_analisis"] ?? '') !== '' ? json_decode($f["{$a}_analisis"], true) : null,
+        ];
+        // Dueño del reporte (up = quien perdió, ue = quien encontró). Sin teléfono se manda ''
+        // (antes era el texto "No indicó teléfono", que el sitio mostraba como si fuera un número).
+        $contacto = static fn (array $f, string $a): array => [
+            'nombre' => $f["{$a}_nombre"], 'telefono' => (string) ($f["{$a}_telefono"] ?? ''), 'correo' => $f["{$a}_correo"],
+        ];
+
+        return ['coincidencias' => array_map(static function (array $f) use ($u, $reporte, $contacto): array {
+            $perdi = (int) $f['rp_usuario'] === $u;
+            $hallazgo = $reporte($f, 're', 'Mascota encontrada') + ['contacto' => $contacto($f, 'ue')];
+            $mio = $reporte($f, $perdi ? 'rp' : 're', 'Tu reporte');
+            $otro = $perdi ? $hallazgo : $reporte($f, 'rp', 'Mascota perdida') + ['contacto' => $contacto($f, 'up')];
+            return [
+                'id' => (string) $f['id'], 'similitud' => (int) $f['similitud'], 'porIA' => (int) ($f['por_ia'] ?? 0) === 1,
+                'fecha' => Serializadores::fecha($f['creado_en']), 'reporteId' => $mio['id'],
+                'lado' => $perdi ? 'perdida' : 'encontrada',
+                'miReporte' => $mio,
+                'otroReporte' => $otro,
+                'hallazgo' => $hallazgo,
+            ];
+        }, $filas)];
     }
 
     public static function resumen(Solicitud $s): array
     {
         $u = $s->usuario['id'];
         $contar = static fn (bool $descartadas): int => (int) Base::valor(
-            'SELECT COUNT(*) ' . self::BASE . ' WHERE ' . ($descartadas ? '' : 'NOT ') . self::DESCARTADA,
-            [$u, $u],
+            'SELECT COUNT(*) ' . self::DESDE . ' WHERE ' . self::MIA . ' AND ' . ($descartadas ? '' : 'NOT ') . self::DESCARTADA,
+            [$u, $u, $u],
         );
         return ['pendientes' => $contar(false), 'descartadas' => $contar(true)];
     }
@@ -198,7 +229,7 @@ final class Reportes
     {
         $id = Validar::idDeRuta($s->parametro('id'));
         // Solo se puede declinar una coincidencia propia
-        if (!Base::uno('SELECT c.id ' . self::BASE . ' WHERE c.id = ?', [$s->usuario['id'], $id])) {
+        if (!Base::uno('SELECT c.id ' . self::DESDE . ' WHERE ' . self::MIA . ' AND c.id = ?', [$s->usuario['id'], $s->usuario['id'], $id])) {
             throw new ErrorHttp(404, 'Esa coincidencia no existe.');
         }
         Base::insertarSiNoExiste('INSERT INTO coincidencias_descartadas (usuario_id, coincidencia_id) VALUES (?, ?)', [$s->usuario['id'], $id]);

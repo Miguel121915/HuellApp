@@ -101,14 +101,78 @@ final class Gemini
         if (!is_array($r)) {
             return null;
         }
+        $resultado = self::leerComparacion($r, $incluidos);
+        if ($resultado === []) {
+            // Antes esto se perdía sin aviso: queda en el log para poder revisarlo
+            error_log('Gemini: la comparación de fotos no trajo similitudes reconocibles: ' . substr((string) json_encode($r, JSON_UNESCAPED_UNICODE), 0, 300));
+        }
+        return $resultado;
+    }
+
+    /**
+     * Interpreta la respuesta de compararFotos aunque Gemini no use exactamente el formato pedido:
+     *  - [{"id": "3", "similitud": 85}, ...]                 (el formato pedido)
+     *  - {"resultados": [ ... ]} o cualquier otra clave que envuelva el arreglo
+     *  - {"3": 85, "7": 40}                                  (id => porcentaje)
+     *  - {"id": "3", "similitud": 85}                        (una sola candidata)
+     * También acepta "id=3" o "CANDIDATA id=3", el porcentaje como texto ("85 %"), como fracción
+     * (0.85) y otros nombres de campo (porcentaje, probabilidad, score).
+     * @param list<string> $incluidos ids que sí se mandaron a comparar
+     * @return array<string,int> id => porcentaje 0-100
+     */
+    public static function leerComparacion(array $r, array $incluidos): array
+    {
+        // Objeto que envuelve el arreglo: se toma el primer valor que sea una lista
+        if (!array_is_list($r) && !isset($r['id'])) {
+            foreach ($r as $valor) {
+                if (is_array($valor) && array_is_list($valor)) {
+                    $r = $valor;
+                    break;
+                }
+            }
+        }
+        if (isset($r['id'])) {
+            $r = [$r]; // una sola candidata
+        }
+
         $resultado = [];
-        foreach ($r as $fila) {
-            $id = is_array($fila) ? (string) ($fila['id'] ?? '') : '';
-            if (in_array($id, $incluidos, true) && is_numeric($fila['similitud'] ?? null)) {
-                $resultado[$id] = max(0, min(100, (int) round((float) $fila['similitud'])));
+        foreach ($r as $clave => $fila) {
+            if (is_array($fila)) {
+                $id = self::idCandidata($fila['id'] ?? $fila['candidata'] ?? null);
+                $valor = $fila['similitud'] ?? $fila['porcentaje'] ?? $fila['probabilidad'] ?? $fila['score'] ?? null;
+            } else {
+                $id = self::idCandidata($clave); // formato {"3": 85}
+                $valor = $fila;
+            }
+            $porcentaje = self::porcentaje($valor);
+            if ($id !== null && $porcentaje !== null && in_array($id, $incluidos, true)) {
+                $resultado[$id] = $porcentaje;
             }
         }
         return $resultado;
+    }
+
+    private static function idCandidata(mixed $valor): ?string
+    {
+        if (is_int($valor)) {
+            return (string) $valor;
+        }
+        return is_string($valor) && preg_match('/(\d+)\s*$/', $valor, $m) ? $m[1] : null;
+    }
+
+    private static function porcentaje(mixed $valor): ?int
+    {
+        if (is_string($valor)) {
+            $valor = str_replace(',', '.', trim(str_replace('%', '', $valor)));
+        }
+        if (!is_numeric($valor)) {
+            return null;
+        }
+        $numero = (float) $valor;
+        if ($numero > 0 && $numero < 1) {
+            $numero *= 100; // un porcentaje entero no cae entre 0 y 1: vino como fracción (0.85 = 85 %)
+        }
+        return max(0, min(100, (int) round($numero)));
     }
 
     /** Parte "inline_data" de una foto subida (/uploads/imagenes/...), o null si no existe. */
@@ -143,15 +207,32 @@ final class Gemini
                 if (!is_string($texto)) {
                     break;
                 }
-                $texto = trim(preg_replace('/^```(?:json)?|```$/m', '', $texto) ?? $texto);
-                $json = json_decode($texto, true);
-                return $json ?? null;
+                return self::extraerJson($texto);
             }
             if (!in_array($estado, [429, 500, 503], true) || $intento === 3) {
                 error_log("Gemini respondió $estado: " . substr($respuesta, 0, 300));
                 break;
             }
             usleep(1_500_000 * 2 ** ($intento - 1)); // 1.5 s, 3 s
+        }
+        return null;
+    }
+
+    /**
+     * JSON de la respuesta del modelo. Si viene entre ``` o con una frase antes o después,
+     * se toma el bloque que va del primer [ o { al último ] o }. null si no hay JSON.
+     */
+    public static function extraerJson(string $texto): mixed
+    {
+        $texto = trim(preg_replace('/^```(?:json)?|```$/m', '', $texto) ?? $texto);
+        $json = json_decode($texto, true);
+        if ($json !== null) {
+            return $json;
+        }
+        $inicio = strcspn($texto, '[{');
+        $fin = max((int) strrpos($texto, ']'), (int) strrpos($texto, '}'));
+        if ($inicio < strlen($texto) && $fin > $inicio) {
+            return json_decode(substr($texto, $inicio, $fin - $inicio + 1), true);
         }
         return null;
     }

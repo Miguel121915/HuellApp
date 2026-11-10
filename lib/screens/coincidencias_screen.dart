@@ -8,9 +8,11 @@ import '../core/sesion_service.dart';
 import '../services/comunidad_service.dart';
 import '../widgets/foto_huellapp.dart';
 
-/// Coincidencias (HU-8): mascotas encontradas por otras personas que se parecen a las que TÚ
-/// reportaste como perdidas. Las calcula la API al crear cada reporte: compara las fotos con IA
-/// (Gemini) y, si no hay IA, la descripción y la zona. Es la misma lista que ve el sitio web.
+/// Coincidencias (HU-8): reportes de otras personas que se parecen a los tuyos. Las ven los dos
+/// lados: si perdiste una mascota, las encontradas que se le parecen; si encontraste una, las
+/// pérdidas de sus posibles dueños ("lado" en la API). Las calcula la API al crear cada reporte:
+/// compara las fotos con IA (Gemini) y, si no hay IA, la descripción y la zona. Es la misma lista
+/// que ve el sitio web.
 class CoincidenciasScreen extends StatefulWidget {
   const CoincidenciasScreen({super.key});
 
@@ -98,10 +100,17 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
     if (!ok && mounted) _aviso('No se pudo abrir ${uri.scheme == 'tel' ? 'el teléfono' : 'el correo'} en este dispositivo.', error: true);
   }
 
+  /// El reporte de la otra persona. Las versiones anteriores de la API solo mandaban "hallazgo".
+  Map<String, dynamic> _otro(Map<String, dynamic> c) =>
+      ((c['otroReporte'] ?? c['hallazgo']) as Map).cast<String, dynamic>();
+
+  /// true si yo encontré la mascota (la otra persona es quien la perdió).
+  bool _encontre(Map<String, dynamic> c) => c['lado'] == 'encontrada';
+
   void _contactar(Map<String, dynamic> c) {
-    final hallazgo = c['hallazgo'] as Map<String, dynamic>;
-    final contacto = (hallazgo['contacto'] as Map?)?.cast<String, dynamic>() ?? {};
-    final nombre = contacto['nombre'] as String? ?? 'quien la encontró';
+    final encontre = _encontre(c);
+    final contacto = (_otro(c)['contacto'] as Map?)?.cast<String, dynamic>() ?? {};
+    final nombre = contacto['nombre'] as String? ?? (encontre ? 'quien la perdió' : 'quien la encontró');
     final telefono = (contacto['telefono'] as String? ?? '').replaceAll(RegExp(r'[^\d+]'), '');
     final correo = contacto['correo'] as String? ?? '';
     showModalBottomSheet(
@@ -118,8 +127,12 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _oscuro)),
               const SizedBox(height: 6),
-              const Text('Pregunta por señas que solo tú conoces antes de ir por tu mascota.',
-                  textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(
+                  encontre
+                      ? 'Pídele una foto o señas de su mascota para confirmar que es la misma.'
+                      : 'Pregunta por señas que solo tú conoces antes de ir por tu mascota.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
               const SizedBox(height: 12),
               if (telefono.length >= 8)
                 ListTile(
@@ -138,7 +151,10 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                   onTap: () {
                     Navigator.pop(hoja);
                     final numero = telefono.length == 10 ? '52$telefono' : telefono.replaceAll('+', '');
-                    _abrir(Uri.parse('https://wa.me/$numero?text=${Uri.encodeComponent('Hola, vi en HuellApp que encontraste una mascota que podría ser la mía.')}'));
+                    final saludo = encontre
+                        ? 'Hola, vi en HuellApp que perdiste una mascota. Creo que encontré a la tuya.'
+                        : 'Hola, vi en HuellApp que encontraste una mascota que podría ser la mía.';
+                    _abrir(Uri.parse('https://wa.me/$numero?text=${Uri.encodeComponent(saludo)}'));
                   },
                 ),
               if (correo.isNotEmpty)
@@ -148,8 +164,15 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                   subtitle: Text(correo),
                   onTap: () {
                     Navigator.pop(hoja);
-                    _abrir(Uri(scheme: 'mailto', path: correo, query: 'subject=${Uri.encodeComponent('Mascota encontrada (HuellApp)')}'));
+                    final asunto = encontre ? 'Encontré a una mascota que podría ser la tuya (HuellApp)' : 'Mascota encontrada (HuellApp)';
+                    _abrir(Uri(scheme: 'mailto', path: correo, query: 'subject=${Uri.encodeComponent(asunto)}'));
                   },
+                ),
+              if (telefono.length < 8 && correo.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('Esta persona no dejó teléfono ni correo. Escríbele en los comentarios de su alerta en el muro.',
+                      textAlign: TextAlign.center),
                 ),
             ],
           ),
@@ -188,7 +211,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
     if (!SesionService.instancia.haySesion) {
       return [
         _vacio(Icons.lock_outline, 'Inicia sesión para ver tus coincidencias',
-            'Cuando reportes una mascota perdida, aquí verás las mascotas encontradas que se le parecen.'),
+            'Cuando reportes una mascota perdida o encontrada, aquí verás los reportes de otras personas que se le parecen.'),
         const SizedBox(height: 12),
         Center(
           child: ElevatedButton(
@@ -212,7 +235,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
       const SizedBox(height: 16),
       if (_coincidencias.isEmpty)
         _vacio(Icons.check_circle_outline, 'No hay coincidencias pendientes',
-            'Te avisaremos aquí cuando alguien reporte una mascota encontrada parecida a la tuya.')
+            'Te avisaremos aquí cuando alguien reporte una mascota parecida a la tuya.')
       else
         ..._coincidencias.map(_tarjeta),
       if (_descartadas > 0)
@@ -234,7 +257,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Comparamos las fotos de tus reportes de mascotas perdidas con las mascotas que otras personas encontraron.',
+              'Comparamos las fotos de tus reportes con las de otras personas: mascotas encontradas si perdiste la tuya, y sus posibles dueños si encontraste una.',
               style: TextStyle(fontSize: 13, color: Colors.black87),
             ),
           ),
@@ -254,10 +277,11 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
 
   Widget _tarjeta(Map<String, dynamic> c) {
     final mio = (c['miReporte'] as Map).cast<String, dynamic>();
-    final hallazgo = (c['hallazgo'] as Map).cast<String, dynamic>();
+    final otro = _otro(c);
+    final encontre = _encontre(c);
     final similitud = (c['similitud'] as num?)?.toInt() ?? 0;
     final porIA = c['porIA'] == true;
-    final analisis = (hallazgo['analisisIA'] as Map?)?.cast<String, dynamic>();
+    final analisis = (otro['analisisIA'] as Map?)?.cast<String, dynamic>();
     final colorSimilitud = similitud >= 75 ? Colors.green.shade600 : similitud >= 55 ? Colors.orange.shade700 : Colors.blueGrey;
 
     return Container(
@@ -278,7 +302,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
               child: Row(children: [
                 Expanded(child: _foto(mio['foto'] as String? ?? '', 'Tu reporte')),
                 const SizedBox(width: 2),
-                Expanded(child: _foto(hallazgo['foto'] as String? ?? '', 'Encontrada')),
+                Expanded(child: _foto(otro['foto'] as String? ?? '', encontre ? 'La que buscan' : 'Encontrada')),
               ]),
             ),
           ),
@@ -293,15 +317,16 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                       porIA ? const Color(0xFF8A6D00) : Colors.blueGrey, porIA ? Icons.auto_awesome : Icons.text_snippet_outlined),
                 ]),
                 const SizedBox(height: 12),
-                const Text('Mascota encontrada', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+                Text(encontre ? 'Alguien busca a esta mascota' : 'Mascota encontrada',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
                 const SizedBox(height: 4),
                 Row(children: [
                   const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
                   const SizedBox(width: 4),
-                  Expanded(child: Text(hallazgo['zona'] as String? ?? '', style: const TextStyle(fontSize: 13))),
+                  Expanded(child: Text(otro['zona'] as String? ?? '', style: const TextStyle(fontSize: 13))),
                 ]),
                 const SizedBox(height: 6),
-                Text(hallazgo['descripcion'] as String? ?? '', style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                Text(otro['descripcion'] as String? ?? '', style: const TextStyle(fontSize: 13, color: Colors.black87)),
                 if (analisis != null && (analisis['raza'] ?? '') != '') ...[
                   const SizedBox(height: 6),
                   Text('IA: ${[analisis['raza'], analisis['color'], analisis['tamano']].where((v) => v != null && v != '').join(' · ')}',
@@ -320,7 +345,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => _descartar(c),
-                      child: const Text('No es mi mascota'),
+                      child: Text(encontre ? 'No es la misma' : 'No es mi mascota'),
                     ),
                   ),
                   const SizedBox(width: 12),
