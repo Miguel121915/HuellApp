@@ -8,15 +8,23 @@ import 'api_config.dart';
 /// Error que devuelve la API ({"error": "..."}) o un problema de conexión.
 /// [mensaje] ya viene en español y se puede mostrar tal cual al usuario.
 class ApiException implements Exception {
-  ApiException(this.mensaje, {this.estado = 0});
+  ApiException(this.mensaje, {this.estado = 0, this.codigo});
 
   final String mensaje;
 
   /// Código HTTP (0 = no hubo respuesta del servidor).
   final int estado;
 
+  /// Campo "codigo" que algunas respuestas de error traen para que la app reaccione
+  /// (por ejemplo "desafio-vencido" o "refugio-no-aprobado"). null si no vino.
+  final String? codigo;
+
   bool get sinConexion => estado == 0;
   bool get sesionVencida => estado == 401;
+
+  /// El desafío de la verificación en dos pasos venció (5 minutos): hay que volver a
+  /// escribir la contraseña. Ningún código de Google Authenticator sirve ya para él.
+  bool get desafioVencido => codigo == 'desafio-vencido';
 
   @override
   String toString() => mensaje;
@@ -87,6 +95,7 @@ class ApiClient {
     throw ApiException(
       (datos['error'] as String?) ?? 'Ocurrió un error en el servidor (${respuesta.statusCode}).',
       estado: respuesta.statusCode,
+      codigo: datos['codigo'] is String ? datos['codigo'] as String : null,
     );
   }
 }

@@ -205,7 +205,8 @@ function iniciar() {
     botonVerificar.disabled = false;
     botonVerificar.textContent = "Verificar";
     if (resultado.ok) { irA(destinoDeSesion(resultado.sesion)); return; }
-    if (/5 minutos|Vuelve a iniciar sesión/.test(resultado.error)) { volverAlLogin(resultado.error); return; }
+    // La API manda codigo "desafio-vencido" cuando pasaron los 5 minutos: ya ningún código sirve
+    if (resultado.codigo === "desafio-vencido") { volverAlLogin(resultado.error); return; }
     mostrarAlerta(alerta2fa, "error", resultado.error);
     form2fa.codigo.select();
   });

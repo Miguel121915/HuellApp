@@ -1,6 +1,6 @@
 /**
  * cuentas-demo.js — Atajos de la pantalla de login para probar cada rol.
- * Coinciden con las cuentas que carga la semilla del backend (backend/database/datos-demo.json).
+ * Coinciden con las cuentas que carga la semilla de la API (api/database/datos-demo.json).
  * AVISO: solo para desarrollo. Quita este archivo y el bloque de demo del login al publicar.
  */
 export const CUENTAS_DEMO = [

@@ -59,6 +59,14 @@ class _DialogoCodigoState extends State<_DialogoCodigo> {
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (!mounted) return;
+      if (e.desafioVencido) {
+        // Pasaron los 5 minutos: ningún código sirve ya. Se cierra el diálogo y se avisa
+        // en la pantalla de atrás para que vuelva a escribir su contraseña.
+        final avisos = ScaffoldMessenger.of(context);
+        Navigator.pop(context, false);
+        avisos.showSnackBar(SnackBar(content: Text(e.mensaje)));
+        return;
+      }
       setState(() {
         _enviando = false;
         _error = e.mensaje;
