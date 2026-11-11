@@ -33,6 +33,26 @@ class CatalogoService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Filtros del catálogo (HU-3) aplicados por la API: devuelve los ids de las mascotas
+  /// disponibles del refugio que cumplen con ellos. Valores vacíos o "todas"/"todos" no filtran.
+  /// [edad]: cachorro | joven | adulto | senior (los mismos rangos que el sitio web).
+  Future<Set<String>> filtrarMascotas(
+    String refugioId, {
+    String texto = '',
+    String especie = '',
+    String edad = '',
+    String tamano = '',
+  }) async {
+    final query = <String, String>{
+      if (texto.trim().isNotEmpty) 'q': texto.trim(),
+      if (especie.isNotEmpty && especie != 'todas') 'especie': especie,
+      if (edad.isNotEmpty && edad != 'todas') 'edad': edad,
+      if (tamano.isNotEmpty && tamano != 'todos') 'tamano': tamano,
+    };
+    final r = await ApiClient.instancia.get('/refugios/${Uri.encodeComponent(refugioId)}/mascotas', query: query);
+    return {for (final m in (r['mascotas'] as List? ?? []).cast<Map<String, dynamic>>()) '${m['id']}'};
+  }
+
   /// Descarga el catálogo. Si ya se cargó, no vuelve a pedirlo salvo con [forzar].
   Future<void> cargar({bool forzar = false}) async {
     if (_cargando || (_cargado && !forzar)) return;

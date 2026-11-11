@@ -31,6 +31,14 @@ final class Config
         // IA de Google (análisis y comparación de fotos de reportes). Vacío = sin IA (compara texto).
         'GEMINI_API_KEY' => '',
         'GEMINI_MODEL' => '',
+        // Modelos de respaldo (separados por coma) si el principal está saturado o sin cuota gratuita.
+        'GEMINI_MODELOS_RESPALDO' => '',
+        // Verificación en dos pasos OBLIGATORIA para administradores y refugios (1 = sí, 0 = opcional).
+        'DOS_PASOS_OBLIGATORIO' => '1',
+        // CAPTCHA (Cloudflare Turnstile) en el registro y tras varios intentos fallidos de login.
+        // Vacío = sin CAPTCHA. Para desarrollo sirven las claves de prueba de Cloudflare (ver api/README.md).
+        'TURNSTILE_SITE_KEY' => '',
+        'TURNSTILE_SECRET_KEY' => '',
     ];
 
     /** @var array<string,string> */

@@ -14,3 +14,22 @@
 
 .feed { display: flex; flex-direction: column; gap: var(--e5); }
 .feed__mas { display: flex; justify-content: center; margin-top: var(--e5); }
+
+/* Alertas de mascotas (HU-5): respeta los saltos de línea del título/zona/rasgos y abre el detalle */
+.publicacion__texto { white-space: pre-line; }
+.publicacion__foto { cursor: zoom-in; }
+.publicacion--perdida { border-color: var(--error); }
+.detalle-alerta__foto { margin-bottom: var(--e3); border-radius: var(--radio-s); overflow: hidden; border: 3px solid var(--tinta); background: var(--lila-suave); }
+.detalle-alerta__foto img { width: 100%; max-height: 60vh; object-fit: contain; }
+.detalle-alerta__meta { margin-bottom: var(--e2); }
+.detalle-alerta__texto { white-space: pre-line; overflow-wrap: anywhere; }
+
+/* Pestañas del muro: Se buscan · Buscan a su familia · Reunidos · Comunidad */
+.pestanas-muro { display: flex; gap: var(--e2); overflow-x: auto; margin-bottom: var(--e4); padding-bottom: var(--e1); border-bottom: 2px solid var(--borde); }
+.pestanas-muro [role=tab] { flex-shrink: 0; min-height: 44px; padding: var(--e2) var(--e4); border: 0; border-radius: var(--radio-m) var(--radio-m) 0 0; background: transparent; font-weight: 700; color: var(--texto-suave, #3F5F5B); cursor: pointer; }
+.pestanas-muro [role=tab][aria-selected=true] { background: var(--aqua-suave); color: var(--tinta); box-shadow: inset 0 -3px 0 var(--tinta); }
+.pestanas-muro [role=tab]:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+.aviso-pestana { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; margin-bottom: var(--e5); }
+.aviso-pestana p { margin: 0; color: var(--texto-suave, #3F5F5B); }
+.publicacion--reunido { border-color: #1F7A52; }
+.aviso-reunido { padding: var(--e3) var(--e4); border-radius: var(--radio-m); background: #E3F4EA; color: #1F7A52; font-weight: 700; }

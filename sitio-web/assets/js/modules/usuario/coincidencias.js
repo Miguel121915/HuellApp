@@ -6,7 +6,7 @@
 import { requerirRol } from "../../core/router-guard.js";
 import { pedirCuenta } from "../../components/aviso-cuenta.js";
 import { montarNavbar, refrescarInsigniaCoincidencias } from "../../components/navbar.js";
-import { obtenerCoincidencias, descartarCoincidencia, restaurarCoincidencias, obtenerResumenCoincidencias } from "../../core/servicios.js";
+import { obtenerCoincidencias, descartarCoincidencia, restaurarCoincidencias, obtenerResumenCoincidencias, responderSena } from "../../core/servicios.js";
 import { crearElemento, resolverImagen, tiempoRelativo } from "../../core/utils.js";
 
 const sesion = requerirRol("usuario", { permitirInvitado: true });
@@ -38,9 +38,40 @@ function mostrarParaVisitante() {
   ]));
 }
 
+let estadoIa = { analizando: 0, duplicados: [] };
+let recarga = null;
+
 async function cargar() {
-  [coincidencias, { descartadas }] = await Promise.all([obtenerCoincidencias(), obtenerResumenCoincidencias()]);
+  let resumenApi;
+  [coincidencias, resumenApi] = await Promise.all([obtenerCoincidencias(), obtenerResumenCoincidencias()]);
+  descartadas = resumenApi.descartadas;
+  estadoIa = { analizando: resumenApi.analizando || 0, duplicados: resumenApi.duplicados || [] };
   render();
+  // Mientras la IA revisa fotos (en segundo plano), la página se actualiza sola
+  clearTimeout(recarga);
+  if (estadoIa.analizando > 0) {
+    recarga = setTimeout(async () => { await cargar(); refrescarInsigniaCoincidencias(); }, 15000);
+  }
+}
+
+/** Avisos de la IA: reportes que aún revisa y alertas que parecen de la misma mascota. */
+function avisosIa() {
+  const avisos = [];
+  if (estadoIa.analizando > 0) {
+    avisos.push(crearElemento("p", { clase: "aviso-ia", atributos: { role: "status" }, texto:
+      `🤖 La IA está revisando la foto de ${estadoIa.analizando === 1 ? "tu reporte" : `${estadoIa.analizando} de tus reportes`} y comparándola con otros. Esta página se actualiza sola.` }));
+  }
+  for (const d of estadoIa.duplicados) {
+    const nombre = d.miReporte.nombre ? `de ${d.miReporte.nombre} ` : "";
+    avisos.push(crearElemento("article", { clase: "aviso-ia aviso-ia--duplicado" }, [
+      d.otro.foto ? crearElemento("img", { atributos: { src: resolverImagen(d.otro.foto), alt: `Foto de la alerta de ${d.otro.autor}`, width: 96, height: 72 } }) : null,
+      crearElemento("div", {}, [
+        crearElemento("strong", { texto: `Tu alerta ${nombre}parece ser de la misma mascota que otra ya publicada` }),
+        crearElemento("p", { clase: "texto-pequeno", texto: `${d.otro.autor} la publicó ${tiempoRelativo(d.otro.fecha)} (zona: ${d.otro.zona}). Si es la misma, pónganse de acuerdo en los comentarios de esa alerta en el foro.` }),
+      ]),
+    ]));
+  }
+  return avisos;
 }
 
 async function iniciar() {
@@ -66,6 +97,7 @@ async function iniciar() {
 
 function render() {
   const fragmento = document.createDocumentFragment();
+  fragmento.append(...avisosIa());
   coincidencias.forEach((c) => fragmento.append(crearTarjeta(c)));
   lista.replaceChildren(fragmento);
 
@@ -100,10 +132,14 @@ function crearTarjeta(c) {
         ]),
         crearElemento("figure", { clase: "coincidencia__foto" }, imagen(otro.foto, otro.fotoAlt || (encontre ? "Mascota perdida" : "Mascota encontrada"))),
         crearElemento("p", { clase: "coincidencia__texto", texto: otro.descripcion }),
-        crearElemento("p", { clase: "texto-pequeno", texto: `Zona: ${otro.zona} · Reportado ${tiempoRelativo(c.fecha)}` }),
-        crearElemento("p", { clase: "texto-pequeno texto-suave", texto: c.porIA
-          ? "🤖 La IA comparó las fotos de las dos mascotas."
-          : "Comparado por descripción y zona (sin IA)." }),
+        crearElemento("p", { clase: "texto-pequeno", texto: `Zona: ${otro.zona} · Reportado ${tiempoRelativo(c.fecha)}`
+          + (c.distanciaKm != null ? ` · 📍 a ${c.distanciaKm} km de tu reporte` : "") }),
+        verificacionSena(c),
+        c.mismaFoto
+          ? crearElemento("p", { clase: "coincidencia__misma-foto texto-pequeno", texto: "⚠️ Usa la misma fotografía que el reporte original, así que la foto no prueba que sea la misma mascota. Pide una foto actual antes de ir por ella." })
+          : crearElemento("p", { clase: "texto-pequeno texto-suave", texto: c.porIA
+            ? "🤖 La IA comparó las fotos de las dos mascotas."
+            : "Comparado por descripción y zona (sin IA)." }),
         crearElemento("div", { clase: "coincidencia__acciones" }, [
           crearElemento("button", { clase: "boton boton--primario", texto: "Contactar", atributos: { type: "button", "data-accion": "contactar" } }),
           crearElemento("button", { clase: "boton boton--peligro", texto: "Declinar", atributos: { type: "button", "data-accion": "declinar" } }),
@@ -113,9 +149,64 @@ function crearTarjeta(c) {
   ]);
 }
 
+/**
+ * Seña secreta del dueño:
+ *  - al dueño se le muestra su seña junto a lo que respondió quien encontró, para que decida;
+ *  - a quien encontró se le avisa que debe describir la seña antes de ver el contacto.
+ */
+function verificacionSena(c) {
+  const v = c.verificacion;
+  if (!v) return null;
+  if (v.tuSena !== undefined) {
+    return crearElemento("div", { clase: "verificacion-sena" }, [
+      crearElemento("p", { texto: `🔒 Tu seña secreta: «${v.tuSena}»` }),
+      crearElemento("p", { texto: v.respuesta
+        ? `Quien la encontró describe: «${v.respuesta}». ¿Coincide? Si no, puedes declinar.`
+        : "Quien la encontró todavía no describe la seña. Le pedimos hacerlo antes de ver tus datos." }),
+    ]);
+  }
+  return crearElemento("div", { clase: "verificacion-sena" }, [
+    crearElemento("p", { texto: v.requerida
+      ? "🔒 El dueño pidió confirmar una seña particular de su mascota. Descríbela para ver sus datos de contacto."
+      : `✅ Ya describiste la seña: «${v.respuesta}». El dueño la revisará.` }),
+  ]);
+}
+
+/** Pide a quien encontró la mascota que describa la seña; al responder se recargan sus coincidencias. */
+function pedirSena(c) {
+  const dialogo = crearElemento("dialog", { clase: "modal", atributos: { "aria-labelledby": "sena-titulo" } });
+  const campo = crearElemento("textarea", { clase: "campo__control", atributos: { rows: 3, maxlength: 300, placeholder: "Por ejemplo: tiene una mancha blanca en el pecho", "aria-label": "Describe la seña" } });
+  const error = crearElemento("p", { clase: "campo__error", atributos: { role: "alert" } });
+  const enviar = crearElemento("button", { clase: "boton boton--primario", texto: "Enviar", atributos: { type: "button" } });
+  const cancelar = crearElemento("button", { clase: "boton boton--contorno", texto: "Cancelar", atributos: { type: "button" } });
+  cancelar.addEventListener("click", () => { dialogo.close(); dialogo.remove(); });
+  enviar.addEventListener("click", async () => {
+    const respuesta = campo.value.trim();
+    if (respuesta.length < 3) { error.textContent = "Escribe al menos 3 caracteres."; return; }
+    enviar.disabled = true;
+    const r = await responderSena(c.id, respuesta);
+    enviar.disabled = false;
+    if (!r.ok) { error.textContent = r.error; return; }
+    dialogo.close(); dialogo.remove();
+    await cargar();
+    abrirContacto(c.id); // ya tiene el contacto del dueño
+  });
+  dialogo.append(
+    crearElemento("h2", { clase: "modal__titulo", texto: "Confirma que es la misma mascota", atributos: { id: "sena-titulo" } }),
+    crearElemento("p", { texto: "El dueño registró una seña particular que no aparece en la foto. Describe alguna seña que tenga la mascota que encontraste (manchas, cicatrices, collar…). El dueño revisará tu respuesta." }),
+    campo, error,
+    crearElemento("div", { clase: "modal__acciones" }, [cancelar, enviar]),
+  );
+  document.body.append(dialogo);
+  dialogo.showModal();
+  campo.focus();
+}
+
 function abrirContacto(id) {
   const c = coincidencias.find((x) => x.id === id);
   if (!c) return;
+  // Si el dueño pidió seña, primero se describe; el contacto llega después
+  if (c.verificacion?.requerida) { pedirSena(c); return; }
   const { contacto } = c.otroReporte || c.hallazgo;
   modal.querySelector("p").textContent = c.lado === "encontrada"
     ? "Comunícate con quien perdió a la mascota para confirmar si es la suya."

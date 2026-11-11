@@ -18,13 +18,30 @@
   <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
   <link rel="stylesheet" href="../../assets/css/components/formularios.css">
   <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="../../assets/js/modules/usuario/reportar.js"></script>
 </head>
 <body class="pagina-usuario" data-protegida>
   <header class="encabezado" id="encabezado"></header>
   <main class="contenido">
     <h1 class="titulo-banner">Reportar una mascota</h1>
-    <div class="reportar">
+
+    <!-- Paso 0: dos caminos distintos, cada uno con su propio formulario -->
+    <section id="eleccion-reporte" class="eleccion-reporte" aria-label="¿Qué pasó?">
+      <button type="button" class="eleccion-reporte__opcion eleccion-reporte__opcion--perdida" data-tipo="perdida">
+        <span class="eleccion-reporte__icono" aria-hidden="true">🔎</span>
+        <strong>Se me perdió mi mascota</strong>
+        <span>Publica una alerta para que la comunidad te ayude a buscarla.</span>
+      </button>
+      <button type="button" class="eleccion-reporte__opcion eleccion-reporte__opcion--encontrada" data-tipo="encontrada">
+        <span class="eleccion-reporte__icono" aria-hidden="true">🏠</span>
+        <strong>Encontré una mascota</strong>
+        <span>Ayúdale a volver con su familia.</span>
+      </button>
+    </section>
+
+    <div class="reportar" id="pasos-reporte" hidden>
       <section class="camara tarjeta tarjeta--blanca" aria-labelledby="titulo-camara">
         <h2 id="titulo-camara" class="seccion-titulo">1. Foto de la mascota</h2>
         <div class="camara__visor">
@@ -47,25 +64,85 @@
       </section>
 
       <form id="formulario-reporte" class="tarjeta tarjeta--blanca" novalidate>
-        <h2 class="seccion-titulo">2. Datos del reporte</h2>
+        <div class="reporte-tipo">
+          <h2 class="seccion-titulo" id="titulo-formulario">2. Datos de tu mascota</h2>
+          <button type="button" class="enlace" id="cambiar-tipo">Cambiar</button>
+        </div>
+        <input type="hidden" name="tipo" id="tipo">
 
-        <fieldset class="campo campo--grupo" id="campo-tipo">
-          <legend class="campo__etiqueta">¿Qué ocurrió?</legend>
-          <label class="opcion"><input type="radio" name="tipo" value="perdida"> Mi mascota se perdió</label>
-          <label class="opcion"><input type="radio" name="tipo" value="encontrada"> Encontré una mascota</label>
+        <div class="reporte-rejilla">
+          <div class="campo" id="campo-especie">
+            <label class="campo__etiqueta" for="especie">Especie</label>
+            <select id="especie" name="especie" class="campo__control">
+              <option value="">Elige…</option><option value="perro">Perro</option><option value="gato">Gato</option><option value="otro">Otra</option>
+            </select>
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" id="campo-nombre" data-solo="perdida">
+            <label class="campo__etiqueta" for="nombre">Nombre</label>
+            <input id="nombre" name="nombre" class="campo__control" type="text" maxlength="60" placeholder="Chispa" autocomplete="off">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" id="campo-color">
+            <label class="campo__etiqueta" for="color">Color</label>
+            <select id="color" name="color" class="campo__control">
+              <option value="">Elige…</option>
+              <option>Negro</option><option>Blanco</option><option>Café</option><option>Gris</option><option>Dorado o amarillo</option>
+              <option>Naranja</option><option>Blanco y negro</option><option>Manchado o varios colores</option><option>Atigrado</option>
+            </select>
+          </div>
+          <div class="campo" id="campo-tamano">
+            <label class="campo__etiqueta" for="tamano">Tamaño</label>
+            <select id="tamano" name="tamano" class="campo__control">
+              <option value="">Elige…</option><option value="pequeño">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
+            </select>
+          </div>
+          <div class="campo" id="campo-collar">
+            <label class="campo__etiqueta" for="collar" id="etiqueta-collar">Collar, placa o chip</label>
+            <input id="collar" name="collar" class="campo__control" type="text" maxlength="80" placeholder="Collar rojo con placa" autocomplete="off">
+          </div>
+          <div class="campo" id="campo-fecha">
+            <label class="campo__etiqueta" for="fecha" id="etiqueta-fecha">¿Cuándo se perdió?</label>
+            <input id="fecha" name="fecha" class="campo__control" type="datetime-local">
+            <span class="campo__error" role="alert"></span>
+          </div>
+        </div>
+
+        <fieldset class="campo campo--grupo" id="campo-situacion" data-solo="encontrada">
+          <legend class="campo__etiqueta">¿Dónde está ahora la mascota?</legend>
+          <label class="opcion"><input type="radio" name="situacion" value="conmigo"> La tengo yo, está a salvo</label>
+          <label class="opcion"><input type="radio" name="situacion" value="refugio"> La llevé a un refugio o veterinaria</label>
+          <label class="opcion"><input type="radio" name="situacion" value="vista"> Solo la vi, no la pude resguardar</label>
           <span class="campo__error" role="alert"></span>
         </fieldset>
 
-        <div class="campo" id="campo-descripcion">
-          <label class="campo__etiqueta" for="descripcion">Descripción</label>
-          <textarea id="descripcion" name="descripcion" class="campo__control" maxlength="600" placeholder="Color, tamaño, collar, señas particulares, nombre…"></textarea>
+        <div class="campo" id="campo-zona">
+          <label class="campo__etiqueta" for="zona" id="etiqueta-zona">¿Dónde se perdió?</label>
+          <input id="zona" name="zona" class="campo__control" type="text" maxlength="120" placeholder="Colonia, calle o punto de referencia" autocomplete="off">
           <span class="campo__error" role="alert"></span>
         </div>
 
-        <div class="campo" id="campo-zona">
-          <label class="campo__etiqueta" for="zona">Zona</label>
-          <input id="zona" name="zona" class="campo__control" type="text" maxlength="120" placeholder="Colonia, calle o punto de referencia" autocomplete="off">
+        <div class="campo" id="campo-descripcion">
+          <label class="campo__etiqueta" for="descripcion">Señas particulares</label>
+          <textarea id="descripcion" name="descripcion" class="campo__control" maxlength="600" placeholder="Manchas, cicatrices, cómo es su carácter, cómo se perdió…"></textarea>
           <span class="campo__error" role="alert"></span>
+        </div>
+
+        <!-- Punto en el mapa: las coincidencias se buscan por distancia real -->
+        <div class="campo">
+          <span class="campo__etiqueta" id="etiqueta-mapa">Marca en el mapa dónde se perdió (recomendado)</span>
+          <div id="mapa-reporte" class="mapa-ubicacion" role="application" aria-labelledby="etiqueta-mapa"></div>
+          <div class="mapa-ubicacion__acciones">
+            <button type="button" class="boton boton--contorno boton--pequeno" id="boton-mi-ubicacion">Usar mi ubicación</button>
+            <span class="campo__ayuda" id="texto-mapa">Toca el mapa para marcar el punto. Así encontramos coincidencias cercanas.</span>
+          </div>
+        </div>
+
+        <!-- Seña secreta: solo «Se me perdió». No se publica: sirve para verificar a quien diga que la encontró -->
+        <div class="campo campo--secreto" id="campo-sena" data-solo="perdida">
+          <label class="campo__etiqueta" for="senaSecreta">🔒 Seña secreta (opcional, no se publica)</label>
+          <input id="senaSecreta" name="senaSecreta" class="campo__control" type="text" maxlength="200" placeholder="Tiene una cicatriz en la pata trasera izquierda" autocomplete="off">
+          <span class="campo__ayuda">Un detalle que no se vea en la foto. Si alguien dice que la encontró, le pediremos que lo describa antes de darle tus datos de contacto.</span>
         </div>
 
         <div id="alerta-reporte" role="status" hidden></div>

@@ -1,7 +1,9 @@
 /**
  * login.js — Pantalla de inicio de sesión con selector de rol.
  */
-import { iniciarSesion, iniciarSesionGoogle, verificarCodigo2fa, obtenerConfigAuth, entrarComoInvitado } from "../../core/auth.js";
+import { iniciarSesion, iniciarSesionGoogle, verificarCodigo2fa, configurarPreparar2fa, configurarActivar2fa, obtenerConfigAuth, entrarComoInvitado } from "../../core/auth.js";
+import { dibujarQr } from "../../components/seguridad-cuenta.js";
+import { montarCaptcha } from "../../components/captcha.js";
 import { redirigirSiHaySesion, destinoDeSesion } from "../../core/router-guard.js";
 import { CUENTAS_DEMO } from "../../data/cuentas-demo.js";
 import { irA, esCorreoValido, mostrarAlerta, ocultarAlerta, marcarError } from "../../core/utils.js";
@@ -148,18 +150,29 @@ function iniciar() {
     marcarError(campoPassword, errorPassword);
     if (errorCorreo || errorPassword) return;
 
+    if (captcha && !captcha.token()) { mostrarAlerta(alerta, "error", "Confirma que no eres un robot."); return; }
+
     boton.disabled = true;
     boton.textContent = "Entrando…";
-    const resultado = await iniciarSesion({ rol: rolActivo, correo, password });
+    const resultado = await iniciarSesion({ rol: rolActivo, correo, password, captcha: captcha?.token() });
     boton.disabled = false;
     boton.textContent = "Entrar";
+    captcha?.reiniciar(); // cada verificación sirve una sola vez
+    // Después de varios intentos fallidos la API pide el «no soy un robot»
+    if (!resultado.ok && resultado.codigo === "requiere-captcha") {
+      captcha ??= await montarCaptcha(document.getElementById("captcha-login"), (await obtenerConfigAuth()).captchaSiteKey);
+      mostrarAlerta(alerta, "aviso", "Hubo varios intentos fallidos. Confirma que no eres un robot y vuelve a entrar.");
+      return;
+    }
     terminarPaso(resultado);
   });
+  let captcha = null;
 
   /** Después de la contraseña o de Google: entra, o pide el código de dos pasos. */
   function terminarPaso(resultado) {
     if (!resultado.ok) { mostrarAlerta(alerta, "error", resultado.error); return; }
     if (resultado.requiere2fa) { mostrarPaso2fa(resultado.desafio); return; }
+    if (resultado.requiereConfigurar2fa) { mostrarConfigurar2fa(resultado.desafio); return; }
     irA(destinoDeSesion(resultado.sesion));
   }
 
@@ -184,6 +197,7 @@ function iniciar() {
   function volverAlLogin(mensaje) {
     desafio = null;
     form2fa.hidden = true;
+    formConfigurar.hidden = true;
     ocultosEn2fa.forEach((el) => { el.hidden = false; });
     seleccionarRol(rolActivo);
     if (mensaje) mostrarAlerta(alerta, "aviso", mensaje);
@@ -209,6 +223,55 @@ function iniciar() {
     if (resultado.codigo === "desafio-vencido") { volverAlLogin(resultado.error); return; }
     mostrarAlerta(alerta2fa, "error", resultado.error);
     form2fa.codigo.select();
+  });
+
+  /* ---------- Primera vez de admin o refugio: configurar la verificación en dos pasos (obligatoria) ---------- */
+  const formConfigurar = document.getElementById("form-configurar-2fa");
+  const alertaConfigurar = document.getElementById("alerta-configurar");
+  const campoCodigoConfigurar = document.getElementById("campo-codigo-configurar");
+  const botonActivar = document.getElementById("boton-activar-2fa");
+
+  async function mostrarConfigurar2fa(nuevoDesafio) {
+    desafio = nuevoDesafio;
+    ocultosEn2fa.forEach((el) => { el.hidden = true; });
+    formConfigurar.hidden = false;
+    ocultarAlerta(alertaConfigurar);
+    marcarError(campoCodigoConfigurar, "");
+    formConfigurar.codigo.value = "";
+    const qr = document.getElementById("configurar-qr");
+    const clave = document.getElementById("configurar-clave");
+    qr.textContent = "Generando tu código QR…";
+    clave.textContent = "";
+    const datos = await configurarPreparar2fa(desafio);
+    if (!datos.ok) {
+      if (datos.codigo === "desafio-vencido") { volverAlLogin(datos.error); return; }
+      mostrarAlerta(alertaConfigurar, "error", datos.error);
+      return;
+    }
+    clave.textContent = datos.secreto.replace(/(.{4})/g, "$1 ").trim();
+    await dibujarQr(qr, datos.enlace);
+    formConfigurar.codigo.focus();
+  }
+
+  document.getElementById("boton-volver-configurar").addEventListener("click", () => volverAlLogin());
+
+  formConfigurar.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    ocultarAlerta(alertaConfigurar);
+    const codigo = formConfigurar.codigo.value.replace(/\s+/g, "");
+    const error = /^\d{6}$/.test(codigo) ? "" : "Escribe los 6 dígitos que muestra Google Authenticator.";
+    marcarError(campoCodigoConfigurar, error);
+    if (error) return;
+
+    botonActivar.disabled = true;
+    botonActivar.textContent = "Activando…";
+    const resultado = await configurarActivar2fa({ desafio, codigo });
+    botonActivar.disabled = false;
+    botonActivar.textContent = "Activar y entrar";
+    if (resultado.ok) { irA(destinoDeSesion(resultado.sesion)); return; }
+    if (resultado.codigo === "desafio-vencido") { volverAlLogin(resultado.error); return; }
+    mostrarAlerta(alertaConfigurar, "error", resultado.error);
+    formConfigurar.codigo.select();
   });
 
   /* ---------- «Continuar con Google» (Google Identity Services) ---------- */

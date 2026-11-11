@@ -7,9 +7,16 @@ import { get, post, put, del, intentar } from "./api.js";
 
 /* ---------- Foro ---------- */
 
-export async function obtenerPublicacionesForo() {
-  return (await get("/foro")).publicaciones;
+/** Publicaciones del muro. `categoria`: busca | familia | reunidos | comunidad (sin ella, todas). */
+export async function obtenerPublicacionesForo(categoria = "") {
+  return (await get(`/foro${categoria ? `?categoria=${encodeURIComponent(categoria)}` : ""}`)).publicaciones;
 }
+
+/** «¡Ya apareció!»: quien publicó la alerta la cierra y pasa a «Reunidos». */
+export const marcarReunido = (reporteId) => intentar(async () => {
+  await post(`/reportes/${encodeURIComponent(reporteId)}/reunido`, {});
+  return { ok: true };
+});
 
 /** @param {{texto:string, foto?:string}} datos  `foto` es una imagen en data URL (opcional) */
 export const crearPublicacionForo = ({ texto, foto = "" }) => intentar(async () => {
@@ -49,8 +56,13 @@ export async function obtenerRefugiosConMascotas() {
   return (await get("/refugios?mascotas=1")).refugios;
 }
 
-export async function obtenerMascotasDisponibles(refugioId) {
-  return (await get(`/refugios/${encodeURIComponent(refugioId)}/mascotas`)).mascotas;
+/**
+ * Mascotas disponibles de un refugio. Los filtros (HU-3) los aplica la API:
+ * { q?: nombre o raza, especie?: perro|gato, tamano?: pequeño|mediano|grande, edad?: cachorro|joven|adulto|senior }
+ */
+export async function obtenerMascotasDisponibles(refugioId, filtros = {}) {
+  const consulta = new URLSearchParams(Object.entries(filtros).filter(([, valor]) => valor)).toString();
+  return (await get(`/refugios/${encodeURIComponent(refugioId)}/mascotas${consulta ? `?${consulta}` : ""}`)).mascotas;
 }
 
 export async function obtenerPublicacionesRefugio(refugioId) {
@@ -82,10 +94,15 @@ export const enviarSolicitudAdopcion = (datos) => intentar(async () => {
 /* ---------- Reportes y coincidencias ---------- */
 
 /** @param {{tipo:"perdida"|"encontrada", descripcion:string, zona:string, foto:string}} datos */
-export const crearReporte = ({ tipo, descripcion, zona, foto }) => intentar(async () => {
-  // La API analiza la foto con IA, busca coincidencias y publica la alerta en el foro
-  const r = await post("/reportes", { tipo, descripcion, zona, foto });
-  return { ok: true, reporte: r.reporte, coincidenciasNuevas: r.coincidenciasNuevas, analisisIA: r.analisisIA || null, iaUsada: Boolean(r.iaUsada) };
+/**
+ * Si la API cree que esa mascota ya fue reportada responde { ok:false, codigo:"posible-duplicado",
+ * datos:{ foto, duplicados } }; para publicar de todos modos se reenvía con confirmarDuplicado y esa foto.
+ */
+export const crearReporte = ({ confirmarDuplicado = false, ...datos }) => intentar(async () => {
+  // datos: { tipo, descripcion, zona, foto, especie?, nombre?, color?, tamano?, collar?, fecha?, situacion? }
+  // La API publica la alerta al instante; la IA revisa la foto después (en segundo plano)
+  const r = await post("/reportes", { ...datos, ...(confirmarDuplicado ? { confirmarDuplicado: true } : {}) });
+  return { ok: true, reporte: r.reporte, coincidenciasNuevas: r.coincidenciasNuevas, analisisIA: r.analisisIA || null, iaUsada: Boolean(r.iaUsada), iaPendiente: Boolean(r.iaPendiente) };
 });
 
 export async function obtenerCoincidencias() {
@@ -99,6 +116,12 @@ export async function obtenerResumenCoincidencias() {
 
 export const descartarCoincidencia = (id) => intentar(async () => {
   await post(`/coincidencias/${id}/descartar`);
+  return { ok: true };
+});
+
+/** Quien encontró la mascota describe la seña secreta que pidió el dueño (después ve su contacto). */
+export const responderSena = (id, respuesta) => intentar(async () => {
+  await post(`/coincidencias/${id}/sena`, { respuesta });
   return { ok: true };
 });
 

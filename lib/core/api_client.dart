@@ -8,9 +8,12 @@ import 'api_config.dart';
 /// Error que devuelve la API ({"error": "..."}) o un problema de conexión.
 /// [mensaje] ya viene en español y se puede mostrar tal cual al usuario.
 class ApiException implements Exception {
-  ApiException(this.mensaje, {this.estado = 0, this.codigo});
+  ApiException(this.mensaje, {this.estado = 0, this.codigo, this.datos = const {}});
 
   final String mensaje;
+
+  /// Cuerpo completo de la respuesta de error (por ejemplo, los reportes duplicados).
+  final Map<String, dynamic> datos;
 
   /// Código HTTP (0 = no hubo respuesta del servidor).
   final int estado;
@@ -96,6 +99,7 @@ class ApiClient {
       (datos['error'] as String?) ?? 'Ocurrió un error en el servidor (${respuesta.statusCode}).',
       estado: respuesta.statusCode,
       codigo: datos['codigo'] is String ? datos['codigo'] as String : null,
+      datos: datos,
     );
   }
 }

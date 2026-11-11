@@ -42,9 +42,11 @@ final class Refugios
             return ['refugios' => $refugios];
         }
         $porRefugio = [];
+        [$filtro, $parametros] = self::filtrosMascotas($s);
         $filas = Base::todos(
             "SELECT m.* FROM mascotas m JOIN refugios r ON r.id = m.refugio_id
-              WHERE r.estado = 'aprobado' AND m.estatus = 'disponible' ORDER BY m.refugio_id, m.id",
+              WHERE r.estado = 'aprobado' AND m.estatus = 'disponible'$filtro ORDER BY m.refugio_id, m.id",
+            $parametros,
         );
         foreach ($filas as $f) {
             $porRefugio[(string) $f['refugio_id']][] = Serializadores::mascota($f);
@@ -57,11 +59,59 @@ final class Refugios
         return ['refugio' => Serializadores::refugioPublico(self::aprobado($s))];
     }
 
-    // Los usuarios solo ven mascotas DISPONIBLES
+    // Los usuarios solo ven mascotas DISPONIBLES (acepta los mismos filtros que el catálogo)
     public static function mascotas(Solicitud $s): array
     {
         $refugio = self::aprobado($s);
-        return ['mascotas' => array_map([Serializadores::class, 'mascota'], Base::todos("SELECT * FROM mascotas WHERE refugio_id = ? AND estatus = 'disponible' ORDER BY id", [$refugio['id']]))];
+        [$filtro, $parametros] = self::filtrosMascotas($s);
+        return ['mascotas' => array_map([Serializadores::class, 'mascota'], Base::todos(
+            "SELECT m.* FROM mascotas m WHERE m.refugio_id = ? AND m.estatus = 'disponible'$filtro ORDER BY m.id",
+            [$refugio['id'], ...$parametros],
+        ))];
+    }
+
+    private const SIN_ACENTOS_PHP = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u'];
+
+    /** Rangos de edad del catálogo, en meses: los mismos que usan la app y el sitio. */
+    private const EDADES = [
+        'cachorro' => 'm.edad_meses < 12',
+        'joven' => 'm.edad_meses >= 12 AND m.edad_meses < 36',
+        'adulto' => 'm.edad_meses >= 36 AND m.edad_meses < 96',
+        'senior' => 'm.edad_meses >= 96',
+    ];
+
+    /**
+     * Filtros del catálogo (HU-3) que llegan en la URL, todos opcionales:
+     *   ?q=texto (nombre o raza) &especie=perro|gato &tamano=pequeño|mediano|grande &edad=cachorro|joven|adulto|senior
+     * Devuelve el trozo de SQL (sobre el alias «m» de mascotas) y sus parámetros.
+     */
+    private static function filtrosMascotas(Solicitud $s): array
+    {
+        $sql = '';
+        $parametros = [];
+        $valor = static fn (string $clave): string => trim((string) ($s->query[$clave] ?? ''));
+
+        if (($q = $valor('q')) !== '') {
+            // Sin distinguir mayúsculas ni acentos («mest» encuentra «Doméstico»), igual que el filtro de la app y el sitio
+            $q = strtr(mb_strtolower(Validar::texto($q, 'La búsqueda', 1, 60)), self::SIN_ACENTOS_PHP);
+            // % y _ se buscan como texto, no como comodines (se escapan con «!»: PDO no entiende «\» dentro de comillas)
+            $q = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $q);
+            $columna = static fn (string $c): string => "TRANSLATE(LOWER($c), 'áéíóúü', 'aeiouu') LIKE ? ESCAPE '!'";
+            $sql .= ' AND (' . $columna('m.nombre') . ' OR ' . $columna('m.raza') . ')';
+            array_push($parametros, "%$q%", "%$q%");
+        }
+        if (($especie = $valor('especie')) !== '') {
+            $sql .= ' AND m.especie = ?';
+            $parametros[] = Validar::enumerado($especie, 'El filtro de especie', ['perro', 'gato']);
+        }
+        if (($tamano = $valor('tamano')) !== '') {
+            $sql .= ' AND m.tamano = ?';
+            $parametros[] = Validar::enumerado($tamano, 'El filtro de tamaño', ['pequeño', 'mediano', 'grande']);
+        }
+        if (($edad = $valor('edad')) !== '') {
+            $sql .= ' AND ' . self::EDADES[Validar::enumerado($edad, 'El filtro de edad', array_keys(self::EDADES))];
+        }
+        return [$sql, $parametros];
     }
 
     // Publicaciones del refugio; se ocultan las de mascotas ya adoptadas

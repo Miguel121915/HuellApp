@@ -74,3 +74,11 @@
   .encabezado__usuario { display: none; }
   .nav { justify-content: space-between; }
 }
+
+/* Aviso emergente: «Encontramos N posibles coincidencias» (la IA trabaja en segundo plano) */
+.aviso-coincidencias { position: fixed; right: 16px; bottom: 16px; z-index: 900; display: flex; align-items: center; gap: 10px; max-width: min(420px, calc(100% - 32px)); padding: 12px 14px; background: #fff; border: 2px solid #1B4F4A; border-radius: 16px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); animation: aviso-entra .25s ease-out; }
+.aviso-coincidencias p { margin: 0; flex: 1; font-weight: 700; color: #14312E; }
+.aviso-coincidencias__icono { font-size: 1.6rem; }
+.aviso-coincidencias__cerrar { border: 0; background: transparent; font-size: 1.4rem; line-height: 1; cursor: pointer; color: #3F5F5B; }
+@keyframes aviso-entra { from { transform: translateY(16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .aviso-coincidencias { animation: none; } }

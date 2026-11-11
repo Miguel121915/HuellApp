@@ -34,9 +34,26 @@ final class Migraciones
         // Reportes (HU-5): especie y nombre opcionales, y lo que detectó la IA (JSON)
         'reportes' => [
             'especie' => 'VARCHAR2(10 CHAR)', 'nombre' => 'VARCHAR2(60 CHAR)', 'analisis_ia' => 'VARCHAR2(1000 CHAR)',
+            // Huella SHA-256 del archivo de la foto: detecta la misma imagen subida dos veces
+            'foto_huella' => 'VARCHAR2(64 CHAR)',
+            // IA en segundo plano: pendiente | procesando | listo | fallo | sin_ia, reintentos y posible duplicado
+            'ia_estado' => 'VARCHAR2(12 CHAR)', 'ia_intentos' => 'NUMBER(2) DEFAULT 0 NOT NULL',
+            'ia_siguiente' => 'TIMESTAMP(3)', 'duplicado_de' => 'NUMBER(10)',
+            // Formularios separados «Se me perdió» / «La encontré» y cierre con «¡Ya apareció!»
+            'color' => 'VARCHAR2(40 CHAR)', 'tamano' => 'VARCHAR2(10 CHAR)', 'collar' => 'VARCHAR2(80 CHAR)',
+            'fecha_evento' => 'TIMESTAMP(3)', 'situacion' => 'VARCHAR2(12 CHAR)',
+            'estado' => "VARCHAR2(10 CHAR) DEFAULT 'activo' NOT NULL", 'reunido_en' => 'TIMESTAMP(3)',
+            // Punto en el mapa (coincidencias por distancia real) y seña secreta del dueño (NUNCA se publica)
+            'latitud' => 'NUMBER(9,6)', 'longitud' => 'NUMBER(9,6)', 'sena_secreta' => 'VARCHAR2(200 CHAR)',
         ],
-        // Coincidencias (HU-8): 1 si la IA comparó las fotos
-        'coincidencias' => ['por_ia' => 'NUMBER(1) DEFAULT 0 NOT NULL'],
+        // Muro por pestañas: la publicación de una alerta queda ligada a su reporte
+        'publicaciones_foro' => ['reporte_id' => 'NUMBER(10)'],
+        // Coincidencias (HU-8): 1 si la IA comparó las fotos; 1 si las dos usan la MISMA fotografía
+        'coincidencias' => [
+            'por_ia' => 'NUMBER(1) DEFAULT 0 NOT NULL', 'misma_foto' => 'NUMBER(1) DEFAULT 0 NOT NULL',
+            // Quien encontró describe la seña secreta antes de ver el contacto del dueño
+            'respuesta_sena' => 'VARCHAR2(300 CHAR)', 'respondida_en' => 'TIMESTAMP(3)',
+        ],
         'refugios' => [
             'latitud' => 'NUMBER(9,6)', 'longitud' => 'NUMBER(9,6)', 'municipio' => 'VARCHAR2(100 CHAR)',
             'codigo_postal' => 'VARCHAR2(5 CHAR)', 'rfc' => 'VARCHAR2(13 CHAR)', 'tipo_organizacion' => 'VARCHAR2(60 CHAR)',
@@ -60,6 +77,21 @@ final class Migraciones
             }
         }
         self::actualizar();
+        self::ligarAlertasViejas();
+    }
+
+    /**
+     * Alertas publicadas antes de existir publicaciones_foro.reporte_id: se ligan a su reporte por la
+     * foto (la alerta usa la misma foto que el reporte). Es seguro repetirlo: solo toca las que faltan.
+     */
+    private static function ligarAlertasViejas(): void
+    {
+        Base::ejecutar(
+            "UPDATE publicaciones_foro p
+                SET reporte_id = (SELECT MIN(r.id) FROM reportes r WHERE r.foto = p.foto AND r.usuario_id = p.usuario_id)
+              WHERE p.reporte_id IS NULL AND p.foto IS NOT NULL
+                AND (p.texto LIKE '🔎 SE BUSCA%' OR p.texto LIKE '🐾 ENCONTRÉ%')",
+        );
     }
 
     private static function actualizar(): void

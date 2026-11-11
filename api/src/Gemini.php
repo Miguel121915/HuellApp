@@ -25,11 +25,18 @@ final class Gemini
         return Config::obtener('GEMINI_API_KEY') !== '';
     }
 
-    private static function modelo(): string
+    /**
+     * Modelos a probar en orden. Cada modelo tiene su PROPIA cuota gratuita: si el principal está
+     * saturado (503), sin cuota del día (429) o no responde, se pasa al siguiente.
+     * Se cambian con GEMINI_MODEL (principal) y GEMINI_MODELOS_RESPALDO (separados por coma) en api/.env.
+     * @return list<string>
+     */
+    private static function modelos(): array
     {
-        $modelo = Config::obtener('GEMINI_MODEL');
-        // Mismo modelo por defecto que usaba el servidor Node; se cambia con GEMINI_MODEL en api/.env
-        return preg_match('/^[a-z0-9.\-]+$/', $modelo) ? $modelo : 'gemini-3.8-flash';
+        $principal = Config::obtener('GEMINI_MODEL') ?: 'gemini-3.8-flash';
+        $respaldo = Config::obtener('GEMINI_MODELOS_RESPALDO') ?: 'gemini-3.5-flash,gemini-3.5-flash-lite';
+        $lista = array_merge([$principal], array_map('trim', explode(',', $respaldo)));
+        return array_values(array_unique(array_filter($lista, static fn ($m) => (bool) preg_match('/^[a-z0-9.\-]+$/', $m))));
     }
 
     /**
@@ -66,10 +73,13 @@ final class Gemini
     /**
      * Compara la foto de un reporte con las fotos de varios candidatos (una sola llamada a Gemini).
      * @param array<int|string,string> $candidatos  id => ruta de la foto
+     * @param array<string,bool> $mismaFoto  (salida) id => true si la candidata es la MISMA fotografía (misma toma),
+     *                                       aunque esté recortada o comprimida: eso no prueba que sea el mismo animal hoy
      * @return array<int|string,int>|null  id => porcentaje 0-100 (solo los que se pudieron comparar), o null si no hay IA
      */
-    public static function compararFotos(string $foto, string $descripcion, array $candidatos): ?array
+    public static function compararFotos(string $foto, string $descripcion, array $candidatos, array &$mismaFoto = []): ?array
     {
+        $mismaFoto = [];
         $principal = self::imagen($foto);
         if (!self::disponible() || $principal === null || $candidatos === []) {
             return null;
@@ -94,13 +104,17 @@ final class Gemini
             Compara la mascota de la FOTO PRINCIPAL con cada CANDIDATA. Fíjate en especie, raza, colores y
             su distribución, manchas, forma de orejas y cola, tamaño aparente y collar. Ignora el fondo, la luz
             y la pose. Para cada candidata da la probabilidad (0 a 100) de que sea EXACTAMENTE el mismo animal
-            (no solo de la misma raza). Responde SOLO con un arreglo JSON:
-            [{"id": "<id de la candidata>", "similitud": 0-100, "motivo": "frase corta"}]
+            (no solo de la misma raza). Indica también "mismaFoto": true si la candidata es LA MISMA
+            FOTOGRAFÍA que la principal (la misma toma: mismo fondo, pose y luz, aunque esté recortada,
+            comprimida, con otro tamaño, filtro o captura de pantalla); false si son fotos distintas,
+            aunque sea el mismo animal. Responde SOLO con un arreglo JSON:
+            [{"id": "<id de la candidata>", "similitud": 0-100, "mismaFoto": true|false, "motivo": "frase corta"}]
             TXT];
         $r = self::pedirJson($partes);
         if (!is_array($r)) {
             return null;
         }
+        $mismaFoto = self::leerMismaFoto($r, $incluidos);
         $resultado = self::leerComparacion($r, $incluidos);
         if ($resultado === []) {
             // Antes esto se perdía sin aviso: queda en el log para poder revisarlo
@@ -147,6 +161,39 @@ final class Gemini
             $porcentaje = self::porcentaje($valor);
             if ($id !== null && $porcentaje !== null && in_array($id, $incluidos, true)) {
                 $resultado[$id] = $porcentaje;
+            }
+        }
+        return $resultado;
+    }
+
+    /**
+     * Candidatas que Gemini marcó como la MISMA fotografía ("mismaFoto": true).
+     * @param list<string> $incluidos
+     * @return array<string,bool> id => true
+     */
+    public static function leerMismaFoto(array $r, array $incluidos): array
+    {
+        if (!array_is_list($r) && !isset($r['id'])) {
+            foreach ($r as $valor) {
+                if (is_array($valor) && array_is_list($valor)) {
+                    $r = $valor;
+                    break;
+                }
+            }
+        }
+        if (isset($r['id'])) {
+            $r = [$r];
+        }
+        $resultado = [];
+        foreach ($r as $fila) {
+            if (!is_array($fila)) {
+                continue;
+            }
+            $id = self::idCandidata($fila['id'] ?? $fila['candidata'] ?? null);
+            $valor = $fila['mismaFoto'] ?? $fila['misma_foto'] ?? false;
+            $esMisma = $valor === true || (is_string($valor) && in_array(strtolower(trim($valor)), ['true', 'si', 'sí', 'yes'], true));
+            if ($id !== null && $esMisma && in_array($id, $incluidos, true)) {
+                $resultado[$id] = true;
             }
         }
         return $resultado;
@@ -199,21 +246,21 @@ final class Gemini
             'contents' => [['role' => 'user', 'parts' => $partes]],
             'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0.2],
         ]);
-        for ($intento = 1; $intento <= 3; $intento++) {
-            [$estado, $respuesta] = self::post(sprintf(self::URL, self::modelo()), (string) $cuerpo);
+        // Un intento por modelo: si uno está saturado o sin cuota, el siguiente suele responder de inmediato
+        foreach (self::modelos() as $i => $modelo) {
+            [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo);
             if ($estado === 200) {
                 $datos = json_decode($respuesta, true);
                 $texto = $datos['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                if (!is_string($texto)) {
-                    break;
-                }
-                return self::extraerJson($texto);
+                return is_string($texto) ? self::extraerJson($texto) : null;
             }
-            if (!in_array($estado, [429, 500, 503], true) || $intento === 3) {
-                error_log("Gemini respondió $estado: " . substr($respuesta, 0, 300));
-                break;
+            error_log("Gemini ($modelo) respondió $estado: " . substr(preg_replace('/\s+/', ' ', $respuesta), 0, 200));
+            if (!in_array($estado, [0, 404, 429, 500, 503], true)) {
+                return null; // error de la petición (no del modelo): otro modelo fallaría igual
             }
-            usleep(1_500_000 * 2 ** ($intento - 1)); // 1.5 s, 3 s
+            if ($i === 0 && $estado === 503) {
+                usleep(1_000_000); // saturación momentánea: un respiro antes de cambiar de modelo
+            }
         }
         return null;
     }
@@ -251,7 +298,7 @@ final class Gemini
             CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . Config::obtener('GEMINI_API_KEY')],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => 45,
+            CURLOPT_TIMEOUT => 30, // si no contesta en 30 s se pasa al siguiente modelo
         ]);
         $respuesta = curl_exec($c);
         $estado = $respuesta === false ? 0 : (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE);

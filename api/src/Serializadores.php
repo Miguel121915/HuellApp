@@ -80,6 +80,13 @@ final class Serializadores
         return ['id' => (string) $r['id'], 'tipo' => $r['tipo'], 'descripcion' => $r['descripcion'], 'zona' => $r['zona'],
             'foto' => $r['foto'], 'fotoAlt' => $r['foto_alt'] ?: 'Foto del reporte', 'fecha' => self::fecha($r['creado_en']),
             'especie' => $r['especie'] ?? null, 'nombre' => $r['nombre'] ?? null,
+            'color' => $r['color'] ?? null, 'tamano' => $r['tamano'] ?? null, 'collar' => $r['collar'] ?? null,
+            'fechaEvento' => ($r['fecha_evento'] ?? null) ? self::fecha($r['fecha_evento']) : null, 'situacion' => $r['situacion'] ?? null,
+            'estado' => $r['estado'] ?? 'activo',
+            // Punto del mapa. La seña secreta (sena_secreta) NUNCA se incluye aquí: solo la ve su dueño en Coincidencias
+            'latitud' => ($r['latitud'] ?? null) !== null ? (float) $r['latitud'] : null,
+            'longitud' => ($r['longitud'] ?? null) !== null ? (float) $r['longitud'] : null,
+            'tieneSena' => ($r['sena_secreta'] ?? '') !== '',
             'analisisIA' => ($r['analisis_ia'] ?? '') !== '' ? json_decode($r['analisis_ia'], true) : null];
     }
 }

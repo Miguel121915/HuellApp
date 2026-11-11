@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
@@ -109,7 +111,13 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
 
   // Filtros de mascotas (los mismos que tiene el sitio web: nombre, especie, edad y tamaño)
   static const _especies = {'todas': 'Especie', 'perro': 'Perros', 'gato': 'Gatos'};
-  static const _edades = {'todas': 'Edad', 'cachorro': 'Cachorro (< 1 año)', 'adulto': 'Adulto (1–7)', 'senior': 'Senior (8+)'};
+  static const _edades = {
+    'todas': 'Edad',
+    'cachorro': 'Cachorro (< 1 año)',
+    'joven': 'Joven (1–2)',
+    'adulto': 'Adulto (3–7)',
+    'senior': 'Senior (8+)',
+  };
   static const _tamanos = {'todos': 'Tamaño', 'pequeño': 'Pequeño', 'mediano': 'Mediano', 'grande': 'Grande'};
 
   bool _pasaFiltros(MascotaRefugio m, String texto, String especie, String edad, String tamano) {
@@ -119,7 +127,8 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
     if (especie != 'todas' && m.especie != especie) return false;
     if (tamano != 'todos' && m.tamano != tamano) return false;
     if (edad == 'cachorro' && m.edadMeses >= 12) return false;
-    if (edad == 'adulto' && (m.edadMeses < 12 || m.edadMeses >= 96)) return false;
+    if (edad == 'joven' && (m.edadMeses < 12 || m.edadMeses >= 36)) return false;
+    if (edad == 'adulto' && (m.edadMeses < 36 || m.edadMeses >= 96)) return false;
     if (edad == 'senior' && m.edadMeses < 96) return false;
     return true;
   }
@@ -150,6 +159,10 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
     String especie = 'todas';
     String edad = 'todas';
     String tamano = 'todos';
+    // Filtros (HU-3): se envían a la API; mientras responde (o si falla) se filtra aquí mismo
+    Set<String>? idsApi;
+    var consulta = 0;
+    Timer? espera;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -159,8 +172,28 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            void filtrar(void Function() cambio, {bool conEspera = false}) {
+              setModalState(() {
+                cambio();
+                idsApi = null; // hasta que conteste la API se usa el filtro local
+              });
+              espera?.cancel();
+              final sinFiltros = texto.isEmpty && especie == 'todas' && edad == 'todas' && tamano == 'todos';
+              if (sinFiltros) return;
+              final id = ++consulta;
+              espera = Timer(Duration(milliseconds: conEspera ? 300 : 0), () async {
+                try {
+                  final ids = await CatalogoService.instancia
+                      .filtrarMascotas(refugio.id, texto: texto, especie: especie, edad: edad, tamano: tamano);
+                  if (id == consulta && context.mounted) setModalState(() => idsApi = ids);
+                } catch (_) {
+                  // Sin conexión con la API: se queda el filtro local
+                }
+              });
+            }
+
             final visibles = refugio.mascotas
-                .where((m) => _pasaFiltros(m, texto, especie, edad, tamano))
+                .where((m) => idsApi != null ? idsApi!.contains(m.id) : _pasaFiltros(m, texto, especie, edad, tamano))
                 .toList();
             return Container(
               height: MediaQuery.of(context).size.height * 0.80,
@@ -190,7 +223,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                   const Divider(),
                   if (refugio.mascotas.isNotEmpty) ...[
                     TextField(
-                      onChanged: (v) => setModalState(() => texto = v.trim().toLowerCase()),
+                      onChanged: (v) => filtrar(() => texto = v.trim().toLowerCase(), conEspera: true),
                       decoration: InputDecoration(
                         hintText: 'Buscar por nombre o raza...',
                         prefixIcon: const Icon(Icons.search),
@@ -208,9 +241,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _selectorFiltro(_especies, especie, (v) => setModalState(() => especie = v)),
-                        _selectorFiltro(_edades, edad, (v) => setModalState(() => edad = v)),
-                        _selectorFiltro(_tamanos, tamano, (v) => setModalState(() => tamano = v)),
+                        _selectorFiltro(_especies, especie, (v) => filtrar(() => especie = v)),
+                        _selectorFiltro(_edades, edad, (v) => filtrar(() => edad = v)),
+                        _selectorFiltro(_tamanos, tamano, (v) => filtrar(() => tamano = v)),
                       ],
                     ),
                     const SizedBox(height: 8),

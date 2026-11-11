@@ -1,6 +1,7 @@
-/** registro-usuario.js — Alta de usuario normal. */
-import { registrarUsuario } from "../../core/auth.js";
+/** registro-usuario.js — Alta de usuario normal (con «no soy un robot» si la API lo tiene activo). */
+import { registrarUsuario, obtenerConfigAuth } from "../../core/auth.js";
 import { redirigirSiHaySesion } from "../../core/router-guard.js";
+import { montarCaptcha } from "../../components/captcha.js";
 import { irA, esCorreoValido, mostrarAlerta, ocultarAlerta, marcarError } from "../../core/utils.js";
 
 if (!redirigirSiHaySesion()) {
@@ -8,6 +9,12 @@ if (!redirigirSiHaySesion()) {
   const alerta = document.getElementById("alerta");
   const boton = document.getElementById("boton-enviar");
   const campo = (nombre) => formulario.elements[nombre].closest(".campo");
+
+  // CAPTCHA (Cloudflare Turnstile): solo si la API tiene TURNSTILE_SITE_KEY
+  let captcha = null;
+  obtenerConfigAuth().then(async ({ captchaSiteKey }) => {
+    captcha = await montarCaptcha(document.getElementById("captcha-registro"), captchaSiteKey);
+  });
 
   formulario.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -23,13 +30,16 @@ if (!redirigirSiHaySesion()) {
     };
     Object.entries(errores).forEach(([nombre, msg]) => marcarError(campo(nombre), msg));
     if (Object.values(errores).some(Boolean)) return;
+    if (captcha && !captcha.token()) { mostrarAlerta(alerta, "error", "Confirma que no eres un robot."); return; }
 
     boton.disabled = true;
     const r = await registrarUsuario({
       nombre: f.nombre.value.trim(), correo: f.correo.value.trim(),
       telefono: f.telefono.value.trim(), password: f.password.value,
+      ...(captcha ? { captcha: captcha.token() } : {}),
     });
     boton.disabled = false;
+    captcha?.reiniciar(); // cada verificación sirve una sola vez
 
     if (!r.ok) { mostrarAlerta(alerta, "error", r.error); return; }
     mostrarAlerta(alerta, "exito", "Cuenta creada. Te llevamos al inicio de sesión…");

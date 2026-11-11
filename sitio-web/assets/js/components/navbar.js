@@ -4,7 +4,7 @@
  * Cada rol tiene su propio menú; las Fases 3 y 4 añaden los de refugio y administrador.
  */
 import { rutaDesdeRaiz, irA } from "../core/utils.js";
-import { cerrarSesion } from "../core/auth.js";
+import { cerrarSesion, obtenerSesion } from "../core/auth.js";
 import { obtenerResumenCoincidencias } from "../core/servicios.js";
 import { obtenerResumenAdmin } from "../core/servicios-admin.js";
 import { obtenerResumen as obtenerResumenRefugio } from "../core/servicios-refugio.js";
@@ -108,7 +108,11 @@ export async function montarNavbar({ sesion, activa }) {
     abrirSeguridad();
   });
 
-  if (sesion.rol === "usuario") await refrescarInsigniaCoincidencias();
+  if (sesion.rol === "usuario") {
+    await refrescarInsigniaCoincidencias();
+    // La IA busca coincidencias en segundo plano: se revisa cada 30 s y se avisa si llegan nuevas
+    setInterval(() => { if (!document.hidden) refrescarInsigniaCoincidencias(); }, 30000);
+  }
   if (sesion.rol === "admin") await refrescarInsigniaSolicitudes();
   if (sesion.rol === "refugio") await refrescarInsigniaMensajes();
 }
@@ -141,6 +145,33 @@ export async function refrescarInsigniaCoincidencias() {
   insignia.textContent = String(total);
   insignia.hidden = total === 0;
   insignia.setAttribute("aria-label", `${total} coincidencias nuevas`);
+
+  // ¿Llegaron coincidencias desde la última vez? (en «Coincidencias» se marcan como vistas)
+  const clave = `huellapp:coincidencias-vistas:${obtenerSesion()?.id ?? ""}`;
+  const vistas = Number(localStorage.getItem(clave) ?? NaN);
+  const enCoincidencias = location.pathname.endsWith("/coincidencias.html");
+  if (enCoincidencias || Number.isNaN(vistas) || total < vistas) {
+    localStorage.setItem(clave, String(total));
+  } else if (total > vistas) {
+    localStorage.setItem(clave, String(total));
+    avisarCoincidencias(total - vistas);
+  }
+}
+
+/** Aviso emergente dentro del sitio: «Encontramos N posibles coincidencias». */
+function avisarCoincidencias(nuevas) {
+  document.querySelector(".aviso-coincidencias")?.remove();
+  const aviso = document.createElement("div");
+  aviso.className = "aviso-coincidencias";
+  aviso.setAttribute("role", "status");
+  aviso.innerHTML = '<span class="aviso-coincidencias__icono" aria-hidden="true">🐾</span><p></p><a class="boton boton--primario boton--pequeno">Ver</a><button type="button" class="aviso-coincidencias__cerrar" aria-label="Cerrar aviso">×</button>';
+  aviso.querySelector("p").textContent = nuevas === 1
+    ? "Encontramos 1 posible coincidencia para tu reporte."
+    : `Encontramos ${nuevas} posibles coincidencias para tus reportes.`;
+  aviso.querySelector("a").href = rutaDesdeRaiz("pages/usuario/coincidencias.html");
+  aviso.querySelector("button").addEventListener("click", () => aviso.remove());
+  document.body.append(aviso);
+  setTimeout(() => aviso.remove(), 15000);
 }
 
 /** Actualiza el número rojo de "Solicitudes" (refugios pendientes de revisar). Solo administrador. */

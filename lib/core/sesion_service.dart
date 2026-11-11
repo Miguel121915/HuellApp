@@ -55,12 +55,16 @@ class Sesion {
 /// Resultado del primer paso del inicio de sesión: o ya hay [sesion], o falta el código
 /// de Google Authenticator para el [desafio] (válido 5 minutos).
 class ResultadoLogin {
-  const ResultadoLogin({this.sesion, this.desafio});
+  const ResultadoLogin({this.sesion, this.desafio, this.configurar = false});
 
   final Sesion? sesion;
   final String? desafio;
 
-  bool get requiereCodigo => desafio != null;
+  /// Admin o refugio sin verificación en dos pasos: es obligatoria y debe configurarla ahora
+  /// (desafío válido 15 minutos). Ver [SesionService.configurarDosPasos].
+  final bool configurar;
+
+  bool get requiereCodigo => desafio != null && !configurar;
 }
 
 /// Maneja el inicio y cierre de sesión y la guarda en el teléfono para no pedirla cada vez.
@@ -143,8 +147,22 @@ class SesionService extends ChangeNotifier {
     return (await _recibir(r)).sesion!;
   }
 
+  /// Primera vez de un refugio (o admin): secreto y enlace otpauth:// para Google Authenticator.
+  Future<Map<String, dynamic>> configurarDosPasos(String desafio) =>
+      _api.post('/auth/2fa/configurar/preparar', {'desafio': desafio});
+
+  /// Confirma el primer código: activa la verificación y entrega la sesión.
+  Future<Sesion> activarDosPasosObligatoria({required String desafio, required String codigo}) async {
+    final r = await _api.post('/auth/2fa/configurar/activar', {
+      'desafio': desafio,
+      'codigo': codigo.replaceAll(RegExp(r'\s'), ''),
+    });
+    return (await _recibir(r)).sesion!;
+  }
+
   Future<ResultadoLogin> _recibir(Map<String, dynamic> r) async {
     if (r['requiere2fa'] == true) return ResultadoLogin(desafio: r['desafio'] as String);
+    if (r['requiereConfigurar2fa'] == true) return ResultadoLogin(desafio: r['desafio'] as String, configurar: true);
     _api.token = r['token'] as String?;
     _actual = Sesion.desdeJson(r['sesion'] as Map<String, dynamic>);
     _invitado = false;

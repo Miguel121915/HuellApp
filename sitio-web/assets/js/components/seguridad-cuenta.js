@@ -23,6 +23,19 @@ function cargarEstilos() {
   }
 }
 
+/** Dibuja en `contenedor` el QR del enlace otpauth:// (o un aviso si no cargó la librería). */
+export async function dibujarQr(contenedor, enlace) {
+  if (!(await cargarLibreriaQr())) {
+    contenedor.textContent = "No se pudo dibujar el código QR (¿sin internet?). Usa la clave de abajo.";
+    return;
+  }
+  const generador = window.qrcode(0, "M");
+  generador.addData(enlace);
+  generador.make();
+  contenedor.innerHTML = generador.createSvgTag({ cellSize: 5, margin: 2, scalable: true }); // SVG creado aquí mismo
+  contenedor.querySelector("svg")?.setAttribute("aria-label", "Código QR para Google Authenticator");
+}
+
 function cargarLibreriaQr() {
   if (window.qrcode) return Promise.resolve(true);
   return new Promise((resolver) => {

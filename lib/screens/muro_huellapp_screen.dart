@@ -30,8 +30,15 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
   bool _cargando = true;
   String? _error;
 
-  /// Filtro: 'todo', 'alertas'
-  String _filtro = 'todo';
+  /// Pestañas del muro (igual que el sitio web): cada una se pide a la API por separado.
+  static const _pestanas = {
+    'busca': ('🔎 Se buscan', 'Mascotas perdidas que sus familias siguen buscando. Si viste a alguna, coméntalo.'),
+    'familia': ('🏠 Buscan a su familia', 'Mascotas que alguien encontró y que buscan a su familia. ¿Reconoces a alguna?'),
+    'reunidos': ('💚 Reunidos', 'Mascotas que ya volvieron a casa gracias a la comunidad.'),
+    'comunidad': ('💬 Comunidad', 'Tips, historias y preguntas de la comunidad.'),
+  };
+  String _pestana = 'busca';
+  int _consulta = 0;
 
   @override
   void initState() {
@@ -50,9 +57,10 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
       _cargando = _publicaciones.isEmpty;
       _error = null;
     });
+    final consulta = ++_consulta;
     try {
-      final lista = await _servicio.publicaciones();
-      if (!mounted) return;
+      final lista = await _servicio.publicaciones(categoria: _pestana);
+      if (!mounted || consulta != _consulta) return; // ya cambiaron de pestaña
       setState(() {
         _publicaciones = lista;
         _cargando = false;
@@ -254,9 +262,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final visibles = _filtro == 'alertas'
-        ? _publicaciones.where((p) => p.esAlertaPerdida || p.esAlertaEncontrada).toList()
-        : _publicaciones;
+    final visibles = _publicaciones;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -275,22 +281,37 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
             child: ListView(
               padding: const EdgeInsets.all(12),
               children: [
-                _cajaPublicar(),
-                const SizedBox(height: 8),
-                Wrap(spacing: 8, children: [
-                  ChoiceChip(
-                    label: const Text('Todo'),
-                    selected: _filtro == 'todo',
-                    onSelected: (_) => setState(() => _filtro = 'todo'),
-                  ),
-                  ChoiceChip(
-                    avatar: const Icon(Icons.campaign_outlined, size: 18),
-                    label: const Text('Solo alertas'),
-                    selected: _filtro == 'alertas',
-                    onSelected: (_) => setState(() => _filtro = 'alertas'),
-                  ),
-                ]),
-                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: [
+                    for (final e in _pestanas.entries)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(e.value.$1),
+                          selected: _pestana == e.key,
+                          selectedColor: _turquesa,
+                          onSelected: (_) {
+                            if (_pestana == e.key) return;
+                            setState(() {
+                              _pestana = e.key;
+                              _publicaciones = [];
+                            });
+                            _cargar();
+                          },
+                        ),
+                      ),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Text(_pestanas[_pestana]!.$2, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                ),
+                // Publicar texto libre solo en «Comunidad»; las alertas se crean desde «Reportar»
+                if (_pestana == 'comunidad') ...[
+                  _cajaPublicar(),
+                  const SizedBox(height: 8),
+                ],
                 if (_cargando)
                   const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
                 else if (_error != null)
@@ -380,9 +401,37 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
     );
   }
 
+  /// «¡Ya apareció!»: la alerta pasa a «Reunidos» y deja de buscar coincidencias.
+  Future<void> _yaAparecio(PublicacionForo p) async {
+    final si = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('¿Tu mascota ya está en casa?'),
+        content: const Text('La alerta pasará a «Reunidos» y dejaremos de buscar coincidencias.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Todavía no')),
+          ElevatedButton(onPressed: () => Navigator.pop(c, true), child: const Text('¡Sí, ya apareció!')),
+        ],
+      ),
+    );
+    if (si != true || !mounted) return;
+    try {
+      await _servicio.marcarReunido(p.reporteId!);
+      if (!mounted) return;
+      setState(() => _publicaciones.remove(p));
+      _aviso('💚 ¡Qué alegría! La alerta pasó a «Reunidos».');
+    } on ApiException catch (e) {
+      if (mounted) _aviso(e.mensaje, error: true);
+    }
+  }
+
   Widget _tarjeta(PublicacionForo p) {
-    final alerta = p.esAlertaPerdida || p.esAlertaEncontrada;
-    final colorAlerta = p.esAlertaPerdida ? const Color(0xFFFFC83D) : const Color(0xFF3DBE8B);
+    final alerta = p.esAlertaPerdida || p.esAlertaEncontrada || p.esReunido;
+    final colorAlerta = p.esAlertaPerdida
+        ? const Color(0xFFFFC83D)
+        : p.esReunido
+            ? const Color(0xFF1F7A52)
+            : const Color(0xFF3DBE8B);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -411,8 +460,8 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(color: colorAlerta, borderRadius: BorderRadius.circular(12)),
                   child: Text(
-                    p.esAlertaPerdida ? 'SE BUSCA' : 'ENCONTRADA',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF14312E)),
+                    p.esAlertaPerdida ? 'SE BUSCA' : p.esReunido ? 'REUNIDO' : 'BUSCA A SU FAMILIA',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: p.esReunido ? Colors.white : const Color(0xFF14312E)),
                   ),
                 ),
             ]),
@@ -457,6 +506,18 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                 _accion(Icons.share_outlined, 'Compartir', () => _compartir(p)),
               ],
             ),
+            if (p.esMiAlerta && !p.esReunido && p.reporteId != null) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _yaAparecio(p),
+                  icon: const Icon(Icons.favorite),
+                  label: const Text('¡Ya apareció!', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F7A52), foregroundColor: Colors.white),
+                ),
+              ),
+            ],
           ],
         ),
       ),

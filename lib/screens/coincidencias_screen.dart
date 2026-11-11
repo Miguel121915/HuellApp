@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -32,10 +34,21 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
   bool _cargando = true;
   String? _error;
 
+  // La IA revisa las fotos en segundo plano: mientras tanto la pantalla se actualiza sola
+  int _analizando = 0;
+  List<Map<String, dynamic>> _duplicados = [];
+  Timer? _recarga;
+
   @override
   void initState() {
     super.initState();
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    _recarga?.cancel();
+    super.dispose();
   }
 
   Future<void> _cargar() async {
@@ -48,14 +61,18 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
       _error = null;
     });
     try {
-      final lista = await _servicio.coincidencias();
+      final estado = await _servicio.coincidenciasConEstado();
       final resumen = await _servicio.resumenCoincidencias();
       if (!mounted) return;
       setState(() {
-        _coincidencias = lista;
+        _coincidencias = estado.coincidencias;
+        _analizando = estado.analizando;
+        _duplicados = estado.duplicados;
         _descartadas = resumen['descartadas'] ?? 0;
         _cargando = false;
       });
+      _recarga?.cancel();
+      if (_analizando > 0) _recarga = Timer(const Duration(seconds: 15), _cargar);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -107,7 +124,62 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
   /// true si yo encontré la mascota (la otra persona es quien la perdió).
   bool _encontre(Map<String, dynamic> c) => c['lado'] == 'encontrada';
 
+  /// Seña secreta: si el dueño la pidió, quien encontró la describe antes de ver el contacto.
+  Future<void> _pedirSena(Map<String, dynamic> c) async {
+    final controller = TextEditingController();
+    String? error;
+    final enviada = await showDialog<bool>(
+      context: context,
+      builder: (dialogo) => StatefulBuilder(
+        builder: (dialogo, setDialogo) => AlertDialog(
+          title: const Text('Confirma que es la misma mascota'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text(
+              'El dueño registró una seña particular que no aparece en la foto. Describe alguna seña de la '
+              'mascota que encontraste (manchas, cicatrices, collar…). El dueño revisará tu respuesta.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              maxLength: 300,
+              decoration: InputDecoration(border: const OutlineInputBorder(), hintText: 'Tiene una mancha blanca en el pecho', errorText: error),
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogo, false), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.text.trim().length < 3) {
+                  setDialogo(() => error = 'Escribe al menos 3 caracteres.');
+                  return;
+                }
+                try {
+                  await _servicio.responderSena('${c['id']}', controller.text);
+                  if (dialogo.mounted) Navigator.pop(dialogo, true);
+                } on ApiException catch (e) {
+                  setDialogo(() => error = e.mensaje);
+                }
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (enviada != true || !mounted) return;
+    await _cargar();
+    if (!mounted) return;
+    final actualizada = _coincidencias.where((x) => '${x['id']}' == '${c['id']}').firstOrNull;
+    if (actualizada != null) _contactar(actualizada);
+  }
+
   void _contactar(Map<String, dynamic> c) {
+    if ((c['verificacion'] as Map?)?['requerida'] == true) {
+      _pedirSena(c);
+      return;
+    }
     final encontre = _encontre(c);
     final contacto = (_otro(c)['contacto'] as Map?)?.cast<String, dynamic>() ?? {};
     final nombre = contacto['nombre'] as String? ?? (encontre ? 'quien la perdió' : 'quien la encontró');
@@ -233,6 +305,20 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
     return [
       _encabezado(),
       const SizedBox(height: 16),
+      if (_analizando > 0) ...[
+        _avisoIa(
+          Icons.auto_awesome,
+          'La IA está revisando la foto de ${_analizando == 1 ? 'tu reporte' : '$_analizando de tus reportes'} '
+          'y comparándola con otros. Esta pantalla se actualiza sola.',
+          const Color(0xFFE6F8F5),
+          _oscuro,
+        ),
+        const SizedBox(height: 12),
+      ],
+      for (final d in _duplicados) ...[
+        _avisoDuplicado(d),
+        const SizedBox(height: 12),
+      ],
       if (_coincidencias.isEmpty)
         _vacio(Icons.check_circle_outline, 'No hay coincidencias pendientes',
             'Te avisaremos aquí cuando alguien reporte una mascota parecida a la tuya.')
@@ -247,6 +333,80 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
           ),
         ),
     ];
+  }
+
+  /// Seña secreta: al dueño le muestra su seña y la respuesta; a quien encontró, qué falta.
+  Widget _cajaSena(Map<String, dynamic> v) {
+    final esDueno = v.containsKey('tuSena');
+    final respuesta = v['respuesta'] as String?;
+    final lineas = esDueno
+        ? [
+            '🔒 Tu seña secreta: «${v['tuSena']}»',
+            respuesta != null
+                ? 'Quien la encontró describe: «$respuesta». ¿Coincide? Si no, puedes descartarla.'
+                : 'Quien la encontró todavía no describe la seña.',
+          ]
+        : [
+            v['requerida'] == true
+                ? '🔒 El dueño pidió confirmar una seña particular. Toca «Contactar» para describirla.'
+                : '✅ Ya describiste la seña: «$respuesta». El dueño la revisará.',
+          ];
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F6FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF6B8DD6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [for (final l in lineas) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(l, style: const TextStyle(fontSize: 13)))],
+      ),
+    );
+  }
+
+  Widget _avisoIa(IconData icono, String texto, Color fondo, Color color) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(14), border: Border.all(color: color)),
+        child: Row(children: [
+          Icon(icono, color: color),
+          const SizedBox(width: 10),
+          Expanded(child: Text(texto, style: TextStyle(fontWeight: FontWeight.w600, color: color))),
+        ]),
+      );
+
+  /// La IA cree que mi alerta es de la misma mascota que otra ya publicada (p. ej. por un familiar).
+  Widget _avisoDuplicado(Map<String, dynamic> d) {
+    final mio = (d['miReporte'] as Map?)?.cast<String, dynamic>() ?? {};
+    final otro = (d['otro'] as Map?)?.cast<String, dynamic>() ?? {};
+    final nombre = (mio['nombre'] as String?)?.isNotEmpty == true ? 'de ${mio['nombre']} ' : '';
+    const color = Color(0xFF7A5A00);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFFFDECB5), borderRadius: BorderRadius.circular(14)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if ((otro['foto'] as String? ?? '').isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: FotoHuellApp(ApiConfig.urlArchivo(otro['foto'] as String), width: 72, height: 72),
+          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Tu alerta ${nombre}parece ser de la misma mascota que otra ya publicada',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 4),
+            Text(
+              'La publicó ${otro['autor'] ?? 'otra persona'} (zona: ${otro['zona'] ?? ''}). Si es la misma, '
+              'pónganse de acuerdo en los comentarios de esa alerta en el muro.',
+              style: const TextStyle(fontSize: 13, color: color),
+            ),
+          ]),
+        ),
+      ]),
+    );
   }
 
   Widget _encabezado() => Container(
@@ -281,6 +441,8 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
     final encontre = _encontre(c);
     final similitud = (c['similitud'] as num?)?.toInt() ?? 0;
     final porIA = c['porIA'] == true;
+    // Los dos reportes usan la MISMA fotografía (p. ej. copiada del muro): la foto no prueba nada
+    final mismaFoto = c['mismaFoto'] == true;
     final analisis = (otro['analisisIA'] as Map?)?.cast<String, dynamic>();
     final colorSimilitud = similitud >= 75 ? Colors.green.shade600 : similitud >= 55 ? Colors.orange.shade700 : Colors.blueGrey;
 
@@ -313,9 +475,24 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
               children: [
                 Wrap(spacing: 8, runSpacing: 6, children: [
                   _chip('$similitud % de parecido', colorSimilitud, Icons.verified),
-                  _chip(porIA ? 'Fotos comparadas con IA' : 'Por descripción y zona',
-                      porIA ? const Color(0xFF8A6D00) : Colors.blueGrey, porIA ? Icons.auto_awesome : Icons.text_snippet_outlined),
+                  if (mismaFoto)
+                    _chip('Misma foto del reporte', Colors.orange.shade800, Icons.warning_amber_rounded)
+                  else
+                    _chip(porIA ? 'Fotos comparadas con IA' : 'Por descripción y zona',
+                        porIA ? const Color(0xFF8A6D00) : Colors.blueGrey, porIA ? Icons.auto_awesome : Icons.text_snippet_outlined),
                 ]),
+                if (mismaFoto) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: const Color(0xFFFDECB5), borderRadius: BorderRadius.circular(10)),
+                    child: const Text(
+                      'Usa la misma fotografía que el reporte original, así que la foto no prueba que sea la misma '
+                      'mascota. Pide una foto actual antes de ir por ella.',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF7A5A00), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Text(encontre ? 'Alguien busca a esta mascota' : 'Mascota encontrada',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
@@ -323,9 +500,16 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                 Row(children: [
                   const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
                   const SizedBox(width: 4),
-                  Expanded(child: Text(otro['zona'] as String? ?? '', style: const TextStyle(fontSize: 13))),
+                  Expanded(
+                    child: Text(
+                      '${otro['zona'] as String? ?? ''}'
+                      '${c['distanciaKm'] != null ? ' · a ${c['distanciaKm']} km de tu reporte' : ''}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 6),
+                if (c['verificacion'] is Map) _cajaSena((c['verificacion'] as Map).cast<String, dynamic>()),
                 Text(otro['descripcion'] as String? ?? '', style: const TextStyle(fontSize: 13, color: Colors.black87)),
                 if (analisis != null && (analisis['raza'] ?? '') != '') ...[
                   const SizedBox(height: 6),

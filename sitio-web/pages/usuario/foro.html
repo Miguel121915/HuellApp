@@ -24,9 +24,18 @@
 <body class="pagina-usuario" data-protegida>
   <header class="encabezado" id="encabezado"></header>
   <main class="contenido contenido--foro">
-    <h1 class="titulo-banner">Bienvenido al foro</h1>
+    <h1 class="titulo-banner">Muro de la comunidad</h1>
 
-    <form id="formulario-publicar" class="publicar tarjeta" novalidate>
+    <!-- Pestañas: las alertas de mascotas separadas de las publicaciones de la comunidad -->
+    <div id="pestanas-muro" class="pestanas-muro" role="tablist" aria-label="Secciones del muro">
+      <button type="button" role="tab" data-pestana="busca" aria-selected="true" aria-controls="feed">🔎 Se buscan</button>
+      <button type="button" role="tab" data-pestana="familia" aria-selected="false" aria-controls="feed" tabindex="-1">🏠 Buscan a su familia</button>
+      <button type="button" role="tab" data-pestana="reunidos" aria-selected="false" aria-controls="feed" tabindex="-1">💚 Reunidos</button>
+      <button type="button" role="tab" data-pestana="comunidad" aria-selected="false" aria-controls="feed" tabindex="-1">💬 Comunidad</button>
+    </div>
+    <div id="aviso-pestana" class="aviso-pestana"></div>
+
+    <form id="formulario-publicar" class="publicar tarjeta" novalidate hidden>
       <div class="campo" id="campo-texto">
         <label class="campo__etiqueta" for="publicar-texto">Crear publicación</label>
         <textarea id="publicar-texto" name="texto" class="campo__control" rows="3" maxlength="600" placeholder="¿Qué quieres compartir con la comunidad?" required></textarea>

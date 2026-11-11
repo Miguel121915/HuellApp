@@ -169,6 +169,7 @@ CREATE TABLE publicaciones_foro (
   foto        VARCHAR2(200 CHAR),
   foto_alt    VARCHAR2(160 CHAR),
   creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  reporte_id  NUMBER(10), -- alerta de un reporte (pestañas del muro), null = publicación de la comunidad
   CONSTRAINT pk_publicaciones_foro PRIMARY KEY (id),
   CONSTRAINT fk_foro_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
 );
@@ -211,6 +212,23 @@ CREATE TABLE reportes (
   especie     VARCHAR2(10 CHAR),
   nombre      VARCHAR2(60 CHAR),
   analisis_ia VARCHAR2(1000 CHAR),
+  foto_huella VARCHAR2(64 CHAR), -- SHA-256 del archivo de la foto (detecta la misma imagen subida dos veces)
+  -- La IA trabaja en segundo plano: pendiente | procesando | listo | fallo | sin_ia (null = reporte antiguo)
+  ia_estado    VARCHAR2(12 CHAR),
+  ia_intentos  NUMBER(2) DEFAULT 0 NOT NULL,
+  ia_siguiente TIMESTAMP(3),     -- cuándo toca el siguiente intento
+  duplicado_de NUMBER(10),       -- la IA cree que es la misma mascota que este otro reporte del mismo tipo
+  -- Datos de los formularios «Se me perdió» / «La encontré»
+  color        VARCHAR2(40 CHAR),
+  tamano       VARCHAR2(10 CHAR),      -- pequeño | mediano | grande
+  collar       VARCHAR2(80 CHAR),      -- collar, placa o chip (texto libre)
+  fecha_evento TIMESTAMP(3),           -- cuándo se perdió o cuándo la vieron
+  situacion    VARCHAR2(12 CHAR),      -- solo encontradas: conmigo | refugio | vista
+  estado       VARCHAR2(10 CHAR) DEFAULT 'activo' NOT NULL, -- activo | reunido («¡Ya apareció!»)
+  reunido_en   TIMESTAMP(3),
+  latitud      NUMBER(9,6),            -- punto en el mapa donde se perdió o la vieron
+  longitud     NUMBER(9,6),
+  sena_secreta VARCHAR2(200 CHAR),     -- detalle que solo sabe el dueño, NUNCA se publica
   CONSTRAINT pk_reportes PRIMARY KEY (id),
   CONSTRAINT ck_reportes_tipo CHECK (tipo IN ('perdida', 'encontrada')),
   CONSTRAINT fk_reportes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
@@ -226,6 +244,9 @@ CREATE TABLE coincidencias (
   similitud             NUMBER(3) NOT NULL,
   creado_en             TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
   por_ia                NUMBER(1) DEFAULT 0 NOT NULL, -- 1 = la IA comparó las fotos
+  misma_foto            NUMBER(1) DEFAULT 0 NOT NULL, -- 1 = los dos reportes usan la MISMA fotografía (no cuenta como prueba)
+  respuesta_sena        VARCHAR2(300 CHAR), -- lo que describe quien la encontró antes de ver el contacto del dueño
+  respondida_en         TIMESTAMP(3),
   CONSTRAINT pk_coincidencias PRIMARY KEY (id),
   CONSTRAINT uq_coincidencia UNIQUE (reporte_perdido_id, reporte_encontrado_id),
   CONSTRAINT fk_coin_perdido FOREIGN KEY (reporte_perdido_id) REFERENCES reportes (id) ON DELETE CASCADE,

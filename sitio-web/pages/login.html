@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="../assets/css/components/botones.css">
   <link rel="stylesheet" href="../assets/css/components/formularios.css">
   <link rel="stylesheet" href="../assets/css/pages/login.css">
+  <link rel="stylesheet" href="../assets/css/components/seguridad.css">
   <script type="module" src="../assets/js/modules/auth/login.js"></script>
 </head>
 <body class="pagina-login">
@@ -54,6 +55,7 @@
           <span class="campo__error" role="status"></span>
         </div>
 
+        <div id="captcha-login" class="captcha" hidden></div>
         <button class="boton boton--primario boton--bloque" id="boton-entrar" type="submit">Entrar</button>
 
         <!-- «Continuar con Google»: solo aparece si la API tiene GOOGLE_CLIENT_ID -->
@@ -74,6 +76,26 @@
         </div>
         <button class="boton boton--primario boton--bloque" id="boton-verificar" type="submit">Verificar</button>
         <button class="boton boton--contorno boton--bloque" id="boton-volver" type="button">Volver</button>
+      </form>
+
+      <!-- Primera vez de un administrador o refugio: configurar la verificación en dos pasos (obligatoria) -->
+      <form id="form-configurar-2fa" class="login__dos-pasos seguridad" novalidate hidden>
+        <div id="alerta-configurar" role="alert" hidden></div>
+        <p class="login__dos-pasos-texto"><strong>Protege tu cuenta.</strong> Para administradores y refugios la <strong>verificación en dos pasos</strong> es obligatoria. Solo se configura una vez:</p>
+        <ol class="seguridad__pasos">
+          <li>Instala <strong>Google Authenticator</strong> en tu teléfono (Android o iPhone).</li>
+          <li>En la app toca <strong>+</strong> → <strong>Escanear un código QR</strong> y apunta a este código:</li>
+        </ol>
+        <div class="seguridad__qr" id="configurar-qr"><p>Generando tu código QR…</p></div>
+        <p class="texto-pequeno">¿No puedes escanear? Elige <strong>Introducir clave de configuración</strong> y escribe:</p>
+        <p class="seguridad__clave" id="configurar-clave"></p>
+        <div class="campo" id="campo-codigo-configurar">
+          <label class="campo__etiqueta" for="codigo-configurar">3. Escribe el código de 6 dígitos que aparece en la app</label>
+          <input class="campo__control campo__control--codigo" id="codigo-configurar" name="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="123456">
+          <span class="campo__error" role="status"></span>
+        </div>
+        <button class="boton boton--primario boton--bloque" id="boton-activar-2fa" type="submit">Activar y entrar</button>
+        <button class="boton boton--contorno boton--bloque" id="boton-volver-configurar" type="button">Volver</button>
       </form>
 
       <p class="login__registro" id="enlace-registro">¿No tienes cuenta? <a class="enlace" href="registro-usuario.html">Regístrate</a></p>

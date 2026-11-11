@@ -365,17 +365,40 @@ function mostrarContactoExtra(refugio) {
   if (hayUbicacion) llegar.href = `https://www.google.com/maps/dir/?api=1&destination=${refugio.latitud},${refugio.longitud}`;
 }
 
-function aplicarFiltros() {
-  const texto = normalizarTexto(entradaTexto.value);
-  coincidentes = mascotasBase.filter((m) =>
-    (!texto || normalizarTexto(`${m.nombre} ${m.raza}`).includes(texto)) &&
-    (!filtroEspecie.value || m.especie === filtroEspecie.value) &&
-    (!filtroEdad.value || RANGOS_EDAD[filtroEdad.value](m.edadMeses)) &&
-    (!filtroTamano.value || m.tamano === filtroTamano.value));
+let consultaFiltros = 0; // descarta respuestas viejas si la persona cambia los filtros rápido
 
+/** Filtros del catálogo (HU-3): se envían a la API; si la API falla, se filtra aquí con lo ya cargado. */
+async function aplicarFiltros() {
+  const filtros = { q: entradaTexto.value.trim(), especie: filtroEspecie.value, edad: filtroEdad.value, tamano: filtroTamano.value };
+  const hayFiltros = Object.values(filtros).some(Boolean);
+  const consulta = ++consultaFiltros;
+  const refugioId = refugioActual?.id;
+
+  let resultado;
+  if (!hayFiltros || !refugioId) {
+    resultado = mascotasBase;
+  } else {
+    try {
+      resultado = await obtenerMascotasDisponibles(refugioId, filtros);
+    } catch {
+      resultado = filtrarLocal(filtros);
+    }
+  }
+  if (consulta !== consultaFiltros) return; // llegó otra búsqueda más nueva
+
+  coincidentes = resultado;
   rejilla.replaceChildren();
   mostradas = 0;
   mostrarMas();
+}
+
+function filtrarLocal({ q, especie, edad, tamano }) {
+  const texto = normalizarTexto(q);
+  return mascotasBase.filter((m) =>
+    (!texto || normalizarTexto(`${m.nombre} ${m.raza}`).includes(texto)) &&
+    (!especie || m.especie === especie) &&
+    (!edad || RANGOS_EDAD[edad](m.edadMeses)) &&
+    (!tamano || m.tamano === tamano));
 }
 
 /** Añade el siguiente lote de tarjetas (DocumentFragment: un solo reflow). */

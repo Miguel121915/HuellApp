@@ -174,3 +174,44 @@
 .comparacion__tabla thead th { background: var(--aqua); font-size: 1.05rem; }
 .comparacion__tabla tbody th { width: 140px; color: var(--tinta-suave); }
 .comparacion__fila--distinta td { background: var(--amarillo); }
+
+/* Aviso mientras la IA analiza la foto de un reporte */
+.analizando { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: var(--e4); background: rgb(27 31 42 / 0.55); }
+.analizando__caja { display: grid; justify-items: center; gap: var(--e3); max-width: 360px; padding: var(--e5); text-align: center; background: var(--blanco); border: 3px solid var(--tinta); border-radius: var(--radio-l); box-shadow: var(--sombra-m); }
+.analizando__texto { margin: 0; font-weight: 800; }
+.analizando__giro { width: 44px; height: 44px; border: 5px solid var(--lila-suave); border-top-color: var(--tinta); border-radius: 50%; animation: analizando-giro 0.9s linear infinite; }
+@keyframes analizando-giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .analizando__giro { animation-duration: 3s; } }
+
+/* Aviso de posible reporte duplicado */
+.duplicado__reporte { display: flex; gap: var(--e3); align-items: flex-start; margin-top: var(--e3); padding: var(--e3); border: 2px solid var(--borde); border-radius: var(--radio-m); }
+.duplicado__reporte img { width: 120px; height: 90px; object-fit: cover; border-radius: var(--radio-s); flex-shrink: 0; }
+.duplicado__reporte p { margin: var(--e1) 0 0; }
+.coincidencia__misma-foto { margin: var(--e2) 0; padding: var(--e2) var(--e3); background: var(--aviso-fondo); color: var(--aviso); border-radius: var(--radio-s); font-weight: 700; }
+
+/* Avisos de la IA en «Coincidencias» (revisando en segundo plano / posible duplicado) */
+.aviso-ia { margin: 0 0 var(--e4); padding: var(--e3) var(--e4); background: var(--aqua-suave, #e3f7f4); border: 2px solid var(--tinta); border-radius: var(--radio-m); font-weight: 700; }
+.aviso-ia--duplicado { display: flex; gap: var(--e3); align-items: flex-start; background: var(--aviso-fondo); color: var(--aviso); font-weight: 400; }
+.aviso-ia--duplicado img { width: 96px; height: 72px; object-fit: cover; border-radius: var(--radio-s); flex-shrink: 0; }
+.aviso-ia--duplicado p { margin: var(--e1) 0 0; }
+
+/* Reportar: primero se elige el camino («Se me perdió» / «Encontré una mascota») */
+.eleccion-reporte { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e4); margin-bottom: var(--e5); }
+.eleccion-reporte[hidden] { display: none; }
+.eleccion-reporte__opcion { display: grid; justify-items: center; gap: var(--e2); padding: var(--e5) var(--e4); text-align: center; background: var(--blanco); border: 2px solid var(--borde); border-radius: var(--radio-l); cursor: pointer; color: var(--tinta); font: inherit; transition: transform .15s, border-color .15s; }
+.eleccion-reporte__opcion:hover, .eleccion-reporte__opcion:focus-visible { transform: translateY(-2px); border-color: var(--tinta); }
+.eleccion-reporte__opcion strong { font-size: 1.15rem; }
+.eleccion-reporte__opcion span:last-child { color: #3F5F5B; font-size: 0.95rem; }
+.eleccion-reporte__icono { font-size: 2.4rem; line-height: 1; }
+.eleccion-reporte__opcion--perdida { background: #FFF4F0; }
+.eleccion-reporte__opcion--encontrada { background: var(--aqua-suave); }
+.reporte-tipo { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e3); }
+.reporte-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 var(--e4); }
+[data-solo][hidden] { display: none !important; }
+
+.campo--secreto { padding: var(--e3); border: 2px dashed var(--borde); border-radius: var(--radio-m); background: #FBFDFC; }
+
+/* Seña secreta en «Coincidencias» */
+.verificacion-sena { margin: var(--e2) 0; padding: var(--e2) var(--e3); background: #F1F6FF; border: 2px dashed #6B8DD6; border-radius: var(--radio-s); font-size: 0.92rem; }
+.verificacion-sena p { margin: var(--e1) 0; }
+.modal textarea.campo__control { width: 100%; margin-top: var(--e2); }

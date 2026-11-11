@@ -106,6 +106,7 @@ function cmdAyuda(): void
       php artisan refugios aprobar correo@refugio.com      (tambien: suspender, reactivar)
       php artisan refugios rechazar correo@refugio.com "Motivo del rechazo"
       php artisan publicaciones:republicar                 Republica ya las publicaciones que les toca
+      php artisan ia:procesar [id]                         Atiende con la IA los reportes pendientes (lo lanza la API sola)
       php artisan test                                     Pruebas automaticas (necesita Node.js)
 
 
@@ -273,6 +274,25 @@ function cmdRepublicar(): void
 }
 
 /**
+ * IA de los reportes en segundo plano. La API lo lanza sola al publicar un reporte (con su id) y cuando
+ * hay reportes esperando un reintento (sin id: atiende todos los que ya toca).
+ *   php artisan ia:procesar [id]
+ */
+function cmdIaProcesar(array $args): void
+{
+    conBase(static function () use ($args): void {
+        $ids = isset($args[0]) && ctype_digit($args[0]) ? [(int) $args[0]] : \HuellApp\Rutas\Reportes::pendientesIa();
+        foreach ($ids as $id) {
+            $resultado = \HuellApp\Rutas\Reportes::procesarIa($id);
+            echo "Reporte $id: $resultado\n";
+        }
+        if ($ids === []) {
+            echo "No hay reportes esperando a la IA.\n";
+        }
+    });
+}
+
+/**
  * Pruebas automaticas: usan un esquema de Oracle APARTE (DB_TEST_USER / DB_TEST_PASS en el .env),
  * que se BORRA en cada corrida; levanta un servidor temporal y ejecuta pruebas/api.test.js (Node.js).
  */
@@ -344,6 +364,7 @@ match ($comando) {
     'db:seed' => cmdSeed($args),
     'refugios' => cmdRefugios($args),
     'publicaciones:republicar' => cmdRepublicar(),
+    'ia:procesar' => cmdIaProcesar($args),
     'test' => cmdTest(),
     'help', 'list', '--help', '-h' => cmdAyuda(),
     default => salir("Comando desconocido: $comando\n       Escribe  php artisan help  para ver los comandos."),

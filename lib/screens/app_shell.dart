@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/core/sesion_service.dart';
@@ -10,7 +12,9 @@ import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/screens/refugios_screen.dart';
 import 'package:huellapp/screens/reportar_screen.dart';
 import 'package:huellapp/screens/seguridad_screen.dart';
+import 'package:huellapp/services/comunidad_service.dart';
 import 'package:huellapp/widgets/barra_inferior.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Estructura principal de la app: la barra de arriba (HuellApp) y la de
 /// abajo se quedan fijas, y solo cambia el contenido de en medio.
@@ -27,7 +31,50 @@ class _AppShellState extends State<AppShell> {
 
   int _indice = 2; // Empieza en Inicio
 
-  void _irA(int indice) => setState(() => _indice = indice);
+  void _irA(int indice) {
+    setState(() => _indice = indice);
+    if (indice == 4) _revisarCoincidencias(marcarVistas: true);
+  }
+
+  /* ---------- Aviso de coincidencias nuevas (la IA trabaja en segundo plano) ---------- */
+  Timer? _reloj;
+
+  @override
+  void initState() {
+    super.initState();
+    _revisarCoincidencias();
+    _reloj = Timer.periodic(const Duration(seconds: 30), (_) => _revisarCoincidencias());
+  }
+
+  @override
+  void dispose() {
+    _reloj?.cancel();
+    super.dispose();
+  }
+
+  /// Si hay más coincidencias que la última vez que la persona las vio, avisa con «Ver».
+  Future<void> _revisarCoincidencias({bool marcarVistas = false}) async {
+    final sesion = SesionService.instancia.actual;
+    if (sesion == null || !sesion.esUsuario) return;
+    try {
+      final total = (await ComunidadService.instancia.resumenCoincidencias())['pendientes'] ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final clave = 'huellapp:coincidencias-vistas:${sesion.id}';
+      final vistas = prefs.getInt(clave);
+      await prefs.setInt(clave, total);
+      if (marcarVistas || vistas == null || total <= vistas || !mounted || _indice == 4) return;
+      final nuevas = total - vistas;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        duration: const Duration(seconds: 10),
+        content: Text(nuevas == 1
+            ? '🐾 Encontramos 1 posible coincidencia para tu reporte.'
+            : '🐾 Encontramos $nuevas posibles coincidencias para tus reportes.'),
+        action: SnackBarAction(label: 'Ver', onPressed: () => _irA(4)),
+      ));
+    } catch (_) {
+      // Sin conexión: se vuelve a intentar en 30 s
+    }
+  }
 
   void _abrirLogin() {
     Navigator.push(

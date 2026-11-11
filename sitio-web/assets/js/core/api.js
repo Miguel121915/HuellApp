@@ -98,7 +98,7 @@ export async function intentar(accion) {
     return await accion();
   } catch (error) {
     // "codigo" deja que la pantalla reaccione sin depender del texto del mensaje (p. ej. "desafio-vencido")
-    if (error instanceof ErrorApi) return { ok: false, error: error.message, estado: error.estado, codigo: error.datos?.codigo ?? null };
+    if (error instanceof ErrorApi) return { ok: false, error: error.message, estado: error.estado, codigo: error.datos?.codigo ?? null, datos: error.datos ?? {} };
     throw error;
   }
 }

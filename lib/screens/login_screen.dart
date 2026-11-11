@@ -8,6 +8,7 @@ import '../core/google_login.dart';
 import '../core/sesion_service.dart';
 import '../widgets/boton_google.dart';
 import '../widgets/dialogo_codigo.dart';
+import 'configurar_dos_pasos_screen.dart';
 import 'register_shelter_screen.dart';
 import 'register_user_screen.dart';
 
@@ -97,6 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Después de la contraseña o de Google: entra, o pide el código de Google Authenticator.
   Future<void> _terminar(ResultadoLogin resultado) async {
+    // Refugio sin verificación en dos pasos: es obligatoria, se configura antes de entrar
+    if (resultado.configurar) {
+      final sesion = await Navigator.of(context).push<Sesion>(
+        MaterialPageRoute(builder: (_) => ConfigurarDosPasosScreen(desafio: resultado.desafio!)),
+      );
+      if (sesion != null && mounted) _entrar(sesion);
+      return;
+    }
     if (resultado.requiereCodigo) {
       Sesion? sesion;
       final ok = await pedirCodigoDosPasos(

@@ -40,3 +40,6 @@ textarea.campo__control { min-height: 110px; resize: vertical; }
 .mapa-ubicacion { height: 280px; border: 2px solid var(--borde); border-radius: var(--radio-m); overflow: hidden; }
 .mapa-ubicacion__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e3); margin-top: var(--e2); }
 .datos-extra { margin-block: var(--e4); }
+
+/* «No soy un robot» (Cloudflare Turnstile) */
+.captcha { display: flex; justify-content: center; margin: var(--e3) 0; min-height: 65px; }

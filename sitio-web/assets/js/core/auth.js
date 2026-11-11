@@ -30,6 +30,8 @@ export const esInvitado = (sesion) => sesion?.rol === "invitado";
 /** Guarda la sesión que devolvió el servidor, o avisa que falta el código de dos pasos. */
 function recibirLogin(r) {
   if (r.requiere2fa) return { ok: true, requiere2fa: true, desafio: r.desafio };
+  // Admin y refugios: la verificación en dos pasos es obligatoria; si no la tienen, la configuran ahora
+  if (r.requiereConfigurar2fa) return { ok: true, requiereConfigurar2fa: true, desafio: r.desafio };
   const sesion = { ...r.sesion, token: r.token };
   guardar(CLAVES.SESION, sesion);
   return { ok: true, sesion };
@@ -41,8 +43,8 @@ function recibirLogin(r) {
  * falta llamar a verificarCodigo2fa con el código de Google Authenticator.
  * @returns {Promise<{ok:boolean, sesion?:object, requiere2fa?:boolean, desafio?:string, error?:string}>}
  */
-export const iniciarSesion = ({ rol, correo, password }) => intentar(async () =>
-  recibirLogin(await post("/auth/login", { rol, correo: correo.trim(), password })));
+export const iniciarSesion = ({ rol, correo, password, captcha }) => intentar(async () =>
+  recibirLogin(await post("/auth/login", { rol, correo: correo.trim(), password, ...(captcha ? { captcha } : {}) })));
 
 /** «Continuar con Google»: `idToken` es la credencial que entrega el botón de Google. */
 export const iniciarSesionGoogle = ({ rol, idToken }) => intentar(async () =>
@@ -51,6 +53,13 @@ export const iniciarSesionGoogle = ({ rol, idToken }) => intentar(async () =>
 /** Segundo paso: el código de 6 dígitos de Google Authenticator. */
 export const verificarCodigo2fa = ({ desafio, codigo }) => intentar(async () =>
   recibirLogin(await post("/auth/2fa/verificar", { desafio, codigo: codigo.replace(/\s+/g, "") })));
+
+/** Primera vez de un admin o refugio: secreto para el QR de Google Authenticator. */
+export const configurarPreparar2fa = (desafio) => intentar(async () => ({ ok: true, ...(await post("/auth/2fa/configurar/preparar", { desafio })) }));
+
+/** Confirma el primer código: activa la verificación y entrega la sesión. */
+export const configurarActivar2fa = ({ desafio, codigo }) => intentar(async () =>
+  recibirLogin(await post("/auth/2fa/configurar/activar", { desafio, codigo: codigo.replace(/\s+/g, "") })));
 
 /** Configuración pública del login (por ahora, el Client ID de Google; "" = sin botón de Google). */
 export async function obtenerConfigAuth() {

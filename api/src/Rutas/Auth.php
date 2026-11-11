@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, Google, RefugioExtra, Serializadores, Sesion, Solicitud, Totp, Validar};
+use HuellApp\{Archivos, Base, Captcha, Config, Enrutador, ErrorHttp, Google, RefugioExtra, Serializadores, Sesion, Solicitud, Totp, Validar};
 
 /** Rutas de autenticación: inicio de sesión, registros y datos de la sesión actual. */
 final class Auth
@@ -11,6 +11,10 @@ final class Auth
     private const MAX_FALLOS = 8;
     private const MAX_FALLOS_CODIGO = 5; // códigos de 6 dígitos equivocados por cuenta cada 10 minutos
     private const VENTANA_SEGUNDOS = 600;
+    /** En el sitio web se pide el CAPTCHA desde este intento fallido (antes del bloqueo de MAX_FALLOS). */
+    private const FALLOS_PARA_CAPTCHA = 3;
+    /** Cuentas de usuario que se pueden crear desde una misma IP cada 10 minutos. */
+    private const MAX_REGISTROS_POR_IP = 10;
     private const TIPOS_DOCUMENTO = ['acta', 'domicilio', 'identificacion', 'permiso'];
     private const TIPOS_OBLIGATORIOS = ['acta', 'domicilio', 'identificacion'];
 
@@ -20,6 +24,9 @@ final class Auth
         $r->post('/auth/login', [self::class, 'login']);
         $r->post('/auth/google', [self::class, 'loginGoogle']);
         $r->post('/auth/2fa/verificar', [self::class, 'verificar2fa']);
+        // Primera vez de un admin o refugio sin verificación en dos pasos: la configura con el desafío del login
+        $r->post('/auth/2fa/configurar/preparar', [self::class, 'configurarPreparar']);
+        $r->post('/auth/2fa/configurar/activar', [self::class, 'configurarActivar']);
         $sesion = [[Sesion::class, 'requiereSesion']];
         $r->get('/auth/2fa', [self::class, 'estado2fa'], $sesion);
         $r->post('/auth/2fa/preparar', [self::class, 'preparar2fa'], $sesion);
@@ -47,6 +54,16 @@ final class Auth
         if ($f && (int) $f['cuenta'] >= $maximo) {
             throw new ErrorHttp(429, 'Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.');
         }
+    }
+
+    /** Intentos fallidos vigentes (de los últimos 10 minutos) de una clave. */
+    private static function fallos(string $clave): int
+    {
+        $f = Base::uno('SELECT cuenta, desde FROM intentos_login WHERE clave = ?', [$clave]);
+        if (!$f || (new \DateTimeImmutable($f['desde'], new \DateTimeZone('UTC')))->getTimestamp() < time() - self::VENTANA_SEGUNDOS) {
+            return 0;
+        }
+        return (int) $f['cuenta'];
     }
 
     private static function anotarFallo(string $clave): void
@@ -80,6 +97,10 @@ final class Auth
         }
         $clave = substr($s->ip() . '|' . strtolower(trim($correo)), 0, 190);
         self::revisarLimite($clave);
+        // En el sitio web, después de varios intentos fallidos se pide el CAPTCHA
+        if (self::fallos($clave) >= self::FALLOS_PARA_CAPTCHA) {
+            Captcha::exigir($s);
+        }
 
         $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [strtolower(trim($correo))]); // en Oracle la comparación distingue mayúsculas
         // Se verifica contra un hash falso si el correo no existe: el tiempo de respuesta no delata qué correos hay
@@ -105,13 +126,65 @@ final class Auth
         if ((int) ($usuario['totp_activo'] ?? 0) === 1) {
             return ['ok' => true, 'requiere2fa' => true, 'desafio' => Sesion::crearDesafio((int) $usuario['id'])];
         }
+        // Administradores y refugios no entran sin verificación en dos pasos: la configuran en ese momento
+        if (self::dosPasosObligatorio($usuario)) {
+            return ['ok' => true, 'requiereConfigurar2fa' => true, 'desafio' => Sesion::crearDesafio((int) $usuario['id'], Sesion::VIGENCIA_CONFIGURAR)];
+        }
         return ['ok' => true, 'token' => Sesion::crearToken($usuario), 'sesion' => self::construirSesion($usuario)];
+    }
+
+    /** ¿Esta cuenta debe tener la verificación en dos pasos? (admin y refugio, salvo DOS_PASOS_OBLIGATORIO=0) */
+    private static function dosPasosObligatorio(array $usuario): bool
+    {
+        return Config::obtener('DOS_PASOS_OBLIGATORIO') !== '0' && in_array($usuario['rol'], ['admin', 'refugio'], true);
+    }
+
+    /** Usuario del desafío de configuración: admin o refugio que aún no tiene la verificación activa. */
+    private static function usuarioPorConfigurar(Solicitud $s): array
+    {
+        $desafio = $s->cuerpo()['desafio'] ?? null;
+        $id = is_string($desafio) ? Sesion::verificarDesafio($desafio) : null;
+        $usuario = $id ? Base::uno('SELECT * FROM usuarios WHERE id = ?', [$id]) : null;
+        if ($usuario === null) {
+            throw new ErrorHttp(401, 'Pasó demasiado tiempo. Vuelve a iniciar sesión.', ['codigo' => 'desafio-vencido']);
+        }
+        if ((int) $usuario['totp_activo'] === 1 || !self::dosPasosObligatorio($usuario)) {
+            throw new ErrorHttp(409, 'Vuelve a iniciar sesión.', ['codigo' => 'desafio-vencido']);
+        }
+        return $usuario;
+    }
+
+    // POST /api/auth/2fa/configurar/preparar — { desafio } → { secreto, enlace } para el código QR
+    public static function configurarPreparar(Solicitud $s): array
+    {
+        return self::nuevoSecreto(self::usuarioPorConfigurar($s));
+    }
+
+    // POST /api/auth/2fa/configurar/activar — { desafio, codigo } → activa y entrega la sesión
+    public static function configurarActivar(Solicitud $s): array
+    {
+        $usuario = self::usuarioPorConfigurar($s);
+        if (($usuario['totp_secreto'] ?? '') === '') {
+            throw new ErrorHttp(409, 'Primero genera el código QR.');
+        }
+        self::comprobarCodigo($usuario, $s->cuerpo()['codigo'] ?? null);
+        Base::ejecutar('UPDATE usuarios SET totp_activo = 1 WHERE id = ?', [$usuario['id']]);
+        $usuario['totp_activo'] = 1;
+        return ['ok' => true, 'token' => Sesion::crearToken($usuario), 'sesion' => self::construirSesion($usuario)];
+    }
+
+    /** Genera y guarda (cifrado, aún sin activar) un secreto nuevo de Google Authenticator. */
+    private static function nuevoSecreto(array $u): array
+    {
+        $secreto = Totp::nuevoSecreto();
+        Base::ejecutar('UPDATE usuarios SET totp_secreto = ?, totp_ultimo_paso = NULL WHERE id = ?', [Sesion::cifrar($secreto), $u['id']]);
+        return ['secreto' => $secreto, 'enlace' => Totp::enlace($secreto, $u['correo'])];
     }
 
     /* ---------- GET /api/auth/config — lo que el login necesita saber antes de mostrarse ---------- */
     public static function config(Solicitud $s): array
     {
-        return ['googleClientId' => Google::clientIdWeb()];
+        return ['googleClientId' => Google::clientIdWeb(), 'captchaSiteKey' => Captcha::claveSitio(), 'captchaTrasFallos' => self::FALLOS_PARA_CAPTCHA];
     }
 
     /* ---------- POST /api/auth/google — «Continuar con Google» ---------- */
@@ -217,9 +290,7 @@ final class Auth
         if ((int) $u['totp_activo'] === 1) {
             throw new ErrorHttp(409, 'La verificación en dos pasos ya está activa. Desactívala primero para cambiar de teléfono.');
         }
-        $secreto = Totp::nuevoSecreto();
-        Base::ejecutar('UPDATE usuarios SET totp_secreto = ?, totp_ultimo_paso = NULL WHERE id = ?', [Sesion::cifrar($secreto), $u['id']]);
-        return ['secreto' => $secreto, 'enlace' => Totp::enlace($secreto, $u['correo'])];
+        return self::nuevoSecreto($u);
     }
 
     // POST /api/auth/2fa/activar — { codigo }: confirma que el teléfono quedó bien configurado
@@ -258,6 +329,11 @@ final class Auth
         $telefono = Validar::telefono($b['telefono'] ?? null, opcional: true);
         $password = Validar::password($b['password'] ?? null);
 
+        // Contra cuentas falsas en masa: CAPTCHA en el sitio web y máximo de registros por IP (también la app)
+        $claveRegistro = 'registro|' . $s->ip();
+        self::revisarLimite($claveRegistro, self::MAX_REGISTROS_POR_IP);
+        Captcha::exigir($s);
+
         if (Base::uno('SELECT 1 FROM usuarios WHERE correo = ?', [$correo])) {
             throw new ErrorHttp(409, 'Ya existe una cuenta con ese correo. Inicia sesión o usa otro correo.');
         }
@@ -265,6 +341,7 @@ final class Auth
             "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en) VALUES (?, ?, ?, ?, 'usuario', ?)",
             [$nombre, $correo, $telefono ?: null, password_hash($password, PASSWORD_DEFAULT), Base::ahora()],
         );
+        self::anotarFallo($claveRegistro); // cuenta los registros de esta IP en la ventana de 10 minutos
         return \HuellApp\Respuesta::json(['ok' => true], 201);
     }
 

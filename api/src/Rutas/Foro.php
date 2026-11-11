@@ -25,16 +25,41 @@ final class Foro
      * Carga publicaciones con autor, comentarios y "me gusta".
      * `likes` NO cuenta el "me gusta" de quien consulta: el sitio lo suma en pantalla al activarlo.
      */
-    private static function cargar(int $usuarioId, ?int $id = null, int $limite = 100): array
+    /**
+     * Pestañas del muro. Cada alerta está ligada a su reporte (publicaciones_foro.reporte_id):
+     *  - busca:     mascotas perdidas que siguen buscándose
+     *  - familia:   mascotas que alguien halló y que buscan a su familia
+     *  - reunidos:  alertas cerradas con «¡Ya apareció!» (finales felices)
+     *  - comunidad: publicaciones normales (tips, historias, preguntas)
+     */
+    private const CATEGORIAS = [
+        'busca' => "r.tipo = 'perdida' AND r.estado = 'activo'",
+        'familia' => "r.tipo = 'encontrada' AND r.estado = 'activo'",
+        'reunidos' => "r.estado = 'reunido'",
+        'comunidad' => 'p.reporte_id IS NULL',
+    ];
+
+    private static function categoria(?string $tipo, ?string $estado): string
+    {
+        if ($tipo === null) {
+            return 'comunidad';
+        }
+        return $estado === 'reunido' ? 'reunidos' : ($tipo === 'perdida' ? 'busca' : 'familia');
+    }
+
+    private static function cargar(int $usuarioId, ?int $id = null, int $limite = 100, ?string $categoria = null): array
     {
         $limite = max(1, min(200, $limite)); // ya es entero validado; se escribe directo en FETCH FIRST
+        $donde = $id ? 'WHERE p.id = ?' : ($categoria ? 'WHERE ' . self::CATEGORIAS[$categoria] : '');
         $filas = Base::todos(
-            "SELECT p.id, p.texto, p.foto, p.foto_alt, p.creado_en, u.nombre AS autor,
+            "SELECT p.id, p.texto, p.foto, p.foto_alt, p.creado_en, p.reporte_id, u.nombre AS autor,
+                    r.tipo AS reporte_tipo, r.estado AS reporte_estado, r.usuario_id AS reporte_usuario,
                     (SELECT COUNT(*) FROM likes_foro l WHERE l.publicacion_id = p.id) AS total_likes,
                     CASE WHEN EXISTS (SELECT 1 FROM likes_foro l WHERE l.publicacion_id = p.id AND l.usuario_id = ?) THEN 1 ELSE 0 END AS ya_dio
                FROM publicaciones_foro p JOIN usuarios u ON u.id = p.usuario_id
-              " . ($id ? 'WHERE p.id = ?' : '') . "
-              ORDER BY p.creado_en DESC, p.id DESC FETCH FIRST $limite ROWS ONLY",
+               LEFT JOIN reportes r ON r.id = p.reporte_id
+              $donde
+              ORDER BY " . ($categoria === 'reunidos' ? 'r.reunido_en DESC NULLS LAST, ' : '') . "p.creado_en DESC, p.id DESC FETCH FIRST $limite ROWS ONLY",
             $id ? [$usuarioId, $id] : [$usuarioId],
         );
         if (!$filas) {
@@ -47,9 +72,13 @@ final class Foro
               WHERE c.publicacion_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ') ORDER BY c.id',
             $ids,
         );
-        return array_map(static function (array $f) use ($comentarios): array {
+        return array_map(static function (array $f) use ($comentarios, $usuarioId): array {
             return [
                 'id' => (string) $f['id'], 'autor' => $f['autor'], 'fecha' => \HuellApp\Serializadores::fecha($f['creado_en']),
+                // Alerta de un reporte: pestaña y si es de quien consulta (para el botón «¡Ya apareció!»)
+                'categoria' => self::categoria($f['reporte_tipo'] ?? null, $f['reporte_estado'] ?? null),
+                'reporteId' => $f['reporte_id'] !== null ? (string) $f['reporte_id'] : null,
+                'esMiAlerta' => $f['reporte_usuario'] !== null && (int) $f['reporte_usuario'] === $usuarioId,
                 'texto' => $f['texto'], 'foto' => $f['foto'],
                 'fotoAlt' => $f['foto'] !== '' ? ($f['foto_alt'] ?: "Foto publicada por {$f['autor']}") : '',
                 'likes' => (int) $f['total_likes'] - (int) $f['ya_dio'], 'yaDioLike' => (bool) $f['ya_dio'],
@@ -73,7 +102,11 @@ final class Foro
     public static function listar(Solicitud $s): array
     {
         $limite = Validar::entero($s->query['limite'] ?? 100, 'El límite', 1, 200);
-        return ['publicaciones' => self::cargar((int) ($s->usuario['id'] ?? 0), null, $limite)];
+        // ?categoria=busca|familia|reunidos|comunidad (sin categoría: todo, como antes)
+        $categoria = ($s->query['categoria'] ?? '') === ''
+            ? null
+            : Validar::enumerado($s->query['categoria'], 'La pestaña', array_keys(self::CATEGORIAS));
+        return ['publicaciones' => self::cargar((int) ($s->usuario['id'] ?? 0), null, $limite, $categoria)];
     }
 
     public static function crear(Solicitud $s): Respuesta

@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:huellapp/core/api_client.dart';
+import 'package:huellapp/core/api_config.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/screens/coincidencias_screen.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/services/comunidad_service.dart';
+import 'package:huellapp/widgets/foto_huellapp.dart';
+import 'package:huellapp/widgets/selector_ubicacion.dart';
 
 /// Colores que cambian según el tipo de reporte
 class _Paleta {
@@ -75,6 +80,27 @@ class _ReportarScreenState extends State<ReportarScreen> {
   String _tipoReporte = 'Extraviada';
   String _tipoMascota = 'Perro';
 
+  /// Primero se elige el camino: «Se me perdió» o «La encontré» (cada uno con su formulario).
+  bool _eligio = false;
+
+  // Datos de los formularios (iguales a los del sitio web)
+  static const _colores = ['Negro', 'Blanco', 'Café', 'Gris', 'Dorado o amarillo', 'Naranja', 'Blanco y negro', 'Manchado o varios colores', 'Atigrado'];
+  static const _tamanos = {'pequeño': 'Pequeño', 'mediano': 'Mediano', 'grande': 'Grande'};
+  static const _situaciones = {
+    'conmigo': 'La tengo yo, está a salvo',
+    'refugio': 'La llevé a un refugio o veterinaria',
+    'vista': 'Solo la vi, no la pude resguardar',
+  };
+  String? _color;
+  String? _tamano;
+  String? _situacion;
+  DateTime? _fecha;
+  double? _latitud;
+  double? _longitud;
+  final TextEditingController _collarController = TextEditingController();
+  // Seña secreta: solo «Se me perdió»; NUNCA se publica (sirve para verificar a quien diga que la encontró)
+  final TextEditingController _senaController = TextEditingController();
+
   final TextEditingController _nombreMascotaController =
       TextEditingController();
   final TextEditingController _razaController = TextEditingController();
@@ -87,14 +113,42 @@ class _ReportarScreenState extends State<ReportarScreen> {
   // 👈 NUEVO: Estado de carga nativo sin modales congelados
   bool _estaCargando = false;
 
+  // Mensajes mientras se publica (la IA revisa la foto después, en segundo plano)
+  static const _etapasAnalisis = [
+    'Subiendo la foto…',
+    'Publicando tu alerta en el muro…',
+    'Buscando coincidencias por descripción y zona…',
+  ];
+  int _etapa = 0;
+  Timer? _relojEtapas;
+
+  void _iniciarAnalisis() {
+    _relojEtapas?.cancel();
+    setState(() {
+      _estaCargando = true;
+      _etapa = 0;
+    });
+    _relojEtapas = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      if (mounted && _etapa < _etapasAnalisis.length - 1) setState(() => _etapa++);
+    });
+  }
+
+  void _terminarAnalisis() {
+    _relojEtapas?.cancel();
+    if (mounted) setState(() => _estaCargando = false);
+  }
+
   _Paleta get _paleta =>
       _tipoReporte == 'Extraviada' ? _paletaBusca : _paletaEncontre;
 
   @override
   void dispose() {
+    _relojEtapas?.cancel();
     _nombreMascotaController.dispose();
     _razaController.dispose();
     _ubicacionController.dispose();
+    _collarController.dispose();
+    _senaController.dispose();
     _descripcionController.dispose();
     super.dispose();
   }
@@ -147,6 +201,13 @@ class _ReportarScreenState extends State<ReportarScreen> {
     if (!await requiereSesion(context, 'reportar una mascota')) return;
     if (!mounted) return;
     if (!_formKey.currentState!.validate()) return;
+    if (_tipoReporte != 'Extraviada' && _situacion == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Cuéntanos dónde está ahora la mascota.'),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
 
     if (_imagenBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +221,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
       return;
     }
 
-    setState(() => _estaCargando = true);
+    _iniciarAnalisis();
 
     // La API pide una sola descripción: se arma con la raza y las señas
     final raza = _razaController.text.trim();
@@ -171,25 +232,112 @@ class _ReportarScreenState extends State<ReportarScreen> {
     ].join(' ');
     if (descripcion.length < 15) descripcion = '$descripcion (sin más señas)';
 
+    final tipo = _tipoReporte == 'Extraviada' ? 'perdida' : 'encontrada';
+    Future<ResultadoReporte> enviar({String? fotoGuardada, bool confirmar = false}) =>
+        ComunidadService.instancia.crearReporte(
+          tipo: tipo,
+          descripcion: descripcion.length > 600 ? descripcion.substring(0, 600) : descripcion,
+          zona: _ubicacionController.text.trim(),
+          foto: _imagenBytes!,
+          especie: switch (_tipoMascota) { 'Perro' => 'perro', 'Gato' => 'gato', _ => 'otro' },
+          nombre: tipo == 'perdida' ? _nombreMascotaController.text : '',
+          color: _color,
+          tamano: _tamano,
+          collar: _collarController.text,
+          fecha: _fecha,
+          situacion: tipo == 'encontrada' ? _situacion : null,
+          latitud: _latitud,
+          longitud: _longitud,
+          senaSecreta: tipo == 'perdida' ? _senaController.text : '',
+          fotoGuardada: fotoGuardada,
+          confirmarDuplicado: confirmar,
+        );
+
     try {
-      final r = await ComunidadService.instancia.crearReporte(
-        tipo: _tipoReporte == 'Extraviada' ? 'perdida' : 'encontrada',
-        descripcion: descripcion.length > 600 ? descripcion.substring(0, 600) : descripcion,
-        zona: _ubicacionController.text.trim(),
-        foto: _imagenBytes!,
-        especie: switch (_tipoMascota) { 'Perro' => 'perro', 'Gato' => 'gato', _ => 'otro' },
-        nombre: _nombreMascotaController.text,
-      );
+      ResultadoReporte r;
+      try {
+        r = await enviar();
+      } on ApiException catch (e) {
+        // ¿Alguien ya reportó a esta mascota? La persona decide si es la misma o publica de todos modos
+        if (e.codigo != 'posible-duplicado' || !mounted) rethrow;
+        _terminarAnalisis();
+        final duplicados = (e.datos['duplicados'] as List? ?? []).cast<Map<String, dynamic>>();
+        final publicar = await _preguntarDuplicado(tipo, duplicados);
+        if (!mounted) return;
+        if (!publicar) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No publicamos tu reporte. Puedes comentar en la alerta que ya existe en el muro.'),
+          ));
+          return;
+        }
+        _iniciarAnalisis();
+        r = await enviar(fotoGuardada: e.datos['foto'] as String?, confirmar: true);
+      }
       if (!mounted) return;
-      setState(() => _estaCargando = false);
+      _terminarAnalisis();
       await _mostrarResultado(r);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _estaCargando = false);
+      _terminarAnalisis();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red),
       );
     }
+  }
+
+  /// Reportes muy parecidos que ya existen (quizá de un familiar). true = publicar de todos modos.
+  Future<bool> _preguntarDuplicado(String tipo, List<Map<String, dynamic>> duplicados) async {
+    final publicar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('¿Ya reportaron a esta mascota?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tipo == 'perdida'
+                  ? 'Encontramos una alerta muy parecida (quizá la subió un familiar). Si es la misma mascota, '
+                      'no hace falta otra: comenta en esa alerta del muro.'
+                  : 'Alguien ya reportó haber encontrado a una mascota muy parecida. Si es la misma, comenta en esa alerta del muro.'),
+              const SizedBox(height: 12),
+              for (final d in duplicados)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    if ((d['foto'] as String? ?? '').isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: FotoHuellApp(ApiConfig.urlArchivo(d['foto'] as String), width: 72, height: 72),
+                      ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(
+                          (d['nombre'] as String?)?.isNotEmpty == true
+                              ? '${d['nombre']}'
+                              : (d['tipo'] == 'perdida' ? 'Mascota perdida' : 'Mascota encontrada'),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text('${d['descripcion'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                        Text('Zona: ${d['zona'] ?? ''} · Reportó ${d['autor'] ?? ''}',
+                            style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      ]),
+                    ),
+                  ]),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Es otra, publicar')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, false), child: const Text('Es la misma, no publicar')),
+        ],
+      ),
+    );
+    return publicar ?? false;
   }
 
   /// Resultado del reporte: lo que vio la IA y cuántas coincidencias hubo.
@@ -218,9 +366,17 @@ class _ReportarScreenState extends State<ReportarScreen> {
             children: [
               Text(
                 hay
-                    ? 'Hay ${r.coincidenciasNuevas == 1 ? '1 mascota parecida' : '${r.coincidenciasNuevas} mascotas parecidas'} en los reportes de la comunidad.'
+                    ? 'Tu alerta ya está en el muro. Por la descripción hay ${r.coincidenciasNuevas == 1 ? '1 mascota parecida' : '${r.coincidenciasNuevas} mascotas parecidas'} en los reportes de la comunidad.'
                     : 'Tu alerta ya está en el muro. Te avisaremos en «Coincidencias» si aparece una mascota parecida.',
               ),
+              if (r.iaPendiente) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '🤖 La IA está revisando la foto y comparándola con otros reportes. '
+                  'En uno o dos minutos verás el resultado en «Coincidencias».',
+                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+              ],
               if (rasgos.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 const Row(children: [
@@ -273,6 +429,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
   @override
   Widget build(BuildContext context) {
     final p = _paleta;
+    if (!_eligio) return _pantallaEleccion();
 
     return Scaffold(
       backgroundColor: backgroundLight,
@@ -341,18 +498,24 @@ class _ReportarScreenState extends State<ReportarScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: darkBorderColor),
-                      SizedBox(height: 16),
+                      const CircularProgressIndicator(color: darkBorderColor),
+                      const SizedBox(height: 16),
                       Text(
-                        'La IA está analizando la foto y buscando coincidencias…\nPuede tardar unos segundos.',
+                        _etapasAnalisis[_etapa],
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: darkBorderColor,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Solo unos segundos. La IA revisará la foto después.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
                       ),
                     ],
                   ),
@@ -362,6 +525,83 @@ class _ReportarScreenState extends State<ReportarScreen> {
         ],
       ),
     );
+  }
+
+  /// Paso 0: dos caminos claros, cada uno con su propio formulario.
+  Widget _pantallaEleccion() {
+    Widget opcion(String valor, String emoji, String titulo, String texto, _Paleta color) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Material(
+            color: color.suave,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => setState(() {
+                _tipoReporte = valor;
+                _eligio = true;
+              }),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.oscuro, width: 1.5),
+                ),
+                child: Row(children: [
+                  Text(emoji, style: const TextStyle(fontSize: 40)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(titulo, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color.oscuro)),
+                      const SizedBox(height: 4),
+                      Text(texto, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                    ]),
+                  ),
+                  Icon(Icons.chevron_right, color: color.oscuro),
+                ]),
+              ),
+            ),
+          ),
+        );
+
+    return Scaffold(
+      backgroundColor: backgroundLight,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _anchoMaximo),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                const SizedBox(height: 12),
+                const Text('¿Qué pasó?', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: darkBorderColor)),
+                const SizedBox(height: 6),
+                const Text('Elige una opción para llenar el formulario correcto.', style: TextStyle(color: Colors.black54)),
+                const SizedBox(height: 24),
+                opcion('Extraviada', '🔎', 'Se me perdió mi mascota', 'Publica una alerta para que la comunidad te ayude a buscarla.', _paletaBusca),
+                opcion('Avistamiento', '🏠', 'Encontré una mascota', 'Ayúdale a volver con su familia.', _paletaEncontre),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _elegirFecha() async {
+    final ahora = DateTime.now();
+    final dia = await showDatePicker(
+      context: context,
+      initialDate: _fecha ?? ahora,
+      firstDate: ahora.subtract(const Duration(days: 365)),
+      lastDate: ahora,
+      helpText: _tipoReporte == 'Extraviada' ? '¿Cuándo se perdió?' : '¿Cuándo la viste?',
+    );
+    if (dia == null || !mounted) return;
+    final hora = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_fecha ?? ahora));
+    if (!mounted) return;
+    var elegida = DateTime(dia.year, dia.month, dia.day, hora?.hour ?? 12, hora?.minute ?? 0);
+    if (elegida.isAfter(ahora)) elegida = ahora; // no puede ser futura
+    setState(() => _fecha = elegida);
   }
 
   Widget _buildBanner(_Paleta p) {
@@ -646,11 +886,38 @@ class _ReportarScreenState extends State<ReportarScreen> {
             _chipTipo(p, 'Otro', '🐾'),
           ],
         ),
+        // Solo «Se me perdió» pide nombre (quien la encontró no lo sabe)
+        if (_tipoReporte == 'Extraviada')
+          TextFormField(
+            controller: _nombreMascotaController,
+            decoration: _inputDecoration('Nombre de tu mascota', Icons.pets),
+          ),
+        Row(children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              initialValue: _color,
+              isExpanded: true,
+              decoration: _inputDecoration('Color', Icons.palette_outlined),
+              items: [for (final c in _colores) DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))],
+              onChanged: (v) => setState(() => _color = v),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              initialValue: _tamano,
+              isExpanded: true,
+              decoration: _inputDecoration('Tamaño', Icons.straighten),
+              items: [for (final e in _tamanos.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+              onChanged: (v) => setState(() => _tamano = v),
+            ),
+          ),
+        ]),
         TextFormField(
-          controller: _nombreMascotaController,
+          controller: _collarController,
           decoration: _inputDecoration(
-            'Nombre de la mascota (si lo sabes)',
-            Icons.pets,
+            _tipoReporte == 'Extraviada' ? 'Collar, placa o chip' : '¿Trae collar o placa? ¿Cómo es?',
+            Icons.local_offer_outlined,
           ),
         ),
         TextFormField(
@@ -671,6 +938,16 @@ class _ReportarScreenState extends State<ReportarScreen> {
             Icons.description_outlined,
           ),
         ),
+        if (_tipoReporte == 'Extraviada')
+          TextFormField(
+            controller: _senaController,
+            maxLength: 200,
+            decoration: _inputDecoration('🔒 Seña secreta (opcional, no se publica)', Icons.lock_outline).copyWith(
+              helperText: 'Un detalle que no se vea en la foto. Si alguien dice que la encontró, '
+                  'le pediremos describirlo antes de darle tus datos.',
+              helperMaxLines: 3,
+            ),
+          ),
       ],
     );
   }
@@ -726,6 +1003,42 @@ class _ReportarScreenState extends State<ReportarScreen> {
           validator: (v) =>
               v == null || v.isEmpty ? 'Indica la ubicación' : null,
         ),
+        // Punto en el mapa: las coincidencias se buscan por distancia real (opcional pero recomendado)
+        SelectorUbicacion(
+          latitud: _latitud,
+          longitud: _longitud,
+          titulo: _tipoReporte == 'Extraviada' ? 'Marca dónde se perdió (recomendado)' : 'Marca dónde la encontraste (recomendado)',
+          descripcion: 'Toca el mapa para colocar el pin o usa tu ubicación actual. '
+              'Así encontramos coincidencias cercanas.',
+          onCambio: (punto) => setState(() {
+            _latitud = punto?.latitude;
+            _longitud = punto?.longitude;
+          }),
+        ),
+        OutlinedButton.icon(
+          onPressed: _elegirFecha,
+          icon: const Icon(Icons.event),
+          style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft, padding: const EdgeInsets.all(14)),
+          label: Text(
+            _fecha == null
+                ? (_tipoReporte == 'Extraviada' ? '¿Cuándo se perdió? (opcional)' : '¿Cuándo la viste? (opcional)')
+                : '${_tipoReporte == 'Extraviada' ? 'Se perdió' : 'La viste'}: '
+                    '${_fecha!.day.toString().padLeft(2, '0')}/${_fecha!.month.toString().padLeft(2, '0')}/${_fecha!.year} '
+                    '${_fecha!.hour.toString().padLeft(2, '0')}:${_fecha!.minute.toString().padLeft(2, '0')}',
+          ),
+        ),
+        // Solo «La encontré»: dónde está ahora la mascota
+        if (_tipoReporte != 'Extraviada') ...[
+          const Text('¿Dónde está ahora la mascota?', style: TextStyle(fontWeight: FontWeight.w800)),
+          RadioGroup<String>(
+            groupValue: _situacion,
+            onChanged: (v) => setState(() => _situacion = v),
+            child: Column(children: [
+              for (final e in _situaciones.entries)
+                RadioListTile<String>(value: e.key, title: Text(e.value), dense: true, contentPadding: EdgeInsets.zero),
+            ]),
+          ),
+        ],
       ],
     );
   }

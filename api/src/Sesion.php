@@ -69,10 +69,12 @@ final class Sesion
      * código de 6 dígitos. Se firma con otra etiqueta, así que nunca vale como token de sesión.
      */
     private const VIGENCIA_DESAFIO = 300;
+    /** Configurar la verificación (instalar la app y escanear el QR) da más tiempo: 15 minutos. */
+    public const VIGENCIA_CONFIGURAR = 900;
 
-    public static function crearDesafio(int $usuarioId): string
+    public static function crearDesafio(int $usuarioId, int $vigencia = self::VIGENCIA_DESAFIO): string
     {
-        $carga = self::b64(json_encode(['sub' => (string) $usuarioId, 'exp' => time() + self::VIGENCIA_DESAFIO]));
+        $carga = self::b64(json_encode(['sub' => (string) $usuarioId, 'exp' => time() + $vigencia]));
         return "$carga." . self::b64(hash_hmac('sha256', "desafio-2fa|$carga", Config::obtener('JWT_SECRET'), true));
     }
 
