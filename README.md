@@ -16,6 +16,7 @@ Sitio web (HTML/JS) ──┘
 | `api/` | API en PHP (sin frameworks) que usan la app y el sitio | `php artisan serve` dentro de `api/` (ver `api/README.md`) |
 | `sitio-web/` | Sitio web en HTML, CSS y JavaScript | Lo muestra la API en http://localhost:3000 (ver `sitio-web/README.md`) |
 | `backend/` | **Ya no se usa.** Era el servidor Node/Express de Reportar con Gemini y MySQL; la IA ahora está en `api/` (ver `api/README.md`) | Se puede borrar cuando el equipo lo confirme |
+| `despliegue/` | Publicar la API, el sitio y la app en una máquina virtual de OCI (HU-25) | Ver `despliegue/README.md` |
 | `database/` | Esquemas de base de datos | — |
 
 Cada parte se ejecuta por separado: cambiar el sitio web no afecta a la app y viceversa. Lo único que comparten es la API; si cambias una ruta o un campo de la API, avisa al equipo.

@@ -26,6 +26,14 @@
   transform: translateX(-50%) rotate(45deg);
 }
 .kiro__enlace { display: inline-block; margin-top: var(--e2); }
+/* Mascotas que recomienda KIRO (HU-7) */
+.kiro__mascotas { display: grid; gap: var(--e2); margin-top: var(--e3); padding: 0; list-style: none; }
+.kiro__mascotas:empty { display: none; }
+.kiro__mascota { display: flex; align-items: center; gap: var(--e3); padding: var(--e2); background: var(--aqua-suave); border-radius: var(--radio-m); color: inherit; text-decoration: none; }
+.kiro__mascota:hover, .kiro__mascota:focus-visible { outline: 2px solid var(--aqua-fuerte); }
+.kiro__mascota img { width: 56px; height: 56px; border-radius: var(--radio-s); object-fit: cover; flex-shrink: 0; background: var(--blanco); }
+.kiro__mascota span { display: grid; text-align: left; }
+.kiro__mascota small { color: var(--tinta-suave); }
 .kiro__imagen { width: min(300px, 70%); height: auto; }
 
 .kiro__buscador {

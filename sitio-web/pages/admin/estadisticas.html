@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estadísticas · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/tabla.css">
+  <link rel="stylesheet" href="../../assets/css/pages/admin.css">
+  <link rel="stylesheet" href="../../assets/css/pages/estadisticas.css">
+  <script type="module" src="../../assets/js/modules/admin/estadisticas.js"></script>
+</head>
+<body class="pagina-admin" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido estadisticas">
+    <div class="estadisticas__cabecera">
+      <h1 class="titulo-banner">Estadísticas de uso</h1>
+      <button id="boton-actualizar" class="boton boton--secundario boton--pequeno" type="button">Actualizar</button>
+    </div>
+    <p id="estado" class="texto-suave texto-pequeno" role="status" aria-live="polite">Cargando estadísticas…</p>
+
+    <section aria-labelledby="titulo-cifras">
+      <h2 id="titulo-cifras" class="solo-lector">Cifras principales</h2>
+      <div id="cifras" class="cifras"></div>
+    </section>
+
+    <section class="estadisticas__seccion" aria-labelledby="titulo-actividad">
+      <h2 id="titulo-actividad" class="seccion-titulo">Actividad de las últimas 8 semanas</h2>
+      <p class="texto-suave texto-pequeno">Cuántos se crearon cada semana (de lunes a domingo). Pasa el cursor sobre una barra para ver la cifra.</p>
+      <div id="actividad" class="mini-graficas"></div>
+    </section>
+
+    <div class="estadisticas__rejilla">
+      <section class="estadisticas__seccion tarjeta tarjeta--blanca" aria-labelledby="titulo-adopciones">
+        <h2 id="titulo-adopciones" class="seccion-titulo">Solicitudes de adopción</h2>
+        <div id="grafica-adopciones"></div>
+      </section>
+      <section class="estadisticas__seccion tarjeta tarjeta--blanca" aria-labelledby="titulo-mascotas">
+        <h2 id="titulo-mascotas" class="seccion-titulo">Mascotas</h2>
+        <div id="grafica-mascotas"></div>
+      </section>
+      <section class="estadisticas__seccion tarjeta tarjeta--blanca" aria-labelledby="titulo-refugios-est">
+        <h2 id="titulo-refugios-est" class="seccion-titulo">Refugios</h2>
+        <div id="grafica-refugios"></div>
+      </section>
+      <section class="estadisticas__seccion tarjeta tarjeta--blanca" aria-labelledby="titulo-top">
+        <h2 id="titulo-top" class="seccion-titulo">Refugios con más adopciones</h2>
+        <div id="grafica-top"></div>
+      </section>
+    </div>
+
+    <details class="estadisticas__tabla">
+      <summary>Ver todos los datos en tabla</summary>
+      <div id="tabla-datos"></div>
+    </details>
+  </main>
+</body>
+</html>

@@ -158,6 +158,9 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `PATCH /admin/documentos/:id` · `GET /admin/documentos/:id/archivo` | admin | Checklist / ver el documento |
 | `GET /admin/refugios/:id/mascotas` · `GET /admin/mascotas/:id` | admin | Todas las mascotas de un refugio (con conteo de documentos) / una mascota con sus documentos |
 | `PATCH /admin/documentos-mascota/:id` · `GET /admin/documentos-mascota/:id/archivo` | admin | Marcar como revisado / ver un documento de mascota |
+| `GET /admin/estadisticas` | admin | HU-20: cuentas, refugios, mascotas, solicitudes (y % aprobadas), reportes, coincidencias, comunidad, top 5 refugios por adopciones y actividad de las últimas 8 semanas |
+| `POST /kiro` | todos, **también sin sesión** | HU-7: `{mensaje, historial?: [{rol: usuario\|kiro, texto}]}` → `{respuesta, mascotas: [mascota + refugioNombre], enlace, iaUsada}`. Con Gemini recomienda solo mascotas disponibles reales; sin IA responde con reglas. Máx. 30 preguntas por IP cada 10 min |
+| `GET /avisos` · `POST /avisos/leidos` | todos | HU-19: mis avisos (30 más recientes) y `noLeidos` / marcar leídos `{ids?}` (sin `ids`, todos). Se crean solos: coincidencia nueva, respuesta de un refugio, cambio de una solicitud de adopción, comentario en tu publicación; al refugio: solicitud o mensaje nuevo, y el resultado de su verificación |
 
 **Republicación automática:** no necesita tarea programada. Antes de listar publicaciones, el servidor pone con fecha de ahora las que tienen periodicidad y ya cumplieron el plazo (si pasaron varios periodos sin visitas, cuenta como una sola republicación). Las de mascotas adoptadas no se republican.
 

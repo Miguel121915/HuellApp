@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, Respuesta, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, Enrutador, ErrorHttp, Respuesta, Sesion, Solicitud, Validar};
 
 /** Rutas del foro: publicaciones, comentarios y "me gusta" (huella). */
 final class Foro
@@ -126,6 +126,10 @@ final class Foro
         $id = self::existe($s->parametro('id'));
         $texto = Validar::texto($s->cuerpo()['texto'] ?? null, 'El comentario', min: 1, max: 300);
         Base::insertar('INSERT INTO comentarios_foro (publicacion_id, usuario_id, texto, creado_en) VALUES (?, ?, ?, ?)', [$id, $s->usuario['id'], $texto, Base::ahora()]);
+        $autor = (int) Base::valor('SELECT usuario_id FROM publicaciones_foro WHERE id = ?', [$id]);
+        if ($autor !== (int) $s->usuario['id']) { // no se avisa de los comentarios propios
+            Avisos::crear($autor, 'foro', "{$s->usuario['nombre']} comentó tu publicación", mb_substr($texto, 0, 120));
+        }
         return Respuesta::json(['ok' => true, 'comentarios' => self::cargar((int) $s->usuario['id'], $id)[0]['comentarios']], 201);
     }
 

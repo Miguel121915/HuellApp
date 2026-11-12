@@ -8,12 +8,14 @@ import 'package:huellapp/screens/favoritos_screen.dart';
 import 'package:huellapp/screens/inicio_screen.dart';
 import 'package:huellapp/screens/login_screen.dart';
 import 'package:huellapp/screens/mis_mensajes_screen.dart';
+import 'package:huellapp/screens/mis_solicitudes_screen.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
 import 'package:huellapp/screens/refugios_screen.dart';
 import 'package:huellapp/screens/reportar_screen.dart';
 import 'package:huellapp/screens/seguridad_screen.dart';
 import 'package:huellapp/services/comunidad_service.dart';
 import 'package:huellapp/widgets/barra_inferior.dart';
+import 'package:huellapp/widgets/campana_avisos.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Estructura principal de la app: la barra de arriba (HuellApp) y la de
@@ -115,6 +117,20 @@ class _AppShellState extends State<AppShell> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
   }
 
+  /// A dónde lleva cada aviso (HU-19).
+  void _abrirAviso(String seccion) {
+    switch (seccion) {
+      case 'coincidencias':
+        _irA(4);
+      case 'foro':
+        _irA(0);
+      case 'solicitudes':
+        _abrir('ver tus solicitudes de adopción', const MisSolicitudesScreen());
+      case 'mensajes':
+        _abrir('ver tus mensajes', const MisMensajesScreen());
+    }
+  }
+
   void _mostrarCuenta(Sesion sesion) {
     showModalBottomSheet(
       context: context,
@@ -155,6 +171,16 @@ class _AppShellState extends State<AppShell> {
               onTap: () {
                 Navigator.pop(hoja);
                 _abrir('ver tus mensajes', const MisMensajesScreen());
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.assignment_outlined),
+              title: const Text('Mis solicitudes de adopción'),
+              subtitle: const Text('Estado de tus solicitudes y la respuesta del refugio'),
+              onTap: () {
+                Navigator.pop(hoja);
+                _abrir('ver tus solicitudes de adopción', const MisSolicitudesScreen());
               },
             ),
             ListTile(
@@ -206,6 +232,13 @@ class _AppShellState extends State<AppShell> {
           ),
         ),
         actions: [
+          // HU-19: avisos (solo con sesión)
+          ListenableBuilder(
+            listenable: SesionService.instancia,
+            builder: (context, _) => SesionService.instancia.haySesion
+                ? CampanaAvisos(alElegir: _abrirAviso)
+                : const SizedBox.shrink(),
+          ),
           IconButton(
             tooltip: 'Mis favoritos',
             icon: const Icon(Icons.favorite_border, color: Colors.black, size: 28),

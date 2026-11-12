@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, DocumentosMascota, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, DocumentosMascota, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
 
 /**
  * Flujo de adopción:
@@ -253,6 +253,7 @@ final class Adopciones
             Archivos::borrarDocumentos(array_column($guardados, 'archivo'));
             throw $e;
         }
+        Avisos::aRefugio((int) $mascota['refugio_id'], 'refugio-adopciones', "Nueva solicitud para adoptar a {$mascota['nombre']}", "De {$datos['nombre']}. Revísala en Adopciones.");
         return Respuesta::json(['ok' => true, 'solicitud' => self::solicitud(Base::uno(self::SELECT_SOLICITUD . ' WHERE s.id = ?', [$id]), false)], 201);
     }
 
@@ -283,6 +284,14 @@ final class Adopciones
             throw new ErrorHttp(400, 'Escribe una nota para explicar al solicitante por qué se rechaza.');
         }
         Base::ejecutar('UPDATE solicitudes_adopcion SET estado = ?, nota_refugio = ?, actualizado_en = ? WHERE id = ?', [$estado, $nota, Base::ahora(), $actual['id']]);
+        if ($estado !== $actual['estado']) {
+            Avisos::crear((int) $actual['usuario_id'], 'solicitudes', match ($estado) {
+                'aprobada' => "¡Aprobaron tu solicitud para adoptar a {$actual['mascota_nombre']}! 🎉",
+                'rechazada' => "Tu solicitud para adoptar a {$actual['mascota_nombre']} no fue aprobada",
+                'en revision' => "{$actual['refugio_nombre']} está revisando tu solicitud",
+                default => "Tu solicitud para adoptar a {$actual['mascota_nombre']} cambió",
+            }, $nota);
+        }
         return ['ok' => true, 'solicitud' => self::solicitud(Base::uno(self::SELECT_SOLICITUD . ' WHERE s.id = ?', [$actual['id']]), true)];
     }
 

@@ -4,6 +4,7 @@ import 'package:huellapp/models/refugio.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/services/usuario_service.dart';
 import 'package:huellapp/widgets/contacto_refugio.dart';
+import 'package:huellapp/screens/solicitud_adopcion_screen.dart';
 
 /// Hoja con el perfil de una mascota (fotos, descripción, salud y botón de
 /// adopción). La usan la lista de refugios y el perfil del refugio.
@@ -208,14 +209,12 @@ void mostrarPerfilMascota(
                                 onPressed: () async {
                                   if (!await requiereSesion(context, 'solicitar una adopción')) return;
                                   if (!context.mounted) return;
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Solicitud de adopción enviada para ${mascota.nombre}',
-                                      ),
-                                    ),
-                                  );
+                                  // HU-14: formulario de solicitud con datos y documentos (misma API que la web)
+                                  final navegador = Navigator.of(context);
+                                  navegador.pop();
+                                  navegador.push(MaterialPageRoute(
+                                    builder: (_) => SolicitudAdopcionScreen(mascota: mascota, nombreRefugio: nombreRefugio),
+                                  ));
                                 },
                                 icon: const Icon(
                                   Icons.pets,

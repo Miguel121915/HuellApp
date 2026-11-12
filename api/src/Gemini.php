@@ -239,13 +239,29 @@ final class Gemini
         return ['inline_data' => ['mime_type' => $mime, 'data' => base64_encode($datos)]];
     }
 
+    /**
+     * Conversación con instrucciones de sistema (KIRO, HU-7). $mensajes = [['rol' => 'usuario'|'kiro', 'texto' => '...'], ...]
+     * en orden; el último debe ser del usuario. Devuelve el JSON que pidan las instrucciones, o null sin IA.
+     */
+    public static function conversar(string $instrucciones, array $mensajes, float $temperatura = 0.5): mixed
+    {
+        if (!self::disponible() || $mensajes === []) {
+            return null;
+        }
+        $contents = array_map(static fn (array $m): array => [
+            'role' => $m['rol'] === 'kiro' ? 'model' : 'user',
+            'parts' => [['text' => $m['texto']]],
+        ], $mensajes);
+        return self::pedirJson([], $contents, $instrucciones, $temperatura);
+    }
+
     /** Llama a Gemini pidiendo JSON. Reintenta si está saturado. Devuelve el JSON decodificado o null. */
-    private static function pedirJson(array $partes): mixed
+    private static function pedirJson(array $partes, ?array $contents = null, ?string $sistema = null, float $temperatura = 0.2): mixed
     {
         $cuerpo = json_encode([
-            'contents' => [['role' => 'user', 'parts' => $partes]],
-            'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0.2],
-        ]);
+            'contents' => $contents ?? [['role' => 'user', 'parts' => $partes]],
+            'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => $temperatura],
+        ] + ($sistema !== null ? ['systemInstruction' => ['parts' => [['text' => $sistema]]]] : []));
         // Un intento por modelo: si uno está saturado o sin cuota, el siguiente suele responder de inmediato
         foreach (self::modelos() as $i => $modelo) {
             [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo);

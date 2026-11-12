@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/sesion_service.dart';
 import '../../services/refugio_service.dart';
+import '../../widgets/campana_avisos.dart';
 import '../../widgets/foto_huellapp.dart';
 import '../../widgets/selector_ubicacion.dart';
 import '../login_screen.dart';
@@ -87,6 +88,12 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 26, fontStyle: FontStyle.italic),
         ),
         actions: [
+          // HU-19: avisos (nuevas solicitudes de adopción y mensajes)
+          CampanaAvisos(alElegir: (seccion) {
+            if (seccion == 'refugio-adopciones') _tabs.animateTo(3);
+            if (seccion == 'refugio-mensajes') _tabs.animateTo(4);
+            if (seccion == 'estado-refugio') _tabs.animateTo(0);
+          }),
           PopupMenuButton<String>(
             tooltip: 'Mi cuenta',
             icon: const Icon(Icons.account_circle, color: Colors.black, size: 32),

@@ -483,7 +483,7 @@ class _InicioScreenState extends State<InicioScreen> {
             color: Colors.transparent,
             child: InkWell(
               customBorder: const CircleBorder(),
-              onTap: () => _abrir(const KiroHomeScreen()),
+              onTap: () => _abrir(KiroHomeScreen(onIrA: widget.onIrA)),
               child: Container(
                 width: 64,
                 height: 64,

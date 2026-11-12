@@ -86,3 +86,17 @@
 /* Secciones con candado del visitante (sin cuenta): al tocarlas se le pide iniciar sesión */
 .nav__enlace--bloqueado { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; opacity: 0.55; }
 .nav__enlace--bloqueado:hover, .nav__enlace--bloqueado:focus-visible { opacity: 0.85; }
+
+/* HU-19: campana de avisos */
+.avisos { position: relative; }
+.avisos__boton { position: relative; }
+.avisos__insignia { position: absolute; top: -6px; right: -6px; }
+.avisos__panel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: min(360px, 90vw); max-height: 70vh; overflow-y: auto; padding: var(--e3); display: grid; gap: var(--e3); background: var(--blanco); color: var(--tinta); border: 2px solid var(--aqua); border-radius: var(--radio-m); box-shadow: 0 12px 32px rgb(20 49 46 / 0.2); text-align: left; }
+.avisos__cabecera { display: flex; justify-content: space-between; align-items: center; gap: var(--e2); }
+.avisos__cabecera .enlace { border: 0; background: none; cursor: pointer; font: inherit; font-size: 0.8125rem; }
+.avisos__lista { display: grid; gap: var(--e1); margin: 0; padding: 0; list-style: none; }
+.avisos__item { display: grid; gap: 2px; width: 100%; padding: var(--e2) var(--e3); border: 0; border-radius: var(--radio-s); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.avisos__item:hover, .avisos__item:focus-visible { background: var(--aqua-suave); }
+.avisos__item--nuevo { background: var(--aqua-suave); border-left: 4px solid var(--aqua-fuerte); }
+.avisos__item span { font-size: 0.875rem; color: var(--tinta-suave); }
+.avisos__item small { font-size: 0.75rem; color: var(--tinta-suave); }

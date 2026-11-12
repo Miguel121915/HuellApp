@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Base, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Avisos, Base, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
 
 /**
  * HU-13 Contacto con el refugio:
@@ -87,6 +87,7 @@ final class Mensajes
             'INSERT INTO mensajes_refugio (usuario_id, refugio_id, mascota_id, mensaje, telefono, estado, creado_en) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [$s->usuario['id'], $refugioId, $mascotaId, $texto, $telefono, 'nuevo', Base::ahora()],
         );
+        Avisos::aRefugio($refugioId, 'refugio-mensajes', "Nuevo mensaje de {$s->usuario['nombre']}", mb_substr($texto, 0, 120));
         return Respuesta::json(['ok' => true, 'mensaje' => self::mensaje(Base::uno(self::SELECT . ' WHERE c.id = ?', [$id]), false)], 201);
     }
 
@@ -112,6 +113,7 @@ final class Mensajes
         if (array_key_exists('respuesta', $b)) {
             $respuesta = Validar::texto($b['respuesta'], 'La respuesta', min: 2, max: 1000);
             Base::ejecutar("UPDATE mensajes_refugio SET respuesta = ?, estado = 'respondido', respondido_en = ? WHERE id = ?", [$respuesta, Base::ahora(), $actual['id']]);
+            Avisos::crear((int) $actual['usuario_id'], 'mensajes', "{$s->refugio['nombre']} respondió tu mensaje", mb_substr($respuesta, 0, 120));
         } elseif ($actual['estado'] === 'nuevo') {
             Base::ejecutar("UPDATE mensajes_refugio SET estado = 'leido' WHERE id = ?", [$actual['id']]);
         }

@@ -32,6 +32,7 @@ const ICONOS = {
   // Administrador
   solicitudes: svg('<path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>'),
   perfil: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'),
+  estadisticas: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
 };
 // Decoran foro (huella dentro del globo) y reportar (huella dentro de la cámara)
 ICONOS.foro = ICONOS.foro.replace("</svg>", `<g transform="translate(5.5 3.2) scale(.55)">${PATA}</g></svg>`);
@@ -61,6 +62,7 @@ const MENUS = {
   admin: [
     { id: "solicitudes", etiqueta: "Solicitudes", ruta: "pages/admin/solicitudes.html", insignia: true },
     { id: "refugios", etiqueta: "Refugios", ruta: "pages/admin/refugios.html" },
+    { id: "estadisticas", etiqueta: "Estadísticas", ruta: "pages/admin/estadisticas.html" },
   ],
 };
 // Visitante sin cuenta: solo entra a Refugios (mascotas en adopción). Las demás secciones se ven
@@ -105,6 +107,10 @@ export async function montarNavbar({ sesion, activa }) {
 
   // El nombre se inserta con textContent: nunca como HTML
   encabezado.querySelector("#nombre-usuario").textContent = sesion.nombre;
+  // HU-19: campana de avisos (solo cuentas; el visitante no recibe avisos)
+  if (sesion.rol !== "invitado" && sesion.token) {
+    import("./avisos.js").then(({ montarAvisos }) => montarAvisos(encabezado.querySelector(".encabezado__acciones")));
+  }
   encabezado.querySelector("#boton-salir").addEventListener("click", () => {
     cerrarSesion();
     irA("pages/login.html");

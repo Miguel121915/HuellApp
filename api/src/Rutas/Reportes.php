@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, Enrutador, ErrorHttp, Gemini, Procesos, Respuesta, Serializadores, Sesion, Similitud, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, Enrutador, ErrorHttp, Gemini, Procesos, Respuesta, Serializadores, Sesion, Similitud, Solicitud, Validar};
 
 /**
  * Reportes de mascotas perdidas/encontradas y sus coincidencias.
@@ -421,10 +421,20 @@ final class Reportes
             if ($actualizada > 0 || $similitud < Similitud::UMBRAL) {
                 continue;
             }
-            $total += Base::insertarSiNoExiste(
+            $nueva = Base::insertarSiNoExiste(
                 'INSERT INTO coincidencias (reporte_perdido_id, reporte_encontrado_id, similitud, por_ia, misma_foto) VALUES (?, ?, ?, ?, ?)',
                 [$perdido, $encontrado, $similitud, $ia === null ? 0 : 1, $mismaFoto ? 1 : 0],
             );
+            $total += $nueva;
+            if ($nueva > 0) { // HU-19: avisar a las dos personas
+                $duenos = Base::todos('SELECT id, usuario_id, tipo, nombre FROM reportes WHERE id IN (?, ?)', [$perdido, $encontrado]);
+                foreach ($duenos as $d) {
+                    $quien = ($d['nombre'] ?? '') !== '' ? $d['nombre'] : 'tu reporte';
+                    Avisos::crear((int) $d['usuario_id'], 'coincidencias', $d['tipo'] === 'perdida'
+                        ? "🐾 Posible coincidencia para $quien ($similitud %)"
+                        : "🐾 La mascota que encontraste podría tener familia ($similitud %)", 'Revísala en Coincidencias.');
+                }
+            }
         }
         return ['total' => $total, 'porIa' => $porIa !== []];
     }

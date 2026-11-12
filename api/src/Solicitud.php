@@ -71,7 +71,14 @@ final class Solicitud
 
     public function ip(): string
     {
-        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $remota = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        // En el servidor publicado, nginx (en la misma máquina) reenvía la IP real en X-Real-IP.
+        // Solo se le cree si la petición viene de la propia máquina: desde fuera no se puede falsificar.
+        $real = $_SERVER['HTTP_X_REAL_IP'] ?? '';
+        if (in_array($remota, ['127.0.0.1', '::1'], true) && filter_var($real, FILTER_VALIDATE_IP)) {
+            return $real;
+        }
+        return $remota;
     }
 
     public function parametro(string $nombre): string

@@ -1,0 +1,39 @@
+/* estadisticas.css — Estadísticas de uso del administrador (HU-20).
+   Una sola tinta para las barras (--aqua-fuerte): la cantidad la dicen el largo y la etiqueta. */
+.estadisticas { display: grid; gap: var(--e5); }
+.estadisticas__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
+.estadisticas__seccion { display: grid; gap: var(--e3); }
+.estadisticas__rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--e5); }
+
+/* Cifras principales */
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--e4); }
+.cifra { display: grid; gap: 2px; padding: var(--e4); background: var(--blanco); }
+.cifra__numero { font-size: 2.2rem; font-weight: 800; line-height: 1.1; color: var(--tinta); font-variant-numeric: tabular-nums; }
+.cifra__etiqueta { font-weight: 700; color: var(--tinta); }
+.cifra__detalle { font-size: 0.8125rem; color: var(--tinta-suave); }
+
+/* Actividad semanal: mini gráficas de columnas */
+.mini-graficas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e4); }
+.mini-grafica { margin: 0; display: grid; gap: var(--e2); padding: var(--e4); }
+.mini-grafica figcaption { display: grid; }
+.columnas { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; align-items: end; height: 110px; border-bottom: 1px solid var(--borde); }
+.columna { height: 100%; display: flex; align-items: flex-end; cursor: default; }
+.columna:hover .columna__barra { opacity: 0.75; }
+.columna__barra { display: block; width: 100%; min-height: 2px; height: var(--alto); background: var(--aqua-fuerte); border-radius: 4px 4px 0 0; opacity: 0.55; }
+.columna--actual .columna__barra { opacity: 1; }
+.columnas__eje { display: flex; justify-content: space-between; }
+
+/* Barras horizontales */
+.barras { display: grid; gap: var(--e2); margin: 0; padding: 0; list-style: none; }
+.barra { display: grid; grid-template-columns: minmax(90px, 34%) 1fr auto; align-items: center; gap: var(--e3); font-size: 0.9rem; }
+.barra__etiqueta { color: var(--tinta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barra__pista { height: 14px; background: var(--aqua-suave); border-radius: 4px; overflow: hidden; }
+.barra__relleno { display: block; height: 100%; width: var(--ancho); background: var(--aqua-fuerte); border-radius: 0 4px 4px 0; }
+.barra__valor { font-weight: 700; color: var(--tinta); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+
+.estadisticas__tabla summary { cursor: pointer; font-weight: 700; color: var(--lila-fuerte); }
+.estadisticas__tabla .tabla { margin-top: var(--e3); }
+
+@media (forced-colors: active) {
+  .columna__barra, .barra__relleno { background: CanvasText; }
+}

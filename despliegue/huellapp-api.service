@@ -1,0 +1,25 @@
+# /etc/systemd/system/huellapp-api.service — Mantiene encendida la API + sitio web de HuellApp.
+# La instala despliegue/instalar.sh. Comandos útiles:
+#   sudo systemctl status huellapp-api      (¿está encendida?)
+#   sudo systemctl restart huellapp-api     (después de un git pull)
+#   sudo journalctl -u huellapp-api -f      (ver los mensajes / errores en vivo)
+[Unit]
+Description=HuellApp - API PHP y sitio web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=huellapp
+Group=huellapp
+WorkingDirectory=/opt/huellapp/api
+# Varias peticiones a la vez (el servidor integrado de PHP en Linux reparte entre «workers»)
+Environment=PHP_CLI_SERVER_WORKERS=6
+Environment=TNS_ADMIN=/opt/huellapp/wallet
+# Solo escucha dentro de la máquina: nginx es quien recibe a internet (puertos 80/443)
+ExecStart=/usr/bin/php artisan serve --host=127.0.0.1 --port=3000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

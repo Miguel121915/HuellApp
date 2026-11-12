@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, DocumentosMascota, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, DocumentosMascota, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
 
 /** Revisión de refugios por el administrador: solicitudes, documentos, aprobar / rechazar / suspender / reactivar. */
 final class Admin
@@ -15,6 +15,7 @@ final class Admin
     {
         $r->grupo('/admin', [[Sesion::class, 'requiereSesion'], Sesion::requiereRol('admin')], static function (Enrutador $r): void {
             $r->get('/resumen', [self::class, 'resumen']);
+            $r->get('/estadisticas', [self::class, 'estadisticas']); // HU-20
             $r->get('/refugios', [self::class, 'listar']);
             $r->get('/refugios/{id}', [self::class, 'ver']);
             $r->post('/refugios/{id}/aprobar', [self::class, 'aprobar']);
@@ -54,8 +55,84 @@ final class Admin
             throw new ErrorHttp(409, $mensajeError);
         }
         Base::ejecutar('UPDATE refugios SET estado = ?, motivo_rechazo = ?, revisado_por = ?, revisado_en = ? WHERE id = ?', [$hacia, $motivo, $s->usuario['id'], Base::ahora(), $refugio['id']]);
+        Avisos::crear((int) $refugio['usuario_id'], 'estado-refugio', match ($hacia) {
+            'aprobado' => '¡Tu refugio fue aprobado! 🎉',
+            'rechazado' => 'Tu solicitud de refugio no fue aprobada',
+            'suspendido' => 'Tu refugio fue suspendido',
+            default => 'El estado de tu refugio cambió',
+        }, $hacia === 'aprobado' ? 'Ya puedes publicar tus mascotas en adopción.' : $motivo);
         $fila = self::refugioPorId((int) $refugio['id']);
         return ['ok' => true, 'refugio' => Serializadores::refugioCompleto($fila, self::documentos((int) $fila['id']))];
+    }
+
+    /**
+     * GET /api/admin/estadisticas — Estadísticas de uso de la plataforma (HU-20).
+     * Totales por estado y la actividad de las últimas 8 semanas (lunes a domingo, en UTC).
+     */
+    public static function estadisticas(): array
+    {
+        $porGrupo = static function (string $sql): array {
+            $res = [];
+            foreach (Base::todos($sql) as $f) {
+                $res[(string) $f['clave']] = (int) $f['total'];
+            }
+            return $res;
+        };
+        $total = static fn (string $tabla): int => (int) Base::valor("SELECT COUNT(*) FROM $tabla");
+
+        // Semanas: del lunes de hace 7 semanas al lunes de esta semana
+        $lunes = (new \DateTimeImmutable('monday this week', new \DateTimeZone('UTC')))->setTime(0, 0);
+        $semanas = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $semanas[] = $lunes->modify("-$i weeks")->format('Y-m-d');
+        }
+        $desde = $semanas[0] . ' 00:00:00.000';
+        $porSemana = static function (string $tabla) use ($desde, $semanas): array {
+            $filas = Base::todos(
+                "SELECT TO_CHAR(TRUNC(creado_en, 'IW'), 'YYYY-MM-DD') AS semana, COUNT(*) AS total
+                   FROM $tabla WHERE creado_en >= TO_TIMESTAMP(?, 'YYYY-MM-DD HH24:MI:SS.FF3')
+                  GROUP BY TRUNC(creado_en, 'IW')",
+                [$desde],
+            );
+            $cuenta = array_column($filas, 'total', 'semana');
+            return array_map(static fn ($s) => (int) ($cuenta[$s] ?? 0), $semanas);
+        };
+
+        $adopciones = $porGrupo('SELECT estado AS clave, COUNT(*) AS total FROM solicitudes_adopcion GROUP BY estado');
+        $resueltas = ($adopciones['aprobada'] ?? 0) + ($adopciones['rechazada'] ?? 0);
+
+        return [
+            'generado' => Serializadores::fecha(Base::ahora()),
+            'usuarios' => $porGrupo('SELECT rol AS clave, COUNT(*) AS total FROM usuarios GROUP BY rol'),
+            'refugios' => $porGrupo('SELECT estado AS clave, COUNT(*) AS total FROM refugios GROUP BY estado'),
+            'mascotas' => $porGrupo('SELECT estatus AS clave, COUNT(*) AS total FROM mascotas GROUP BY estatus'),
+            'mascotasPorEspecie' => $porGrupo('SELECT especie AS clave, COUNT(*) AS total FROM mascotas GROUP BY especie'),
+            'adopciones' => $adopciones,
+            // De las solicitudes ya resueltas, qué porcentaje se aprobó
+            'tasaAprobacion' => $resueltas > 0 ? (int) round(100 * ($adopciones['aprobada'] ?? 0) / $resueltas) : null,
+            'reportes' => $porGrupo('SELECT tipo AS clave, COUNT(*) AS total FROM reportes GROUP BY tipo'),
+            'coincidencias' => [
+                'total' => $total('coincidencias'),
+                'porIa' => (int) Base::valor('SELECT COUNT(*) FROM coincidencias WHERE por_ia = 1'),
+            ],
+            'comunidad' => [
+                'publicaciones' => $total('publicaciones_foro'),
+                'comentarios' => $total('comentarios_foro'),
+                'mensajes' => $total('mensajes_refugio'),
+                'favoritos' => $total('favoritos'),
+            ],
+            'topRefugios' => array_map(static fn ($f) => ['nombre' => $f['nombre'], 'adopciones' => (int) $f['total']], Base::todos(
+                "SELECT r.nombre, COUNT(*) AS total FROM solicitudes_adopcion s JOIN refugios r ON r.id = s.refugio_id
+                  WHERE s.estado = 'aprobada' GROUP BY r.nombre ORDER BY total DESC, r.nombre FETCH FIRST 5 ROWS ONLY",
+            )),
+            'semanas' => $semanas,
+            'actividad' => [
+                'usuarios' => $porSemana('usuarios'),
+                'reportes' => $porSemana('reportes'),
+                'solicitudes' => $porSemana('solicitudes_adopcion'),
+                'publicaciones' => $porSemana('publicaciones_foro'),
+            ],
+        ];
     }
 
     public static function resumen(): array

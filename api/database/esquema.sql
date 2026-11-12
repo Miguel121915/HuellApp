@@ -384,3 +384,18 @@ CREATE TABLE requisitos_refugio (
   CONSTRAINT fk_requisitos_refugio FOREIGN KEY (refugio_id) REFERENCES refugios (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_requisitos_refugio ON requisitos_refugio (refugio_id);
+
+-- HU-19 Avisos (notificaciones dentro de la app y el sitio) -------------------------------
+CREATE SEQUENCE avisos_seq;
+CREATE TABLE avisos (
+  id          NUMBER(10) DEFAULT avisos_seq.NEXTVAL NOT NULL,
+  usuario_id  NUMBER(10) NOT NULL,
+  seccion     VARCHAR2(20 CHAR) NOT NULL,
+  titulo      VARCHAR2(120 CHAR) NOT NULL,
+  texto       VARCHAR2(300 CHAR),
+  leido       NUMBER(1) DEFAULT 0 NOT NULL,
+  creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  CONSTRAINT pk_avisos PRIMARY KEY (id),
+  CONSTRAINT fk_avisos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
+);
+CREATE INDEX idx_avisos_usuario ON avisos (usuario_id, leido, creado_en);
