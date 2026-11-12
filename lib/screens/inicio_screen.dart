@@ -7,6 +7,7 @@ import 'package:huellapp/services/usuario_service.dart';
 import 'package:huellapp/screens/kiro_home_screen.dart';
 import 'package:huellapp/screens/refugios_cercanos_screen.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
+import 'package:huellapp/widgets/kiro_avatar.dart';
 
 /// Pantalla de inicio: bienvenida, búsqueda, accesos rápidos y mascotas en
 /// adopción. KIRO queda como un botón flotante que abre su propia pantalla.
@@ -499,11 +500,8 @@ class _InicioScreenState extends State<InicioScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.smart_toy_rounded,
-                  size: 36,
-                  color: _darkTeal,
-                ),
+                padding: const EdgeInsets.all(6),
+                child: const KiroAvatar(size: 46),
               ),
             ),
           ),

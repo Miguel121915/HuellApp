@@ -53,6 +53,7 @@ También funciona: el servidor acepta peticiones desde `localhost` y `127.0.0.1`
 | `php artisan refugios` | Lista los refugios y su estado |
 | `php artisan refugios aprobar correo@refugio.com` | Aprueba una solicitud (también: `suspender`, `reactivar`) |
 | `php artisan refugios rechazar correo@refugio.com "Motivo"` | Rechaza una solicitud (el motivo es obligatorio) |
+| `php artisan 2fa:reiniciar correo@cuenta.com` | Quita la verificación en dos pasos de una cuenta; al entrar vuelve a pedir el QR (ensayos o teléfono perdido). Pide confirmación; `--si` la omite |
 | `php artisan publicaciones:republicar` | Republica ya las publicaciones a las que les toca (opcional: el servidor lo hace solo al mostrarlas) |
 | `php artisan test` | Pruebas automáticas (usan un esquema aparte, `DB_TEST_USER`, que se borra en cada corrida; necesitan Node.js) |
 

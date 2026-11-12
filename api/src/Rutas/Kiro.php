@@ -10,7 +10,8 @@ use HuellApp\{Base, Enrutador, ErrorHttp, Gemini, Serializadores, Sesion, Simili
  * que están disponibles en refugios aprobados.
  *
  * POST /api/kiro  { mensaje, historial?: [{rol: 'usuario'|'kiro', texto}] }
- *   → { respuesta, mascotas: [mascota + refugioNombre], enlace: 'refugios'|'reportar'|…|null, iaUsada }
+ *   → { respuesta, mascotas: [mascota + refugioNombre], reportes: [reporte activo], enlace: 'refugios'|'reportar'|…|null, iaUsada }
+ *   «reportes» (perdidas y encontradas) solo llegan a quien inició sesión.
  *
  * Con GEMINI_API_KEY responde la IA con la lista de mascotas disponibles como contexto (solo puede
  * recomendar esas). Sin IA, o si falla, responde con reglas sencillas y busca mascotas por palabras.
@@ -18,6 +19,7 @@ use HuellApp\{Base, Enrutador, ErrorHttp, Gemini, Serializadores, Sesion, Simili
 final class Kiro
 {
     private const MAX_MASCOTAS_CONTEXTO = 80;
+    private const MAX_REPORTES_CONTEXTO = 60;
     private const MAX_HISTORIAL = 8;
     private const MAX_PREGUNTAS = 30; // por persona (IP) cada 10 minutos: la cuota de Gemini es limitada
     private const VENTANA = 600;
@@ -47,22 +49,42 @@ final class Kiro
 
         $mascotas = self::mascotasDisponibles();
         $porId = array_column($mascotas, null, 'id');
+        // Los reportes de perdidas y encontradas solo se comparten con quien inició sesión (el invitado solo ve adopción)
+        $reportes = $s->usuario ? self::reportesActivos() : [];
+        $reportePorId = array_column($reportes, null, 'id');
 
-        $ia = Gemini::conversar(self::instrucciones($mascotas, $s->usuario), [...$historial, ['rol' => 'usuario', 'texto' => $mensaje]]);
+        $ia = Gemini::conversar(self::instrucciones($mascotas, $reportes, $s->usuario), [...$historial, ['rol' => 'usuario', 'texto' => $mensaje]]);
         if (is_array($ia) && is_string($ia['respuesta'] ?? null) && trim($ia['respuesta']) !== '') {
-            $ids = array_values(array_unique(array_filter(
-                array_map('strval', is_array($ia['mascotas'] ?? null) ? $ia['mascotas'] : []),
-                static fn ($id) => isset($porId[$id]), // solo mascotas que existen y están disponibles
-            )));
+            // Solo ids que existen en lo que se le mandó a la IA (nunca inventados)
+            $validos = static fn (mixed $lista, array $existentes): array => array_slice(array_values(array_unique(array_filter(
+                array_map('strval', is_array($lista) ? array_filter($lista, 'is_scalar') : []),
+                static fn ($id) => isset($existentes[$id]),
+            ))), 0, 3);
             $enlace = in_array($ia['enlace'] ?? null, self::ENLACES, true) ? $ia['enlace'] : null;
             return [
-                'respuesta' => mb_substr(trim($ia['respuesta']), 0, 1200),
-                'mascotas' => array_map(static fn ($id) => self::tarjeta($porId[$id]), array_slice($ids, 0, 3)),
+                'respuesta' => mb_substr(self::sinIds($ia['respuesta']), 0, 1200),
+                'mascotas' => array_map(static fn ($id) => self::tarjeta($porId[$id]), $validos($ia['mascotas'] ?? null, $porId)),
+                'reportes' => array_map(static fn ($id) => self::tarjetaReporte($reportePorId[$id]), $validos($ia['reportes'] ?? null, $reportePorId)),
                 'enlace' => $enlace,
                 'iaUsada' => true,
             ];
         }
-        return self::sinIa($mensaje, $mascotas) + ['iaUsada' => false];
+        return self::sinIa($mensaje, $mascotas) + ['reportes' => [], 'iaUsada' => false];
+    }
+
+    /**
+     * Quita los números internos que la IA a veces copia de la lista: «Toby (id=132)», «Toby (id 132)»,
+     * «Toby, id=132,» o «[id: 132]». Los ids reales viajan aparte, en la lista de mascotas.
+     */
+    public static function sinIds(string $texto): string
+    {
+        $texto = preg_replace('/\s*[(\[]\s*id\s*[=:#]?\s*\d+\s*[)\]]/iu', '', $texto) ?? $texto;
+        $texto = preg_replace('/,?\s*\bid\s*[=:#]\s*\d+\b,?/iu', '', $texto) ?? $texto;
+        // La web y la app muestran texto plano: fuera las negritas de Markdown (**Canela**, __Toby__)
+        // y las viñetas «* » / «- » al inicio de línea se vuelven «• »
+        $texto = preg_replace('/(\*\*|__)(.+?)\1/u', '$2', $texto) ?? $texto;
+        $texto = preg_replace('/^[ \t]*[*\-][ \t]+/mu', '• ', $texto) ?? $texto;
+        return trim(preg_replace('/[ \t]{2,}/', ' ', $texto) ?? $texto);
     }
 
     /** Mismo límite que el inicio de sesión, con su propia clave en la tabla intentos_login. */
@@ -96,6 +118,33 @@ final class Kiro
         );
     }
 
+    /**
+     * Reportes ACTIVOS de mascotas perdidas y encontradas (los más recientes), con lo mismo que se ve en el muro.
+     * Nunca se lee la seña secreta ni el punto exacto del mapa; usuario_id solo sirve para marcar los de quien pregunta
+     * y no se le manda a la IA.
+     * @return list<array>
+     */
+    private static function reportesActivos(): array
+    {
+        return Base::todos(
+            "SELECT id, usuario_id, tipo, especie, nombre, color, tamano, collar, zona, descripcion, foto, foto_alt, creado_en, fecha_evento, situacion
+               FROM reportes
+              WHERE estado = 'activo'
+              ORDER BY creado_en DESC, id DESC FETCH FIRST " . self::MAX_REPORTES_CONTEXTO . ' ROWS ONLY',
+        );
+    }
+
+    /** Lo que muestran la web y la app en la tarjeta de un reporte que encontró KIRO. */
+    private static function tarjetaReporte(array $r): array
+    {
+        return [
+            'id' => (string) $r['id'], 'tipo' => $r['tipo'], 'especie' => $r['especie'], 'nombre' => $r['nombre'],
+            'color' => $r['color'], 'tamano' => $r['tamano'], 'zona' => $r['zona'],
+            'fecha' => Serializadores::fecha($r['fecha_evento'] ?: $r['creado_en']),
+            'foto' => $r['foto'], 'fotoAlt' => $r['foto_alt'] ?: 'Foto del reporte',
+        ];
+    }
+
     private static function tarjeta(array $m): array
     {
         return Serializadores::mascota($m) + ['refugioNombre' => $m['refugio_nombre'], 'refugioMunicipio' => $m['refugio_municipio'] ?? ''];
@@ -106,8 +155,40 @@ final class Kiro
         return $meses < 12 ? "$meses meses" : intdiv($meses, 12) . ' año' . (intdiv($meses, 12) === 1 ? '' : 's');
     }
 
-    private static function instrucciones(array $mascotas, ?array $usuario): string
+    private static function instrucciones(array $mascotas, array $reportes, ?array $usuario): string
     {
+        $dia = static fn (?string $v): string => $v ? substr($v, 0, 10) : '¿?';
+        $hoy = gmdate('Y-m-d');
+        if ($usuario) {
+            $listaReportes = implode("\n", array_map(static fn (array $r): string => sprintf(
+                '- id=%s | %s%s | %s%s | color: %s | tamaño: %s | collar o placa: %s | zona: %s | %s el %s | %s',
+                $r['id'], $r['tipo'] === 'perdida' ? 'SE BUSCA (perdida)' : 'ENCONTRADA (busca a su familia)',
+                (int) $r['usuario_id'] === (int) $usuario['id'] ? ' | REPORTE DE ESTA MISMA PERSONA' : '',
+                $r['especie'] ?: 'especie sin dato', $r['nombre'] ? " llamado/a {$r['nombre']}" : '',
+                $r['color'] ?: 'sin dato', $r['tamano'] ?: 'sin dato', $r['collar'] ?: 'sin dato', $r['zona'],
+                $r['tipo'] === 'perdida' ? 'se perdió' : 'la vieron', $dia($r['fecha_evento'] ?: $r['creado_en']),
+                mb_substr(preg_replace('/\s+/', ' ', (string) $r['descripcion']), 0, 120),
+            ), $reportes)) ?: '(por ahora no hay reportes activos)';
+            $seccionReportes = <<<TXT
+                Reportes ACTIVOS de mascotas perdidas y encontradas (hoy es $hoy). Si la persona pregunta si han
+                reportado una mascota con ciertas características (especie, color, tamaño, collar, zona o fecha),
+                busca aquí y menciona de 1 a 3 que se parezcan, diciendo si se busca o si alguien la encontró, la zona
+                y hace cuánto. Busca en el lado que le sirve:
+                - Si a la persona SE LE PERDIÓ su mascota, busca en las ENCONTRADAS (alguien pudo hallarla); cuenta
+                  zonas o colonias vecinas como cercanas.
+                - Si ENCONTRÓ una mascota, busca en las SE BUSCA (su familia la puede estar buscando).
+                - Si solo pregunta qué se ha reportado, puede ser de los dos tipos.
+                - Los marcados «REPORTE DE ESTA MISMA PERSONA» son suyos: no se los presentes como hallazgos; como
+                  mucho recuérdale que su alerta sigue activa.
+                Escribe las fechas como se dicen («el 11 de noviembre», «hace 2 días»), nunca como 2026-11-11.
+                Si ninguno se parece, dilo y sugiérele crear su reporte en «Reportar». Para contactar a quien
+                reportó, que lo haga desde el muro. Nunca inventes reportes ni datos de quien reportó.
+                $listaReportes
+                TXT;
+        } else {
+            $seccionReportes = 'La persona no tiene cuenta: NO tienes acceso a los reportes de mascotas perdidas o encontradas. '
+                . 'Si pregunta por ellos, dile que inicie sesión para consultarlos en el muro y en «Coincidencias».';
+        }
         $lista = implode("\n", array_map(static fn (array $m): string => sprintf(
             '- id=%s | %s | %s %s | %s | %s | %s | refugio: %s (%s) | %s',
             $m['id'], $m['nombre'], $m['especie'], $m['raza'], self::edad((int) $m['edad_meses']), $m['sexo'], $m['tamano'],
@@ -136,10 +217,14 @@ final class Kiro
 
             Si la persona busca una mascota, recomienda de 1 a 3 que encajen (espacio, tiempo, niños, otras mascotas,
             tamaño, edad) y explica en una línea por qué. Si no hay ninguna adecuada, dilo con honestidad.
+            $seccionReportes
+
+            En «respuesta» nombra a las mascotas y los reportes SOLO por su nombre o sus rasgos: el id es interno,
+            nunca lo escribas ahí; va únicamente en las listas «mascotas» (en adopción) y «reportes» (perdidas o encontradas).
             No pidas ni guardes datos personales. Si preguntan algo ajeno a mascotas o a HuellApp, redirige con amabilidad.
 
             Responde SOLO con este JSON:
-            {"respuesta": "texto para la persona", "mascotas": ["id", ...], "enlace": "refugios|reportar|coincidencias|favoritos|foro|mensajes|solicitudes|null"}
+            {"respuesta": "texto para la persona", "mascotas": ["id", ...], "reportes": ["id", ...], "enlace": "refugios|reportar|coincidencias|favoritos|foro|mensajes|solicitudes|null"}
             TXT;
     }
 

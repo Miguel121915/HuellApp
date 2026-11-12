@@ -12,6 +12,10 @@ import '../widgets/foto_huellapp.dart';
 class MuroHuellAppScreen extends StatefulWidget {
   const MuroHuellAppScreen({super.key});
 
+  /// Pestaña que otra pantalla quiere abrir ('busca', 'familia'…), por ejemplo la tarjeta de un
+  /// reporte en KIRO. El muro la escucha y cambia de pestaña aunque ya esté abierto.
+  static final ValueNotifier<String?> pestanaPedida = ValueNotifier<String?>(null);
+
   @override
   State<MuroHuellAppScreen> createState() => _MuroHuellAppScreenState();
 }
@@ -43,13 +47,32 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
   @override
   void initState() {
     super.initState();
+    final pedida = MuroHuellAppScreen.pestanaPedida.value;
+    if (_pestanas.containsKey(pedida)) _pestana = pedida!;
+    MuroHuellAppScreen.pestanaPedida.addListener(_alPedirPestana);
     _cargar();
   }
 
   @override
   void dispose() {
+    MuroHuellAppScreen.pestanaPedida.removeListener(_alPedirPestana);
     _publicacionController.dispose();
     super.dispose();
+  }
+
+  void _alPedirPestana() {
+    final pedida = MuroHuellAppScreen.pestanaPedida.value;
+    MuroHuellAppScreen.pestanaPedida.value = null; // se atiende una sola vez
+    if (pedida != null && _pestanas.containsKey(pedida)) _cambiarPestana(pedida);
+  }
+
+  void _cambiarPestana(String pestana) {
+    if (_pestana == pestana) return;
+    setState(() {
+      _pestana = pestana;
+      _publicaciones = [];
+    });
+    _cargar();
   }
 
   Future<void> _cargar() async {
@@ -291,14 +314,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                           label: Text(e.value.$1),
                           selected: _pestana == e.key,
                           selectedColor: _turquesa,
-                          onSelected: (_) {
-                            if (_pestana == e.key) return;
-                            setState(() {
-                              _pestana = e.key;
-                              _publicaciones = [];
-                            });
-                            _cargar();
-                          },
+                          onSelected: (_) => _cambiarPestana(e.key),
                         ),
                       ),
                   ]),

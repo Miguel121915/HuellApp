@@ -10,6 +10,7 @@
  *   php artisan migrate:fresh [--seed] Borra TODO y vuelve a crear las tablas
  *   php artisan db:seed [--force]     Carga los datos de demostración
  *   php artisan refugios ...          Lista y revisa refugios (aprobar, rechazar, suspender, reactivar)
+ *   php artisan 2fa:reiniciar correo  Quita la verificación en dos pasos de una cuenta (vuelve a pedir el QR)
  *   php artisan test                  Ejecuta las pruebas automáticas (necesita Node.js)
  */
 declare(strict_types=1);
@@ -105,7 +106,8 @@ function cmdAyuda(): void
       php artisan refugios                                 Lista los refugios y su estado
       php artisan refugios aprobar correo@refugio.com      (tambien: suspender, reactivar)
       php artisan refugios rechazar correo@refugio.com "Motivo del rechazo"
-      php artisan publicaciones:republicar                 Republica ya las publicaciones que les toca
+      php artisan 2fa:reiniciar correo@cuenta.com [--si]   Quita la verificacion en dos pasos (al entrar pide el QR otra vez)
+      php artisan publicaciones:republicar                Republica ya las publicaciones que les toca
       php artisan ia:procesar [id]                         Atiende con la IA los reportes pendientes (lo lanza la API sola)
       php artisan test                                     Pruebas automaticas (necesita Node.js)
 
@@ -352,6 +354,42 @@ function cmdTest(): void
     exit($codigo);
 }
 
+/**
+ * Deja una cuenta sin verificación en dos pasos, como nueva: borra el secreto de Google Authenticator
+ * y los intentos fallidos. Si es admin o refugio, el siguiente inicio de sesión vuelve a mostrar el QR.
+ * Sirve para ensayar la demostración o para alguien que perdió el teléfono. Solo desde la terminal.
+ */
+function cmdReiniciar2fa(array $args): void
+{
+    $correo = strtolower(trim($args[0] ?? ''));
+    if ($correo === '' || str_starts_with($correo, '--')) {
+        salir('Uso:  php artisan 2fa:reiniciar correo@cuenta.com [--si]');
+    }
+    conBase(static function () use ($correo, $args): void {
+        $usuario = Base::uno('SELECT id, rol, totp_activo, totp_secreto FROM usuarios WHERE correo = ?', [$correo]);
+        if ($usuario === null) {
+            salir("No hay ninguna cuenta con el correo $correo.");
+        }
+        $activo = (int) $usuario['totp_activo'] === 1;
+        if (!$activo && ($usuario['totp_secreto'] ?? '') === '') {
+            echo "[OK] $correo no tiene verificacion en dos pasos: no hay nada que reiniciar.\n";
+            return;
+        }
+        echo "\n$correo ({$usuario['rol']}): verificacion en dos pasos "
+            . ($activo ? 'ACTIVA' : 'a medio configurar (QR sin activar)') . ".\n"
+            . "Los codigos que tengan en Google Authenticator para esta cuenta dejaran de servir: borren esa entrada del telefono.\n";
+        if (!confirmar('¿Reiniciarla?', $args)) {
+            echo "Cancelado: no se cambio nada.\n";
+            return;
+        }
+        Base::ejecutar('UPDATE usuarios SET totp_activo = 0, totp_secreto = NULL, totp_ultimo_paso = NULL WHERE id = ?', [$usuario['id']]);
+        Base::ejecutar('DELETE FROM intentos_login WHERE clave = ?', ['2fa|' . $usuario['id']]);
+        echo '[OK] Listo. ' . (in_array($usuario['rol'], ['admin', 'refugio'], true)
+            ? "Al iniciar sesion se mostrara un QR nuevo para configurarla.\n"
+            : "La cuenta entra solo con su contrasena.\n");
+    });
+}
+
 /* ---------- Despacho ---------- */
 
 $comando = $argv[1] ?? 'help';
@@ -363,6 +401,7 @@ match ($comando) {
     'migrate:fresh' => cmdMigrateFresh($args),
     'db:seed' => cmdSeed($args),
     'refugios' => cmdRefugios($args),
+    '2fa:reiniciar' => cmdReiniciar2fa($args),
     'publicaciones:republicar' => cmdRepublicar(),
     'ia:procesar' => cmdIaProcesar($args),
     'test' => cmdTest(),

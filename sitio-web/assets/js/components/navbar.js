@@ -69,7 +69,8 @@ const MENUS = {
 // en el menú con candado y, al tocarlas, se le pide iniciar sesión o crear una cuenta.
 MENUS.invitado = MENUS.usuario.map(({ insignia, ...item }) => ({ ...item, bloqueado: item.id !== "refugios" }));
 
-const HUELLA_LOGO = "assets/img/logos/huella.svg";
+const ROL_TEXTO = { usuario: "Usuario", refugio: "Refugio", admin: "Administrador" };
+const HUELLA_LOGO ="assets/img/logos/huella.svg";
 const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/refugios.html" };
 
 /**
@@ -99,14 +100,29 @@ export async function montarNavbar({ sesion, activa }) {
       </a>
       <nav class="nav" aria-label="Principal">${enlaces}</nav>
       <div class="encabezado__acciones">
-        <span class="encabezado__usuario texto-pequeno" id="nombre-usuario"></span>
-        ${sesion.rol === "invitado" ? "" : '<button class="boton boton--contorno boton--pequeno" id="boton-seguridad" type="button" title="Verificación en dos pasos">🔒 Seguridad</button>'}
-        <button class="boton boton--contorno boton--pequeno" id="boton-salir" type="button">${sesion.rol === "invitado" ? "Iniciar sesión" : "Cerrar sesión"}</button>
+        ${sesion.rol === "invitado"
+          ? '<button class="boton boton--contorno boton--pequeno" id="boton-salir" type="button">Iniciar sesión</button>'
+          : `<div class="cuenta">
+              <button class="cuenta__boton" id="boton-cuenta" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="menu-cuenta">
+                <span class="cuenta__avatar" aria-hidden="true"></span>
+                <span class="cuenta__nombre" id="nombre-usuario"></span>
+                <svg class="cuenta__flecha" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="cuenta__menu" id="menu-cuenta" hidden>
+                <div class="cuenta__datos">
+                  <strong class="cuenta__menu-nombre"></strong>
+                  <span class="cuenta__correo"></span>
+                  <span class="cuenta__rol">${ROL_TEXTO[sesion.rol] || ""}</span>
+                </div>
+                <button class="cuenta__opcion" id="boton-seguridad" type="button">🔒 Seguridad <small>Verificación en dos pasos</small></button>
+                <button class="cuenta__opcion cuenta__opcion--salir" id="boton-salir" type="button">↩ Cerrar sesión</button>
+              </div>
+            </div>`}
       </div>
     </div>`;
 
-  // El nombre se inserta con textContent: nunca como HTML
-  encabezado.querySelector("#nombre-usuario").textContent = sesion.nombre;
+  // El nombre y el correo se insertan con textContent: nunca como HTML
+  if (sesion.rol !== "invitado") montarMenuCuenta(encabezado, sesion);
   // HU-19: campana de avisos (solo cuentas; el visitante no recibe avisos)
   if (sesion.rol !== "invitado" && sesion.token) {
     import("./avisos.js").then(({ montarAvisos }) => montarAvisos(encabezado.querySelector(".encabezado__acciones")));
@@ -125,6 +141,11 @@ export async function montarNavbar({ sesion, activa }) {
     abrirSeguridad();
   });
 
+  // KIRO (HU-7): burbuja flotante con el chat, en todas las páginas del usuario y del visitante
+  if (sesion.rol === "usuario" || sesion.rol === "invitado") {
+    import("./chatbot-kiro.js").then(({ montarKiroFlotante }) => montarKiroFlotante());
+  }
+
   if (sesion.rol === "usuario") {
     await refrescarInsigniaCoincidencias();
     // La IA busca coincidencias en segundo plano: se revisa cada 30 s y se avisa si llegan nuevas
@@ -132,6 +153,32 @@ export async function montarNavbar({ sesion, activa }) {
   }
   if (sesion.rol === "admin") await refrescarInsigniaSolicitudes();
   if (sesion.rol === "refugio") await refrescarInsigniaMensajes();
+}
+
+/**
+ * Menú de cuenta: un solo botón (inicial + nombre) que despliega datos, Seguridad y Cerrar sesión.
+ * Se cierra al elegir, al tocar fuera o con Esc.
+ */
+function montarMenuCuenta(encabezado, sesion) {
+  const boton = encabezado.querySelector("#boton-cuenta");
+  const menu = encabezado.querySelector("#menu-cuenta");
+  const nombre = (sesion.nombre || "Mi cuenta").trim();
+  encabezado.querySelector(".cuenta__avatar").textContent = nombre.charAt(0).toUpperCase();
+  encabezado.querySelector(".cuenta__nombre").textContent = nombre.split(/\s+/)[0];
+  encabezado.querySelector(".cuenta__menu-nombre").textContent = nombre;
+  encabezado.querySelector(".cuenta__correo").textContent = sesion.correo || "";
+  boton.setAttribute("aria-label", `Cuenta de ${nombre}`);
+
+  const abrir = (abierto) => {
+    menu.hidden = !abierto;
+    boton.setAttribute("aria-expanded", String(abierto));
+  };
+  boton.addEventListener("click", () => abrir(menu.hidden));
+  menu.addEventListener("click", (e) => { if (e.target.closest(".cuenta__opcion")) abrir(false); });
+  document.addEventListener("click", (e) => { if (!menu.hidden && !e.target.closest(".cuenta")) abrir(false); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu.hidden) { abrir(false); boton.focus(); }
+  });
 }
 
 /** Número rojo de "Mensajes" del refugio (mensajes nuevos sin leer). */

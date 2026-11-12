@@ -53,30 +53,7 @@
       <div id="lista-mascotas" class="inicio-mascotas__lista" aria-live="polite"></div>
       <p id="sin-mascotas" class="texto-suave" hidden>Aún no hay mascotas publicadas.</p>
     </section>
-
-    <section class="kiro inicio-kiro" aria-labelledby="titulo-kiro">
-      <h2 id="titulo-kiro" class="inicio-kiro__titulo">¿Te ayudo? Habla con KIRO</h2>
-
-      <div class="kiro__globo" role="status" aria-live="polite">
-        <p id="kiro-globo"></p>
-        <a id="kiro-enlace" class="enlace kiro__enlace" href="#" hidden></a>
-      </div>
-
-      <img class="kiro__imagen" src="../../assets/img/kiro/kiro.svg" alt="KIRO, el gato-robot asistente" width="400" height="420">
-
-      <form id="kiro-formulario" class="kiro__buscador" role="search" novalidate>
-        <label class="solo-lector" for="kiro-entrada">Escribe tu duda aquí</label>
-        <input id="kiro-entrada" type="search" placeholder="Escribe tu duda aquí" autocomplete="off" maxlength="200">
-        <button type="submit" aria-label="Preguntar a KIRO">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
-        </button>
-      </form>
-
-      <section class="kiro__faq" aria-labelledby="titulo-faq">
-        <h3 id="titulo-faq" class="kiro__faq-titulo">Preguntas frecuentes</h3>
-        <ul id="kiro-sugerencias" class="chips"></ul>
-      </section>
-    </section>
+    <!-- KIRO: burbuja flotante en todas las páginas (components/chatbot-kiro.js, la monta navbar.js) -->
   </main>
 </body>
 </html>

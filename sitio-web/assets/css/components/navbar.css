@@ -51,28 +51,70 @@
   text-align: center;
 }
 
-.encabezado__acciones { display: flex; align-items: center; gap: var(--e3); }
+.encabezado__acciones { display: flex; align-items: center; gap: var(--e3); flex-shrink: 0; }
+.marca { flex-shrink: 0; }
 
 /* Con 7-8 secciones (usuario y refugio) los enlaces se compactan antes de pasar a segunda fila */
 @media (max-width: 1360px) {
-  .nav__enlace { padding-inline: var(--e2); }
+  .nav__enlace { padding-inline: var(--e3); }
   .marca__texto { font-size: 1.875rem; }
-  .encabezado__interno { gap: var(--e3); }
+  .marca__huella { width: 40px; height: 40px; }
+  .encabezado__interno { gap: var(--e4); }
+}
+@media (max-width: 1240px) {
+  .nav__enlace { padding-inline: var(--e2); }
+  .nav__icono { width: 24px; height: 24px; }
 }
 
-/* Tablet / móvil: la navegación pasa a segunda fila con scroll horizontal */
-@media (max-width: 1180px) {
+/* Tablet / móvil: la navegación pasa a segunda fila completa (con scroll horizontal si no cabe) */
+@media (max-width: 1080px) {
   .encabezado__interno { flex-wrap: wrap; padding-block: var(--e2); }
-  .nav { order: 3; width: 100%; overflow-x: auto; }
+  .nav { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; }
   .marca__texto { font-size: 1.75rem; }
   .marca__huella { width: 36px; height: 36px; }
 }
 
-/* Nombre del usuario y botón de salir */
-.encabezado__usuario { font-weight: 700; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Menú de cuenta: inicial + nombre; despliega datos, Seguridad y Cerrar sesión */
+.cuenta { position: relative; }
+.cuenta__boton {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  padding: 4px 10px 4px 4px;
+  border: 2px solid var(--tinta); border-radius: 999px;
+  background: var(--blanco); color: var(--tinta);
+  font: inherit; font-weight: 700; font-size: 0.875rem;
+  cursor: pointer;
+}
+.cuenta__boton:hover, .cuenta__boton[aria-expanded="true"] { background: var(--aqua-suave); }
+.cuenta__avatar {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--tinta); color: var(--blanco);
+  font-size: 0.9375rem;
+}
+.cuenta__nombre { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cuenta__flecha { transition: transform 0.15s; }
+.cuenta__boton[aria-expanded="true"] .cuenta__flecha { transform: rotate(180deg); }
+.cuenta__menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 60;
+  display: grid; width: 260px; padding: var(--e2);
+  background: var(--blanco); color: var(--tinta);
+  border: 2px solid var(--aqua); border-radius: var(--radio-m);
+  box-shadow: 0 12px 32px rgb(20 49 46 / 0.2);
+}
+.cuenta__datos { display: grid; gap: 2px; padding: var(--e2) var(--e3) var(--e3); border-bottom: 1px solid var(--aqua-suave); margin-bottom: var(--e1); }
+.cuenta__datos strong { overflow-wrap: anywhere; }
+.cuenta__correo { font-size: 0.8125rem; color: var(--tinta-suave); overflow-wrap: anywhere; }
+.cuenta__rol { justify-self: start; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: var(--aqua-suave); font-size: 0.75rem; font-weight: 700; }
+.cuenta__opcion {
+  display: grid; gap: 1px; width: 100%;
+  padding: var(--e2) var(--e3); border: 0; border-radius: var(--radio-s);
+  background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+}
+.cuenta__opcion small { font-weight: 400; font-size: 0.75rem; color: var(--tinta-suave); }
+.cuenta__opcion:hover, .cuenta__opcion:focus-visible { background: var(--aqua-suave); }
+.cuenta__opcion--salir { color: #b42318; }
 @media (max-width: 900px) {
-  .encabezado__usuario { display: none; }
-  .nav { justify-content: space-between; }
+  .cuenta__nombre { display: none; }
 }
 
 /* Aviso emergente: «Encontramos N posibles coincidencias» (la IA trabaja en segundo plano) */

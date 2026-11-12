@@ -95,6 +95,3 @@
 .mascota-mini__nombre { font-weight: 800; }
 .mascota-mini__detalle { font-size: 0.8rem; color: var(--tinta-suave); }
 
-/* KIRO debajo, como el botón "¿Te ayudo?" de la app */
-.inicio-kiro { padding-top: var(--e5); border-top: 1px solid var(--borde); }
-.inicio-kiro__titulo { color: var(--aqua-fuerte); font-size: 1.3rem; }

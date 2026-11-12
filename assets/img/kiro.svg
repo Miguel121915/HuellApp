@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 420" width="400" height="420" role="img" aria-label="KIRO, el gato-robot asistente de HuellApp">
+<defs>
+<linearGradient id="cuerpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f1ff"/><stop offset="1" stop-color="#b9d8f0"/></linearGradient>
+<linearGradient id="casco" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6f1fb"/><stop offset="1" stop-color="#8fcbe6"/></linearGradient>
+</defs>
+<ellipse cx="200" cy="405" rx="120" ry="10" fill="#1b1f2a" opacity=".12"/>
+<ellipse cx="150" cy="388" rx="34" ry="18" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3"/>
+<ellipse cx="250" cy="388" rx="34" ry="18" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3"/>
+<ellipse cx="200" cy="285" rx="118" ry="108" fill="url(#cuerpo)" stroke="#7a78b8" stroke-width="3"/>
+<ellipse cx="82" cy="290" rx="30" ry="46" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3" transform="rotate(18 82 290)"/>
+<ellipse cx="318" cy="290" rx="30" ry="46" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3" transform="rotate(-18 318 290)"/>
+<circle cx="200" cy="300" r="30" fill="#eaf7fd" stroke="#7fb7d6" stroke-width="3"/>
+<g fill="#5b5bb0"><ellipse cx="200" cy="308" rx="10" ry="8"/><ellipse cx="184" cy="298" rx="4" ry="5"/><ellipse cx="193" cy="289" rx="4" ry="5.5"/><ellipse cx="207" cy="289" rx="4" ry="5.5"/><ellipse cx="216" cy="298" rx="4" ry="5"/></g>
+<path d="M104 118L98 36l74 44z" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3" stroke-linejoin="round"/>
+<path d="M296 118l6-82-74 44z" fill="#c9c6ee" stroke="#7a78b8" stroke-width="3" stroke-linejoin="round"/>
+<path d="M114 98l-4-40 40 24z" fill="#f6b9c8"/><path d="M286 98l4-40-40 24z" fill="#f6b9c8"/>
+<circle cx="200" cy="170" r="108" fill="url(#casco)" stroke="#7a78b8" stroke-width="3"/>
+<ellipse cx="200" cy="176" rx="84" ry="68" fill="#f4fcff" stroke="#7fb7d6" stroke-width="3"/>
+<path d="M120 108q80-46 160 0" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".7"/>
+<ellipse cx="164" cy="170" rx="15" ry="19" fill="#1b2a44"/><ellipse cx="236" cy="170" rx="15" ry="19" fill="#1b2a44"/>
+<circle cx="169" cy="162" r="6" fill="#fff"/><circle cx="241" cy="162" r="6" fill="#fff"/><circle cx="160" cy="177" r="3" fill="#fff"/><circle cx="232" cy="177" r="3" fill="#fff"/>
+<circle cx="138" cy="198" r="13" fill="#f9a8b8" opacity=".75"/><circle cx="262" cy="198" r="13" fill="#f9a8b8" opacity=".75"/>
+<path d="M192 190h16l-8 9z" fill="#f4768a"/>
+<path d="M200 199q-10 16-26 8M200 199q10 16 26 8" fill="none" stroke="#1b2a44" stroke-width="4" stroke-linecap="round"/>
+<path d="M186 214q14 12 28 0" fill="#f4768a" stroke="#1b2a44" stroke-width="3" stroke-linejoin="round"/>
+</svg>

@@ -33,8 +33,10 @@ final class Gemini
      */
     private static function modelos(): array
     {
-        $principal = Config::obtener('GEMINI_MODEL') ?: 'gemini-3.8-flash';
-        $respaldo = Config::obtener('GEMINI_MODELOS_RESPALDO') ?: 'gemini-3.5-flash,gemini-3.5-flash-lite';
+        // gemini-3.8-flash (y gemini-flash-latest) no contestan en la capa gratuita: se quedaban colgados
+        // hasta el tiempo límite. gemini-3.5-flash responde en ~5 s; los respaldos, en 2 a 7 s.
+        $principal = Config::obtener('GEMINI_MODEL') ?: 'gemini-3.5-flash';
+        $respaldo = Config::obtener('GEMINI_MODELOS_RESPALDO') ?: 'gemini-3.5-flash-lite,gemini-3.6-flash';
         $lista = array_merge([$principal], array_map('trim', explode(',', $respaldo)));
         return array_values(array_unique(array_filter($lista, static fn ($m) => (bool) preg_match('/^[a-z0-9.\-]+$/', $m))));
     }
@@ -252,11 +254,15 @@ final class Gemini
             'role' => $m['rol'] === 'kiro' ? 'model' : 'user',
             'parts' => [['text' => $m['texto']]],
         ], $mensajes);
-        return self::pedirJson([], $contents, $instrucciones, $temperatura);
+        // Es un chat: la persona está esperando. Si un modelo tarda más de 15 s se pasa al siguiente.
+        return self::pedirJson([], $contents, $instrucciones, $temperatura, 15);
     }
 
-    /** Llama a Gemini pidiendo JSON. Reintenta si está saturado. Devuelve el JSON decodificado o null. */
-    private static function pedirJson(array $partes, ?array $contents = null, ?string $sistema = null, float $temperatura = 0.2): mixed
+    /**
+     * Llama a Gemini pidiendo JSON. Reintenta si está saturado. Devuelve el JSON decodificado o null.
+     * $limite = segundos máximos de espera por modelo (las fotos van en segundo plano y pueden esperar más).
+     */
+    private static function pedirJson(array $partes, ?array $contents = null, ?string $sistema = null, float $temperatura = 0.2, int $limite = 30): mixed
     {
         $cuerpo = json_encode([
             'contents' => $contents ?? [['role' => 'user', 'parts' => $partes]],
@@ -264,7 +270,7 @@ final class Gemini
         ] + ($sistema !== null ? ['systemInstruction' => ['parts' => [['text' => $sistema]]]] : []));
         // Un intento por modelo: si uno está saturado o sin cuota, el siguiente suele responder de inmediato
         foreach (self::modelos() as $i => $modelo) {
-            [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo);
+            [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo, $limite);
             if ($estado === 200) {
                 $datos = json_decode($respuesta, true);
                 $texto = $datos['candidates'][0]['content']['parts'][0]['text'] ?? null;
@@ -301,7 +307,7 @@ final class Gemini
     }
 
     /** @return array{0:int,1:string} código HTTP (0 = sin conexión) y cuerpo */
-    private static function post(string $url, string $cuerpo): array
+    private static function post(string $url, string $cuerpo, int $limite = 30): array
     {
         if (!function_exists('curl_init')) {
             error_log('Gemini: falta la extensión curl de PHP.');
@@ -314,7 +320,7 @@ final class Gemini
             CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . Config::obtener('GEMINI_API_KEY')],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => 30, // si no contesta en 30 s se pasa al siguiente modelo
+            CURLOPT_TIMEOUT => $limite, // si no contesta a tiempo se pasa al siguiente modelo
         ]);
         $respuesta = curl_exec($c);
         $estado = $respuesta === false ? 0 : (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE);

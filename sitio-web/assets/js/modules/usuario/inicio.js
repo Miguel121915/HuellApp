@@ -1,10 +1,9 @@
 /**
  * inicio.js — Pantalla de inicio (igual que en la app móvil): bienvenida con búsqueda,
- * accesos rápidos, mascotas en adopción y el asistente KIRO. La ven el usuario y el visitante.
+ * accesos rápidos y mascotas en adopción. KIRO es la burbuja flotante (components/chatbot-kiro.js).
  */
 import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
-import { montarChatbot } from "../../components/chatbot-kiro.js";
 import { obtenerRefugiosConMascotas } from "../../core/servicios.js";
 import { crearElemento, formatearEdad, irA, resolverImagen } from "../../core/utils.js";
 
@@ -22,14 +21,7 @@ if (sesion) {
   });
 
   cargarMascotas();
-
-  montarChatbot({
-    formulario: document.getElementById("kiro-formulario"),
-    entrada: document.getElementById("kiro-entrada"),
-    globo: document.getElementById("kiro-globo"),
-    enlace: document.getElementById("kiro-enlace"),
-    sugerencias: document.getElementById("kiro-sugerencias"),
-  });
+  // KIRO ya no va aquí: es la burbuja flotante que monta navbar.js en todas las páginas
 }
 
 /** Las primeras mascotas disponibles de todos los refugios, como en la app. */

@@ -10,11 +10,47 @@ class MascotaRecomendada {
   final String refugioNombre;
 }
 
+/// Un reporte activo (mascota perdida o encontrada) que KIRO encontró. Solo llegan con sesión iniciada.
+class ReporteKiro {
+  const ReporteKiro({
+    required this.id,
+    required this.perdida,
+    required this.titulo,
+    required this.rasgos,
+    required this.zona,
+    required this.fecha,
+    required this.foto,
+  });
+
+  factory ReporteKiro.desdeApi(Map<String, dynamic> r) {
+    final especie = r['especie'] as String?;
+    final nombre = (r['nombre'] as String?) ?? '';
+    return ReporteKiro(
+      id: '${r['id']}',
+      perdida: r['tipo'] == 'perdida',
+      titulo: nombre.isNotEmpty ? nombre : (especie == 'gato' ? 'Gato' : especie == 'perro' ? 'Perro' : 'Mascota'),
+      rasgos: [r['color'], r['tamano']].whereType<String>().where((t) => t.isNotEmpty).join(' · '),
+      zona: r['zona'] as String? ?? '',
+      fecha: DateTime.tryParse(r['fecha'] as String? ?? '')?.toLocal(),
+      foto: ApiConfig.urlArchivo(r['foto'] as String? ?? ''),
+    );
+  }
+
+  final String id;
+  final bool perdida;
+  final String titulo;
+  final String rasgos;
+  final String zona;
+  final DateTime? fecha;
+  final String foto;
+}
+
 class RespuestaKiro {
-  const RespuestaKiro({required this.texto, this.mascotas = const [], this.enlace, this.iaUsada = false});
+  const RespuestaKiro({required this.texto, this.mascotas = const [], this.reportes = const [], this.enlace, this.iaUsada = false});
 
   final String texto;
   final List<MascotaRecomendada> mascotas;
+  final List<ReporteKiro> reportes;
 
   /// Sección sugerida: 'refugios', 'reportar', 'coincidencias', 'favoritos', 'foro', 'mensajes'…
   final String? enlace;
@@ -45,6 +81,7 @@ class KiroService {
                 m['refugioNombre'] as String? ?? '',
               ))
           .toList(),
+      reportes: (r['reportes'] as List? ?? []).map((x) => ReporteKiro.desdeApi(x as Map<String, dynamic>)).toList(),
     );
   }
 }

@@ -4,8 +4,8 @@
  * adoptar, adopción, adoptado... El chatbot real se conectaría a un backend más adelante.
  */
 export const SALUDO_KIRO = "Hola, me llamo KIRO y te asistiré en lo que pueda";
-export const RESPUESTA_VACIA = "Escribe tu duda arriba y con gusto te ayudo. Por ejemplo: «¿Cómo adopto una mascota?»";
-export const RESPUESTA_DESCONOCIDA = "Mmm, todavía no sé responder eso. Prueba con otras palabras o elige una de las preguntas frecuentes de abajo.";
+export const RESPUESTA_VACIA = "Escribe tu duda y con gusto te ayudo. Por ejemplo: «¿Cómo adopto una mascota?»";
+export const RESPUESTA_DESCONOCIDA = "Mmm, todavía no sé responder eso. Prueba con otras palabras, por ejemplo: «¿Cómo adopto una mascota?»";
 
 export const preguntasKiro = [
   { id: "reportar", pregunta: "¿Cómo reporto una mascota perdida?", claves: ["report", "perdi", "extravi", "se fue", "desaparec"],
