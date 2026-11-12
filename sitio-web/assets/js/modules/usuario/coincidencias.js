@@ -9,7 +9,7 @@ import { montarNavbar, refrescarInsigniaCoincidencias } from "../../components/n
 import { obtenerCoincidencias, descartarCoincidencia, restaurarCoincidencias, obtenerResumenCoincidencias, responderSena } from "../../core/servicios.js";
 import { crearElemento, resolverImagen, tiempoRelativo } from "../../core/utils.js";
 
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 
 const lista = document.getElementById("lista-coincidencias");
 const vacio = document.getElementById("sin-coincidencias");

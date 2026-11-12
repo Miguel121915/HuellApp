@@ -9,7 +9,7 @@ import { obtenerRefugiosConMascotas } from "../../core/servicios.js";
 import { crearElemento, formatearEdad, irA, resolverImagen } from "../../core/utils.js";
 
 const MAX_MASCOTAS = 8;
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 
 if (sesion) {
   montarNavbar({ sesion, activa: "inicio" });

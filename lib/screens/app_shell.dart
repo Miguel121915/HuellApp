@@ -29,11 +29,34 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const Color _turquoise = Color(0xFF75E6DA);
 
-  int _indice = 2; // Empieza en Inicio
+  static const int _refugios = 1;
 
-  void _irA(int indice) {
+  // Con cuenta empieza en Inicio; el visitante sin cuenta solo puede ver Refugios (mascotas en adopción)
+  int _indice = SesionService.instancia.haySesion ? 2 : _refugios;
+
+  /// Lo que se le dice al visitante al tocar cada pestaña que pide cuenta.
+  static const Map<int, String> _accionPorPestana = {
+    0: 'ver el foro de la comunidad',
+    2: 'usar el inicio de HuellApp',
+    3: 'reportar una mascota',
+    4: 'ver tus coincidencias',
+  };
+
+  Future<void> _irA(int indice) async {
+    if (indice != _refugios && !SesionService.instancia.haySesion) {
+      // Pide iniciar sesión o registrarse; si lo hace, entra a la pestaña que quería
+      if (!await requiereSesion(context, _accionPorPestana[indice] ?? 'usar esta sección')) return;
+      if (!mounted) return;
+    }
     setState(() => _indice = indice);
     if (indice == 4) _revisarCoincidencias(marcarVistas: true);
+  }
+
+  /// Si cierra sesión estando en otra pestaña, vuelve a Refugios.
+  void _alCambiarSesion() {
+    if (!SesionService.instancia.haySesion && _indice != _refugios && mounted) {
+      setState(() => _indice = _refugios);
+    }
   }
 
   /* ---------- Aviso de coincidencias nuevas (la IA trabaja en segundo plano) ---------- */
@@ -42,6 +65,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    SesionService.instancia.addListener(_alCambiarSesion);
     _revisarCoincidencias();
     _reloj = Timer.periodic(const Duration(seconds: 30), (_) => _revisarCoincidencias());
   }
@@ -49,6 +73,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void dispose() {
     _reloj?.cancel();
+    SesionService.instancia.removeListener(_alCambiarSesion);
     super.dispose();
   }
 

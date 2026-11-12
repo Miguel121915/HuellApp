@@ -82,3 +82,7 @@
 .aviso-coincidencias__cerrar { border: 0; background: transparent; font-size: 1.4rem; line-height: 1; cursor: pointer; color: #3F5F5B; }
 @keyframes aviso-entra { from { transform: translateY(16px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .aviso-coincidencias { animation: none; } }
+
+/* Secciones con candado del visitante (sin cuenta): al tocarlas se le pide iniciar sesión */
+.nav__enlace--bloqueado { border: 0; background: none; font: inherit; color: inherit; cursor: pointer; opacity: 0.55; }
+.nav__enlace--bloqueado:hover, .nav__enlace--bloqueado:focus-visible { opacity: 0.85; }

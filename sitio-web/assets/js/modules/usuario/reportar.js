@@ -10,7 +10,7 @@ import { crearReporte } from "../../core/servicios.js";
 import { montarMapaPunto } from "../../components/mapa-punto.js";
 import { crearElemento, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta, resolverImagen, tiempoRelativo, validarImagen } from "../../core/utils.js";
 
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 protegerAcciones(sesion, { envios: ["#formulario-reporte"], accion: "reportar una mascota" });
 
 if (sesion) {

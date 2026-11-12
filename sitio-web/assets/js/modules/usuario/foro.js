@@ -38,7 +38,7 @@ const PESTANAS = {
   },
 };
 
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 protegerAcciones(sesion, {
   clics: [".like-huella", "#publicar-foto", 'label[for="publicar-foto"]'],
   envios: ["#formulario-publicar", ".comentarios__form"],

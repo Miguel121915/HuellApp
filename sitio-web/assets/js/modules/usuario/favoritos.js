@@ -11,7 +11,7 @@ import { crearElemento, formatearEdad, mostrarAlerta, ESTATUS_MASCOTA } from "..
 
 const MAX_COMPARAR = 3;
 
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 const lista = document.getElementById("lista-favoritos");
 const vacio = document.getElementById("sin-favoritos");
 const alerta = document.getElementById("alerta");

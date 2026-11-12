@@ -13,7 +13,7 @@ const ESTADOS = {
   respondido: { texto: "Respondido", clase: "aprobado" },
 };
 
-const sesion = requerirRol("usuario", { permitirInvitado: true });
+const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
 const lista = document.getElementById("lista-mensajes");
 const vacio = document.getElementById("sin-mensajes");
 

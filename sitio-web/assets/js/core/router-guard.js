@@ -14,7 +14,8 @@ export const RUTA_INICIO_POR_ROL = Object.freeze({
   usuario: "pages/usuario/inicio.html",
   refugio: "pages/refugio/panel.html",
   admin: "pages/admin/solicitudes.html",
-  invitado: "pages/usuario/inicio.html",
+  // El visitante sin cuenta solo puede ver las mascotas en adopción (refugios y sus mascotas)
+  invitado: "pages/usuario/refugios.html",
 });
 
 /** A dónde mandar a una sesión recién iniciada (o ya existente). */

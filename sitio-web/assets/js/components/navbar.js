@@ -5,6 +5,7 @@
  */
 import { rutaDesdeRaiz, irA } from "../core/utils.js";
 import { cerrarSesion, obtenerSesion } from "../core/auth.js";
+import { pedirCuenta } from "./aviso-cuenta.js";
 import { obtenerResumenCoincidencias } from "../core/servicios.js";
 import { obtenerResumenAdmin } from "../core/servicios-admin.js";
 import { obtenerResumen as obtenerResumenRefugio } from "../core/servicios-refugio.js";
@@ -62,11 +63,12 @@ const MENUS = {
     { id: "refugios", etiqueta: "Refugios", ruta: "pages/admin/refugios.html" },
   ],
 };
-// Visitante sin cuenta: ve las mismas secciones que un usuario; al intentar hacer algo se le pide cuenta
-MENUS.invitado = MENUS.usuario.map(({ insignia, ...item }) => item);
+// Visitante sin cuenta: solo entra a Refugios (mascotas en adopción). Las demás secciones se ven
+// en el menú con candado y, al tocarlas, se le pide iniciar sesión o crear una cuenta.
+MENUS.invitado = MENUS.usuario.map(({ insignia, ...item }) => ({ ...item, bloqueado: item.id !== "refugios" }));
 
 const HUELLA_LOGO = "assets/img/logos/huella.svg";
-const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/inicio.html" };
+const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/refugios.html" };
 
 /**
  * Dibuja el encabezado.
@@ -76,7 +78,11 @@ export async function montarNavbar({ sesion, activa }) {
   const encabezado = document.getElementById("encabezado");
   if (!encabezado) return;
 
-  const enlaces = (MENUS[sesion.rol] || []).map((item) => `
+  const enlaces = (MENUS[sesion.rol] || []).map((item) => item.bloqueado ? `
+    <button type="button" class="nav__enlace nav__enlace--bloqueado" data-bloqueado="${item.etiqueta}" title="Inicia sesión para usar ${item.etiqueta}">
+      ${ICONOS[item.id]}
+      <span>${item.etiqueta} 🔒</span>
+    </button>` : `
     <a class="nav__enlace" href="${rutaDesdeRaiz(item.ruta)}"${item.id === activa ? ' aria-current="page"' : ""}>
       ${ICONOS[item.id]}
       <span>${item.etiqueta}</span>
@@ -102,6 +108,11 @@ export async function montarNavbar({ sesion, activa }) {
   encabezado.querySelector("#boton-salir").addEventListener("click", () => {
     cerrarSesion();
     irA("pages/login.html");
+  });
+  // Secciones con candado del visitante: se le invita a iniciar sesión o registrarse
+  encabezado.querySelector(".nav").addEventListener("click", (e) => {
+    const bloqueado = e.target.closest("[data-bloqueado]");
+    if (bloqueado) pedirCuenta(`usar «${bloqueado.dataset.bloqueado}»`);
   });
   encabezado.querySelector("#boton-seguridad")?.addEventListener("click", async () => {
     const { abrirSeguridad } = await import("./seguridad-cuenta.js"); // se carga solo cuando se usa
