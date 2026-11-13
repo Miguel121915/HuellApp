@@ -312,6 +312,80 @@ function cmdModeracionRevisar(array $args): void
 }
 
 /**
+ * Evaluacion de la IA con datos etiquetados (evaluacion/*.json). Trabaja sobre el esquema de PRUEBAS
+ * (DB_TEST_USER), lo reinicia y lo siembra con los datos demo: es repetible y no toca la base del equipo.
+ * Usa la clave real de Gemini (gasta cuota: ~55 consultas). Guarda evaluacion/resultados/ultima.json.
+ *   php artisan ia:evaluar [moderacion|kiro|coincidencias|fotos]   (sin nada: todas)
+ */
+function cmdIaEvaluar(array $args): void
+{
+    $usuarioPrueba = Config::obtener('DB_TEST_USER');
+    if ($usuarioPrueba === '' || strcasecmp($usuarioPrueba, Config::obtener('DB_USER')) === 0) {
+        salir('La evaluacion usa el esquema de pruebas: configura DB_TEST_USER y DB_TEST_PASS en el .env (ver README).');
+    }
+    putenv("DB_USER=$usuarioPrueba");
+    putenv('DB_PASS=' . Config::obtener('DB_TEST_PASS'));
+    Base::reiniciarConexion();
+    $que = $args[0] ?? 'todo';
+    if (!in_array($que, ['todo', 'moderacion', 'kiro', 'coincidencias', 'fotos'], true)) {
+        salir('Uso:  php artisan ia:evaluar [moderacion|kiro|coincidencias|fotos]');
+    }
+    echo "Preparando el esquema de pruebas ($usuarioPrueba) con los datos demo...\n";
+    conBase(static function (): void {
+        Migraciones::reiniciar();
+        Semilla::sembrar();
+    });
+    $progreso = static function (string $texto): void { fwrite(STDOUT, "\r  $texto   "); };
+    $resultado = ['fecha' => gmdate('c'), 'gemini' => \HuellApp\Gemini::disponible(),
+        'modelo' => Config::obtener('GEMINI_MODEL') ?: 'gemini-3.5-flash (por defecto)'];
+    conBase(static function () use ($que, $progreso, &$resultado): void {
+        if (in_array($que, ['todo', 'coincidencias'], true)) {
+            $resultado['coincidenciasTexto'] = \HuellApp\Evaluacion::coincidenciasTexto();
+            echo "  coincidencias por texto: listo\n";
+        }
+        if (in_array($que, ['todo', 'moderacion'], true)) {
+            $resultado['moderacion'] = \HuellApp\Evaluacion::moderacion($progreso);
+            echo "\n";
+        }
+        if (in_array($que, ['todo', 'kiro'], true)) {
+            $resultado['kiro'] = \HuellApp\Evaluacion::kiro($progreso);
+            echo "\n";
+        }
+        if (in_array($que, ['todo', 'fotos'], true)) {
+            $fotos = \HuellApp\Evaluacion::coincidenciasFotos($progreso);
+            if ($fotos === null) {
+                echo "  Fotos: faltan fotos en evaluacion/fotos/ (minimo 2 mascotas con 2 fotos cada una; ver evaluacion/fotos/LEEME.md)\n";
+            } else {
+                $resultado['coincidenciasFotos'] = $fotos;
+                echo "\n";
+            }
+        }
+    });
+    $dir = __DIR__ . '/evaluacion/resultados';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0775, true);
+    }
+    // Al evaluar solo una parte, se conservan los resultados anteriores de las demás
+    if ($que !== 'todo' && is_file("$dir/ultima.json")) {
+        $anterior = json_decode((string) file_get_contents("$dir/ultima.json"), true) ?: [];
+        $resultado = array_merge($anterior, $resultado);
+    }
+    file_put_contents("$dir/ultima.json", json_encode($resultado, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $pct = static fn (float $x): string => number_format($x * 100, 1) . '%';
+    if (isset($resultado['moderacion'])) {
+        $m = $resultado['moderacion'];
+        foreach (['palabras' => 'Solo palabras', 'ia' => 'Solo IA', 'ambos' => 'Palabras + IA'] as $k => $nombre) {
+            printf("  Moderacion - %-14s exactitud %s  precision %s  recall %s  F1 %s\n", $nombre, $pct($m[$k]['exactitud']), $pct($m[$k]['precision']), $pct($m[$k]['recall']), $pct($m[$k]['f1']));
+        }
+    }
+    if (isset($resultado['kiro'])) {
+        $k = $resultado['kiro'];
+        printf("  KIRO - casos que cumplen todo: %d/%d · verificaciones: %d/%d · mediana %d ms\n", $k['casosCumplidos'], $k['casos'], $k['verificacionesCumplidas'], $k['verificaciones'], $k['tiemposMs']['mediana']);
+    }
+    echo "[OK] Resultados en evaluacion/resultados/ultima.json\n";
+}
+
+/**
  * Pruebas automaticas: usan un esquema de Oracle APARTE (DB_TEST_USER / DB_TEST_PASS en el .env),
  * que se BORRA en cada corrida; levanta un servidor temporal y ejecuta pruebas/api.test.js (Node.js).
  */
@@ -424,6 +498,7 @@ match ($comando) {
     'publicaciones:republicar' => cmdRepublicar(),
     'ia:procesar' => cmdIaProcesar($args),
     'moderacion:revisar' => cmdModeracionRevisar($args),
+    'ia:evaluar' => cmdIaEvaluar($args),
     'test' => cmdTest(),
     'help', 'list', '--help', '-h' => cmdAyuda(),
     default => salir("Comando desconocido: $comando\n       Escribe  php artisan help  para ver los comandos."),

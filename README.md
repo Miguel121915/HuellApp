@@ -26,6 +26,7 @@ Sitio web (HTML/JS) ──┘                          └──► Google Gemin
 | [docs/api.md](docs/api.md) | Referencia de la API: las 94 rutas, quién puede usarlas, errores y sesión |
 | [docs/base-de-datos.md](docs/base-de-datos.md) | Diagrama y tablas de Oracle |
 | [docs/ia.md](docs/ia.md) | Qué hace la IA, qué datos recibe y qué pasa sin cuota |
+| [docs/resultados-ia.md](docs/resultados-ia.md) | Métricas de la IA contra el método sin IA (moderación, KIRO, coincidencias); se repite con `php artisan ia:evaluar` |
 | [docs/pruebas-manuales.md](docs/pruebas-manuales.md) | Lista de pruebas por rol para antes de la entrega |
 | [api/README.md](api/README.md) | Instalar y correr la API, comandos de `php artisan` y pruebas automáticas |
 | [despliegue/README.md](despliegue/README.md) | Publicar en una máquina virtual de OCI |

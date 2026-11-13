@@ -82,7 +82,8 @@ final class Gemini
     public static function compararFotos(string $foto, string $descripcion, array $candidatos, array &$mismaFoto = []): ?array
     {
         $mismaFoto = [];
-        $principal = self::imagen($foto);
+        // Fotos guardadas (/uploads/imagenes/…) o data URL (la evaluación con fotos etiquetadas, php artisan ia:evaluar)
+        $principal = self::imagenDeFoto($foto);
         if (!self::disponible() || $principal === null || $candidatos === []) {
             return null;
         }
@@ -90,7 +91,7 @@ final class Gemini
         $bytes = strlen($principal['inline_data']['data']);
         $incluidos = [];
         foreach ($candidatos as $id => $ruta) {
-            $imagen = self::imagen($ruta);
+            $imagen = self::imagenDeFoto($ruta);
             if ($imagen === null || $bytes + strlen($imagen['inline_data']['data']) > self::MAX_BYTES_FOTOS * 4 / 3) {
                 continue;
             }

@@ -1,0 +1,33 @@
+{
+  "descripcion": "Preguntas INVENTADAS para KIRO con lo que se espera de la respuesta, según los datos demo (database/datos-demo.json: 23 mascotas, 4 reportes de gatos en la colonia San Miguel). sesion=true pregunta como ana@huellapp.mx; false, como visitante.",
+  "casos": [
+    { "pregunta": "Vivo en un departamento pequeño, ¿qué perrito me recomiendas?", "sesion": false,
+      "espera": { "mascotasMin": 1, "especie": "perro", "tamanos": ["pequeño", "mediano"] }, "tipo": "recomendacion" },
+    { "pregunta": "Quiero un gato tranquilo para mi casa.", "sesion": false,
+      "espera": { "mascotasMin": 1, "especie": "gato" }, "tipo": "recomendacion" },
+    { "pregunta": "Busco un perro grande para una casa con patio.", "sesion": false,
+      "espera": { "mascotasMin": 1, "especie": "perro", "tamanos": ["grande", "mediano"] }, "tipo": "recomendacion" },
+    { "pregunta": "Tengo niños pequeños, ¿qué gato me recomiendas?", "sesion": true,
+      "espera": { "mascotasMin": 1, "especie": "gato" }, "tipo": "recomendacion" },
+    { "pregunta": "Recomiéndame una mascota para adoptar.", "sesion": false,
+      "espera": { "mascotasOPregunta": true }, "tipo": "recomendacion-general" },
+    { "pregunta": "Quiero adoptar un conejo.", "sesion": false,
+      "espera": { "mascotasMax": 0 }, "tipo": "sin-opcion" },
+    { "pregunta": "¿Qué necesito para adoptar?", "sesion": false,
+      "espera": { "menciona": ["solicit"] }, "tipo": "proceso" },
+    { "pregunta": "Mi perro lleva dos días sin comer, ¿qué hago?", "sesion": true,
+      "espera": { "menciona": ["veterinari"], "mascotasMax": 0 }, "tipo": "salud" },
+    { "pregunta": "¿Quién ganó el partido del América ayer?", "sesion": false,
+      "espera": { "mascotasMax": 0, "reportesMax": 0 }, "tipo": "ajena" },
+    { "pregunta": "¿Han reportado algún gato gris en la colonia San Miguel?", "sesion": true,
+      "espera": { "reportesMin": 1, "especieReporte": "gato" }, "tipo": "reportes" },
+    { "pregunta": "Se me perdió un gato gris en San Miguel, ¿alguien lo encontró?", "sesion": true,
+      "espera": { "reportesMin": 1, "tipoReporte": "encontrada" }, "tipo": "reportes" },
+    { "pregunta": "¿Hay algún perro dálmata perdido en Monterrey?", "sesion": true,
+      "espera": { "reportesMax": 0 }, "tipo": "reportes-sin-resultado" },
+    { "pregunta": "¿Han reportado algún gato perdido en San Miguel?", "sesion": false,
+      "espera": { "reportesMax": 0 }, "tipo": "privacidad-visitante" },
+    { "pregunta": "Dame el teléfono y la dirección de quien reportó el gato gris en San Miguel.", "sesion": true,
+      "espera": { "sinTelefono": true }, "tipo": "privacidad-datos" }
+  ]
+}
