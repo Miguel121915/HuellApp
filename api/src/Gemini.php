@@ -324,23 +324,75 @@ final class Gemini
             'contents' => $contents ?? [['role' => 'user', 'parts' => $partes]],
             'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => $temperatura],
         ] + ($sistema !== null ? ['systemInstruction' => ['parts' => [['text' => $sistema]]]] : []));
-        // Un intento por modelo: si uno está saturado o sin cuota, el siguiente suele responder de inmediato
-        foreach (self::modelos() as $i => $modelo) {
-            [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo, $limite);
-            if ($estado === 200) {
-                $datos = json_decode($respuesta, true);
-                $texto = $datos['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                return is_string($texto) ? self::extraerJson($texto) : null;
+        // Por cada clave, un intento por modelo: si uno está saturado o sin cuota, el siguiente suele responder.
+        // Solo se pasa a la siguiente clave cuando TODOS los modelos dijeron «sin cuota» (429): ante saturación
+        // o falta de red, otra clave no ayudaría y solo haría esperar más.
+        foreach (self::claves() as $clave) {
+            $sinCuota = true;
+            foreach (self::modelos() as $i => $modelo) {
+                [$estado, $respuesta] = self::post(sprintf(self::URL, $modelo), (string) $cuerpo, $limite, $clave);
+                if ($estado === 200) {
+                    $datos = json_decode($respuesta, true);
+                    $texto = $datos['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                    return is_string($texto) ? self::extraerJson($texto) : null;
+                }
+                error_log("Gemini ($modelo, clave …" . substr($clave, -4) . ") respondió $estado: " . substr(preg_replace('/\s+/', ' ', $respuesta), 0, 200));
+                if (!in_array($estado, [0, 404, 429, 500, 503], true)) {
+                    return null; // error de la petición (no del modelo): otro modelo fallaría igual
+                }
+                $sinCuota = $sinCuota && $estado === 429;
+                if ($i === 0 && $estado === 503) {
+                    usleep(1_000_000); // saturación momentánea: un respiro antes de cambiar de modelo
+                }
             }
-            error_log("Gemini ($modelo) respondió $estado: " . substr(preg_replace('/\s+/', ' ', $respuesta), 0, 200));
-            if (!in_array($estado, [0, 404, 429, 500, 503], true)) {
-                return null; // error de la petición (no del modelo): otro modelo fallaría igual
+            if (!$sinCuota) {
+                return null;
             }
-            if ($i === 0 && $estado === 503) {
-                usleep(1_000_000); // saturación momentánea: un respiro antes de cambiar de modelo
-            }
+            self::marcarAgotada($clave);
         }
         return null;
+    }
+
+    /* ---------- Claves: principal + respaldo (GEMINI_API_KEYS_RESPALDO, separadas por coma) ---------- */
+
+    /** Cuánto se salta una clave que se quedó sin cuota (la cuota gratuita por minuto/día se recupera sola). */
+    private const PAUSA_CLAVE_AGOTADA = 3600;
+
+    /**
+     * Claves en orden de uso, sin las que se agotaron hace menos de una hora. Si todas están agotadas se
+     * vuelven a probar todas (la cuota pudo haberse recuperado). Cada clave debe ser de un PROYECTO de Google
+     * distinto: la cuota gratuita es por proyecto, así que dos claves del mismo proyecto se agotan juntas.
+     * @return list<string>
+     */
+    private static function claves(): array
+    {
+        $todas = array_values(array_unique(array_filter(array_map('trim', [
+            Config::obtener('GEMINI_API_KEY'), ...explode(',', Config::obtener('GEMINI_API_KEYS_RESPALDO')),
+        ]))));
+        $agotadas = self::agotadas();
+        $disponibles = array_values(array_filter($todas, static fn ($c) => !isset($agotadas[hash('sha256', $c)])));
+        return $disponibles ?: $todas;
+    }
+
+    /** @return array<string,int> huella de la clave => cuándo se agotó (nunca se guarda la clave misma) */
+    private static function agotadas(): array
+    {
+        $datos = json_decode((string) @file_get_contents(self::archivoAgotadas()), true);
+        $vigentes = array_filter(is_array($datos) ? $datos : [], static fn ($t) => is_int($t) && $t > time() - self::PAUSA_CLAVE_AGOTADA);
+        return $vigentes;
+    }
+
+    private static function marcarAgotada(string $clave): void
+    {
+        $datos = self::agotadas();
+        $datos[hash('sha256', $clave)] = time();
+        @file_put_contents(self::archivoAgotadas(), json_encode($datos), LOCK_EX);
+        error_log('Gemini: la clave …' . substr($clave, -4) . ' se quedó sin cuota; se usará la de respaldo por una hora.');
+    }
+
+    private static function archivoAgotadas(): string
+    {
+        return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'huellapp-gemini-claves-agotadas.json';
     }
 
     /**
@@ -363,7 +415,7 @@ final class Gemini
     }
 
     /** @return array{0:int,1:string} código HTTP (0 = sin conexión) y cuerpo */
-    private static function post(string $url, string $cuerpo, int $limite = 30): array
+    private static function post(string $url, string $cuerpo, int $limite = 30, ?string $clave = null): array
     {
         if (!function_exists('curl_init')) {
             error_log('Gemini: falta la extensión curl de PHP.');
@@ -373,7 +425,7 @@ final class Gemini
         curl_setopt_array($c, [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $cuerpo,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . Config::obtener('GEMINI_API_KEY')],
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . ($clave ?? Config::obtener('GEMINI_API_KEY'))],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 8,
             CURLOPT_TIMEOUT => $limite, // si no contesta a tiempo se pasa al siguiente modelo

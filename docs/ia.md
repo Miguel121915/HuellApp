@@ -20,8 +20,12 @@ HuellApp usa **Google Gemini** (capa gratuita, sin facturación) desde la API PH
   `GEMINI_MODEL` y `GEMINI_MODELOS_RESPALDO`.
 - `gemini-3.8-flash` y `gemini-flash-latest` **no** contestan en la capa gratuita (se quedan colgados): no usarlos.
 - Tiempo máximo por modelo: 15 s en el chat de KIRO y 20–30 s en lo demás.
-- La cuota gratuita es por minuto **y** por día. El día de la demo conviene una clave aparte que no se haya usado
-  para pruebas.
+- La cuota gratuita es por minuto **y** por día, y **por proyecto de Google** (no por clave): dos claves del mismo
+  proyecto se agotan juntas. El día de la demo conviene una clave de otro proyecto que no se haya usado para pruebas.
+- **Claves de respaldo:** `GEMINI_API_KEYS_RESPALDO` (separadas por coma, de otros proyectos). Si la principal
+  responde «sin cuota» (429) en todos los modelos, la API pasa sola a la siguiente y salta la agotada durante una
+  hora (guarda solo una huella de la clave en un archivo temporal, nunca la clave). Ante saturación (503) o falta de
+  red no cambia de clave, porque no ayudaría.
 
 ## Funciones
 

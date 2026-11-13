@@ -30,6 +30,7 @@ final class Config
         'GOOGLE_CLIENT_ID' => '',
         // IA de Google (análisis y comparación de fotos de reportes). Vacío = sin IA (compara texto).
         'GEMINI_API_KEY' => '',
+        'GEMINI_API_KEYS_RESPALDO' => '', // claves de OTROS proyectos de Google, separadas por coma
         'GEMINI_MODEL' => '',
         // Modelos de respaldo (separados por coma) si el principal está saturado o sin cuota gratuita.
         'GEMINI_MODELOS_RESPALDO' => '',
