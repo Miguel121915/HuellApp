@@ -99,7 +99,7 @@ test("foro: listar, publicar con foto, comentar y dar 'me gusta'", async () => {
 
   const comentario = await api("POST", `/api/foro/${pub.id}/comentarios`, { token, cuerpo: { texto: "¡Hola!" } });
   assert.equal(comentario.estado, 201);
-  assert.deepEqual(comentario.datos.comentarios.at(-1), { autor: "Ana López", texto: "¡Hola!" });
+  assert.deepEqual(comentario.datos.comentarios.at(-1), { autor: "Ana López", texto: "¡Hola!", enRevision: false });
 });
 
 test("foro: rechaza datos inválidos, archivos falsos y roles sin permiso", async () => {
@@ -215,11 +215,11 @@ test("coincidencias: listar, declinar, restaurar y proteger las ajenas", async (
   assert.equal(lista[0].lado, "perdida", "Ana perdió a su mascota");
   assert.deepEqual(lista[0].otroReporte, lista[0].hallazgo, "para quien perdió, otroReporte es el hallazgo");
   assert.ok(lista.every((c) => typeof c.otroReporte.contacto.telefono === "string"), "el teléfono siempre es texto ('' si no lo dio)");
-  assert.deepEqual((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos, { pendientes: 3, descartadas: 0 });
+  assert.deepEqual((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos, { pendientes: 3, descartadas: 0, analizando: 0, duplicados: [] });
 
   assert.equal((await api("POST", `/api/coincidencias/${lista[0].id}/descartar`, { token: otro.token })).estado, 404, "no puede declinar la de otra persona");
   await api("POST", `/api/coincidencias/${lista[0].id}/descartar`, { token: ana.token });
-  assert.deepEqual((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos, { pendientes: 2, descartadas: 1 });
+  assert.deepEqual((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos, { pendientes: 2, descartadas: 1, analizando: 0, duplicados: [] });
   await api("POST", "/api/coincidencias/restaurar", { token: ana.token });
   assert.equal((await api("GET", "/api/coincidencias", { token: ana.token })).datos.coincidencias.length, 3);
   assert.equal((await api("GET", "/api/coincidencias", { token: otro.token })).datos.coincidencias.length, 0, "cada quien ve solo las suyas");
@@ -252,7 +252,13 @@ test("reportes: un hallazgo parecido genera una coincidencia nueva para el dueñ
   assert.equal((await api("GET", "/api/coincidencias/resumen", { token: ana.token })).datos.pendientes, 4);
   await api("POST", "/api/coincidencias/restaurar", { token: otro.token });
 
-  const irrelevante = await api("POST", "/api/reportes", { token: otro.token, cuerpo: { tipo: "encontrada", zona: "Monterrey Nuevo León", foto: PNG, descripcion: "Perro labrador negro con collar morado muy grande" } });
+  // La MISMA foto en otro hallazgo se detecta como posible duplicado; quien reporta puede confirmar que es otra
+  const IRRELEVANTE = { tipo: "encontrada", zona: "Monterrey Nuevo León", foto: PNG, descripcion: "Perro labrador negro con collar morado muy grande" };
+  const repetida = await api("POST", "/api/reportes", { token: otro.token, cuerpo: IRRELEVANTE });
+  assert.equal(repetida.estado, 409, "la misma foto ya estaba en otro reporte");
+  assert.equal(repetida.datos.codigo, "posible-duplicado");
+  const irrelevante = await api("POST", "/api/reportes", { token: otro.token, cuerpo: { ...IRRELEVANTE, confirmarDuplicado: true } });
+  assert.equal(irrelevante.estado, 201, irrelevante.datos?.error);
   assert.equal(irrelevante.datos.coincidenciasNuevas, 0, "un reporte sin parecido no genera coincidencias");
 });
 
@@ -278,7 +284,7 @@ test("administrador: solo él revisa; aprobar, rechazar con motivo, suspender y 
   assert.equal((await api("GET", "/api/admin/resumen", { token: refugio.token })).estado, 403);
 
   const resumen = (await api("GET", "/api/admin/resumen", { token: admin.token })).datos;
-  assert.deepEqual(resumen, { pendientes: 2, aprobados: 4, rechazados: 1, suspendidos: 0 });
+  assert.deepEqual(resumen, { pendientes: 2, aprobados: 4, rechazados: 1, suspendidos: 0, moderacion: 0 });
 
   const pendientes = (await api("GET", "/api/admin/refugios?estado=pendiente", { token: admin.token })).datos.refugios;
   const nuevo = pendientes.find((r) => r.correo === "elena@huellasdelsur.mx");
