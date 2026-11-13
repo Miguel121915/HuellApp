@@ -174,3 +174,23 @@
 .verificacion-sena { margin: var(--e2) 0; padding: var(--e2) var(--e3); background: #F1F6FF; border: 2px dashed #6B8DD6; border-radius: var(--radio-s); font-size: 0.92rem; }
 .verificacion-sena p { margin: var(--e1) 0; }
 .modal textarea.campo__control { width: 100%; margin-top: var(--e2); }
+
+/* ---------- Mis solicitudes (HU-14) y guía de cuidado (HU-23) ---------- */
+.mis-solicitudes { display: grid; gap: var(--e3); max-width: 820px; margin: 0 auto; padding: 0; list-style: none; }
+.mi-solicitud { display: flex; align-items: center; gap: var(--e4); }
+.mi-solicitud__foto { width: 72px; height: 72px; flex-shrink: 0; border-radius: var(--radio-m); object-fit: cover; background: var(--aqua-suave); }
+.mi-solicitud__info { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.mi-solicitud__nota { margin: var(--e2) 0 0; padding: var(--e2) var(--e3); background: var(--aqua-suave); border-radius: var(--radio-s); font-size: 0.875rem; }
+.mi-solicitud__lado { display: grid; justify-items: end; gap: var(--e2); }
+@media (max-width: 600px) {
+  .mi-solicitud { flex-wrap: wrap; }
+  .mi-solicitud__lado { width: 100%; justify-items: start; }
+}
+.guia-consejos { margin-block: var(--e3); padding: var(--e3) var(--e4); background: var(--lila-tenue); border: 2px solid var(--lila); border-radius: var(--radio-m); }
+.guia-consejos h3 { margin: 0 0 var(--e2); font-size: 1rem; }
+.guia-consejos ul, .guia-seccion ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; list-style: disc; }
+.guia-secciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e3); }
+.guia-seccion { padding: var(--e3); background: var(--aqua-suave); border-radius: var(--radio-m); }
+.guia-seccion h3 { margin: 0 0 var(--e2); font-size: 1rem; }
+.guia-seccion li { font-size: 0.9rem; }
+.guia-aviso { margin-top: var(--e3); font-style: italic; }

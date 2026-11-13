@@ -35,8 +35,10 @@ const MASCOTA = { nombre: "Rayo", especie: "perro", raza: "Beagle", edadMeses: 2
 /* ---------- Autenticación ---------- */
 test("salud y rutas protegidas", async () => {
   assert.equal((await api("GET", "/api/salud")).estado, 200);
-  assert.equal((await api("GET", "/api/foro")).estado, 401);
-  assert.equal((await api("GET", "/api/foro", { token: "falso" })).estado, 401);
+  // Leer el foro es público (el visitante también lo ve); las coincidencias sí piden cuenta
+  assert.equal((await api("GET", "/api/foro")).estado, 200);
+  assert.equal((await api("GET", "/api/coincidencias")).estado, 401);
+  assert.equal((await api("GET", "/api/coincidencias", { token: "falso" })).estado, 401);
   assert.equal((await api("GET", "/api/ruta-que-no-existe")).estado, 404);
 });
 
@@ -574,4 +576,134 @@ test("adopción: el usuario envía datos y documentos; solo el refugio que la re
   // Una mascota que no está disponible no recibe solicitudes
   const enProceso = (await api("GET", "/api/refugio/mascotas", { token: r.token })).datos.mascotas.find((m) => m.estatus === "en proceso");
   assert.equal((await enviar({ ...DATOS, mascotaId: enProceso.id, documentos: DOCS })).estado, 409);
+});
+
+/* ==========================================================================
+ * Sprint 3 y 4 — funciones con IA. Usan la API real de Gemini si hay clave
+ * (GEMINI_API_KEY): por eso solo se revisa la FORMA de la respuesta, nunca el
+ * texto exacto. Sin clave o sin cuota responden con reglas y también pasan.
+ * ========================================================================== */
+
+test("KIRO (HU-7): el visitante no recibe reportes; con sesión sí, sin datos privados", async () => {
+  const invitado = await api("POST", "/api/kiro", { cuerpo: { mensaje: "¿Han reportado algún perro perdido?" } });
+  assert.equal(invitado.estado, 200, invitado.datos?.error);
+  assert.equal(typeof invitado.datos.respuesta, "string");
+  assert.deepEqual(invitado.datos.reportes, [], "sin sesión no se comparten reportes");
+  assert.equal(/\(id\s*=\s*\d+\)/i.test(invitado.datos.respuesta), false, "no se ven ids internos");
+
+  const { token } = await entrar("ana@huellapp.mx", "usuario");
+  const conSesion = await api("POST", "/api/kiro", { token, cuerpo: { mensaje: "¿Han reportado algún perro perdido o encontrado?" } });
+  assert.equal(conSesion.estado, 200, conSesion.datos?.error);
+  assert.ok(Array.isArray(conSesion.datos.reportes));
+  for (const r of conSesion.datos.reportes) {
+    assert.ok(["perdida", "encontrada"].includes(r.tipo));
+    for (const privado of ["senaSecreta", "sena_secreta", "latitud", "longitud", "usuarioId", "correo", "telefono"]) {
+      assert.equal(privado in r, false, `la tarjeta del reporte no trae ${privado}`);
+    }
+  }
+  assert.equal((await api("POST", "/api/kiro", { cuerpo: { mensaje: "" } })).estado, 400);
+});
+
+test("resumen con IA de una solicitud (HU-22): solo su refugio; se guarda y se reutiliza", async () => {
+  const r = await entrar("refugio@huellapp.mx", "refugio");
+  const otro = await entrar("petcare@huellapp.mx", "refugio");
+  const ana = await entrar("ana@huellapp.mx", "usuario");
+  const sol = (await api("GET", "/api/refugio/adopciones", { token: r.token })).datos.solicitudes[0];
+  assert.ok(sol, "la prueba de adopción dejó una solicitud");
+  const ruta = `/api/refugio/adopciones/${sol.id}/resumen`;
+
+  const primero = await api("POST", ruta, { token: r.token, cuerpo: {} });
+  assert.equal(primero.estado, 200, primero.datos?.error);
+  const resumen = primero.datos.resumen;
+  assert.equal(typeof resumen.sintesis, "string");
+  for (const lista of ["aFavor", "atencion", "preguntas"]) assert.ok(Array.isArray(resumen[lista]) && resumen[lista].length <= 4);
+  assert.equal(JSON.stringify(resumen).includes("ana@huellapp.mx"), false, "el resumen no repite el correo");
+  if (resumen.iaUsada) {
+    // El de IA se guarda: la segunda vez llega el mismo (misma fecha) y aparece en la lista
+    const segundo = await api("POST", ruta, { token: r.token, cuerpo: {} });
+    assert.equal(segundo.datos.resumen.fecha, resumen.fecha);
+    const enLista = (await api("GET", "/api/refugio/adopciones", { token: r.token })).datos.solicitudes.find((s) => s.id === sol.id);
+    assert.equal(enLista.resumenIa.sintesis, resumen.sintesis);
+  }
+  assert.equal((await api("POST", ruta, { token: otro.token, cuerpo: {} })).estado, 404, "otro refugio no la ve");
+  assert.equal((await api("POST", ruta, { token: ana.token, cuerpo: {} })).estado, 403, "un usuario no pide resúmenes");
+});
+
+test("guía de cuidado (HU-23): solo con la adopción aprobada y solo para quien adoptó", async () => {
+  const ana = await entrar("ana@huellapp.mx", "usuario");
+  const laura = await entrar("laura.mendez@ejemplo.mx", "usuario");
+  const mias = (await api("GET", "/api/adopciones", { token: ana.token })).datos.solicitudes;
+  const aprobada = mias.find((s) => s.estado === "aprobada");
+  assert.ok(aprobada, "la prueba de adopción dejó una aprobada");
+
+  const guia = await api("GET", `/api/adopciones/${aprobada.id}/cuidados`, { token: ana.token });
+  assert.equal(guia.estado, 200, guia.datos?.error);
+  assert.ok(["cachorro", "adulto", "senior"].includes(guia.datos.guia.etapa));
+  assert.equal(guia.datos.guia.secciones.length, 5);
+  for (const s of guia.datos.guia.secciones) assert.ok(s.titulo && s.puntos.length > 0);
+
+  const consejos = await api("POST", `/api/adopciones/${aprobada.id}/cuidados`, { token: ana.token, cuerpo: {} });
+  assert.equal(consejos.estado, 200);
+  assert.ok(consejos.datos.consejos === null || (Array.isArray(consejos.datos.consejos) && consejos.datos.consejos.length <= 5));
+
+  assert.equal((await api("GET", `/api/adopciones/${aprobada.id}/cuidados`, { token: laura.token })).estado, 404, "no es suya");
+  const abierta = mias.find((s) => s.estado !== "aprobada");
+  if (abierta) assert.equal((await api("GET", `/api/adopciones/${abierta.id}/cuidados`, { token: ana.token })).estado, 409);
+});
+
+test("borrador de descripción con IA (HU-17): para refugios, sin guardar nada", async () => {
+  const r = await entrar("refugio@huellapp.mx", "refugio");
+  const ana = await entrar("ana@huellapp.mx", "usuario");
+  const antes = (await api("GET", "/api/refugio/mascotas", { token: r.token })).datos.mascotas.length;
+
+  const ok = await api("POST", "/api/refugio/mascotas/borrador", {
+    token: r.token,
+    cuerpo: { nombre: "Chispa", especie: "perro", tamano: "mediano", notas: "muy juguetona, se lleva bien con niños", foto: PNG },
+  });
+  assert.equal(ok.estado, 200, ok.datos?.error);
+  assert.ok(ok.datos.descripcion.length >= 10 && ok.datos.descripcion.length <= 400);
+  assert.equal(typeof ok.datos.iaUsada, "boolean");
+  assert.equal((await api("GET", "/api/refugio/mascotas", { token: r.token })).datos.mascotas.length, antes, "no se creó ninguna mascota");
+
+  assert.equal((await api("POST", "/api/refugio/mascotas/borrador", { token: r.token, cuerpo: { nombre: "X" } })).estado, 400);
+  assert.equal((await api("POST", "/api/refugio/mascotas/borrador", { token: ana.token, cuerpo: { especie: "perro" } })).estado, 403);
+});
+
+test("moderación (HU-18): lo marcado se oculta a los demás; el admin aprueba o quita", async () => {
+  const ana = await entrar("ana@huellapp.mx", "usuario");
+  const laura = await entrar("laura.mendez@ejemplo.mx", "usuario");
+  const admin = await entrar("admin@huellapp.mx", "admin");
+
+  // La lista de palabras marca al instante (sin esperar a la IA)
+  const venta = await api("POST", "/api/foro", { token: ana.token, cuerpo: { texto: "Vendo cachorros husky $2500, informes por inbox" } });
+  assert.equal(venta.estado, 201, venta.datos?.error);
+  const id = venta.datos.publicacion.id;
+  assert.equal(venta.datos.publicacion.enRevision, true);
+  const ve = async (token) => (await api("GET", "/api/foro?categoria=comunidad", { token })).datos.publicaciones.some((p) => p.id === id);
+  assert.equal(await ve(ana.token), true, "su autora la ve");
+  assert.equal(await ve(laura.token), false, "los demás no");
+  assert.equal(await ve(undefined), false, "el visitante tampoco");
+
+  // Un comentario ofensivo también queda en revisión
+  const publica = (await api("GET", "/api/foro?categoria=comunidad", { token: laura.token })).datos.publicaciones[0];
+  const comentario = await api("POST", `/api/foro/${publica.id}/comentarios`, { token: laura.token, cuerpo: { texto: "qué estúpida idea" } });
+  assert.equal(comentario.estado, 201);
+  assert.equal(comentario.datos.comentarios.at(-1).enRevision, true);
+
+  // Bandeja del administrador
+  assert.equal((await api("GET", "/api/admin/moderacion", { token: ana.token })).estado, 403);
+  const bandeja = (await api("GET", "/api/admin/moderacion", { token: admin.token })).datos.elementos;
+  assert.ok(bandeja.some((e) => e.tipo === "publicacion" && e.id === id && e.fuente === "palabras"));
+  assert.ok(bandeja.some((e) => e.tipo === "comentario"));
+  assert.ok((await api("GET", "/api/admin/resumen", { token: admin.token })).datos.moderacion >= 2);
+
+  assert.equal((await api("POST", `/api/admin/moderacion/publicacion/${id}`, { token: admin.token, cuerpo: { accion: "aprobar" } })).estado, 200);
+  assert.equal(await ve(laura.token), true, "aprobada: ya la ven todos");
+  assert.equal((await api("POST", `/api/admin/moderacion/publicacion/${id}`, { token: admin.token, cuerpo: { accion: "quitar" } })).estado, 200);
+  assert.equal(await ve(ana.token), false, "quitada: ni su autora la ve");
+  assert.equal((await api("POST", `/api/admin/moderacion/publicacion/${id}`, { token: admin.token, cuerpo: { accion: "borrar" } })).estado, 400);
+
+  // Un texto normal no se marca
+  const normal = await api("POST", "/api/foro", { token: ana.token, cuerpo: { texto: "¿A qué edad conviene esterilizar a una perrita?" } });
+  assert.equal(normal.datos.publicacion.enRevision, false);
 });

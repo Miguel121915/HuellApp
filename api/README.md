@@ -185,7 +185,27 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 
 - **Velocidad con Oracle en la nube:** la API reutiliza la conexión entre peticiones (`DB_PERSISTENTE=1`, el valor por defecto) y manda los ajustes de sesión en un solo viaje. Cada respuesta trae la cabecera `Server-Timing: api;dur=…` con los milisegundos que tardó la API (en el navegador: herramientas → Red → Tiempos; o `curl -i`). Si alguna vez la conexión persistente diera problemas, pon `DB_PERSISTENTE=0` en el `.env`.
 
-- **Coincidencias:** la similitud se calcula comparando las palabras de las descripciones y la zona (`src/Similitud.php`). **No reconoce imágenes**; es una simulación para que la pantalla funcione.
+- **Coincidencias:** con `GEMINI_API_KEY`, la IA compara las fotos en segundo plano (`php artisan ia:procesar`). Sin clave o sin cuota, la similitud se calcula comparando las palabras de las descripciones y la zona (`src/Similitud.php`). Detalle de todas las funciones con IA en [`../docs/ia.md`](../docs/ia.md).
 - `php artisan serve` usa el servidor integrado de PHP: está pensado para **desarrollo local** y atiende una petición a la vez (suficiente para probar, no para publicar).
 - Al borrar una mascota o publicación, su archivo de foto queda en `storage/uploads/imagenes`; `migrate:fresh` limpia todo.
 - Antes de publicar en internet: define `JWT_SECRET` en `.env`, usa HTTPS y un servidor web de verdad (Apache o Nginx; `public/.htaccess` ya está preparado), y usa el esquema `HUELLAPP_DEMO` (o uno de producción), nunca `ADMIN`.
+
+## Pruebas automáticas (`php artisan test`)
+
+Las pruebas **borran y vuelven a crear** su propio esquema en cada corrida, así que necesitan un usuario de Oracle
+**aparte** (nunca `HUELLAPP_DEV`). Se crea una sola vez:
+
+1. En la consola de OCI: tu Autonomous Database → **Database Actions → SQL**, con el usuario **ADMIN**.
+2. Ejecuta (cambia la contraseña; no la compartas por chat):
+   ```sql
+   CREATE USER HUELLAPP_TEST IDENTIFIED BY "UnaContraseñaFuerte#2026";
+   GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE, CREATE VIEW, CREATE TRIGGER, CREATE PROCEDURE TO HUELLAPP_TEST;
+   ALTER USER HUELLAPP_TEST QUOTA UNLIMITED ON DATA;
+   ```
+3. En tu `api/.env`: `DB_TEST_USER=HUELLAPP_TEST` y `DB_TEST_PASS=` con esa contraseña.
+4. Instala Node.js y corre `php artisan test` dentro de `api/`.
+
+Las pruebas viven en `pruebas/api.test.js` (25 pruebas por HTTP). Durante las pruebas la verificación en dos pasos
+se apaga para poder entrar con las cuentas demo. Las de IA (KIRO, resumen, guía, borrador, moderación) usan la clave
+real de Gemini si hay; solo revisan la forma de la respuesta, así que también pasan sin IA.
+Lista de pruebas a mano por rol: [`../docs/pruebas-manuales.md`](../docs/pruebas-manuales.md).

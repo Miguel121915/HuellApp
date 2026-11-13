@@ -14,6 +14,8 @@ export function renderComentarios(tarjeta, comentarios) {
     fragmento.append(crearElemento("li", { clase: "comentario" }, [
       crearElemento("strong", { clase: "comentario__autor", texto: c.autor }),
       crearElemento("span", { texto: c.texto }),
+      // HU-18: solo su autor lo ve mientras el administrador lo revisa
+      ...(c.enRevision ? [crearElemento("small", { clase: "en-revision", texto: "🕒 En revisión: solo tú lo ves por ahora" })] : []),
     ]));
   });
   lista.replaceChildren(fragmento);
@@ -41,6 +43,8 @@ export function crearTarjetaPublicacion(pub, { liked = false, conLikes = true, c
       crearElemento("time", { clase: "publicacion__fecha texto-pequeno texto-suave", texto: tiempoRelativo(pub.fecha), atributos: { datetime: pub.fecha } }),
     ]),
     ...(pub.etiqueta ? [crearElemento("span", { clase: "publicacion__etiqueta", texto: pub.etiqueta })] : []),
+    // HU-18: el sistema la marcó para revisión; los demás no la ven hasta que el administrador la apruebe
+    ...(pub.enRevision ? [crearElemento("p", { clase: "en-revision", texto: "🕒 En revisión: por ahora solo tú ves esta publicación. Un administrador la revisará pronto." })] : []),
     crearElemento("p", { clase: "tarjeta__cuerpo publicacion__texto", texto: pub.texto }),
   ]);
 

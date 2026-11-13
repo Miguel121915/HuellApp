@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis solicitudes · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/solicitudes.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Mis solicitudes</h1>
+    <p class="texto-suave intro-seccion">El estado de tus solicitudes de adopción. Cuando un refugio te aprueba, aquí encuentras la guía para cuidar a tu nueva mascota.</p>
+    <div id="alerta" role="status" hidden></div>
+
+    <ul id="lista-solicitudes" class="mis-solicitudes" aria-live="polite"></ul>
+
+    <section id="sin-solicitudes" class="vacio tarjeta tarjeta--blanca" hidden>
+      <img src="../../assets/img/kiro/kiro.svg" alt="" width="120" height="126">
+      <h2>Aún no has enviado solicitudes</h2>
+      <p>Busca una mascota en «Refugios» y toca «Solicitar adopción».</p>
+      <a class="boton boton--secundario" href="refugios.html">Ver refugios</a>
+    </section>
+
+    <!-- HU-23: guía de cuidado después de adoptar -->
+    <dialog id="modal-guia" class="modal modal--ancho" aria-labelledby="guia-titulo">
+      <h2 id="guia-titulo" class="modal__titulo">Guía de cuidado</h2>
+      <p id="guia-etapa" class="texto-suave texto-pequeno"></p>
+      <section class="guia-consejos" aria-labelledby="guia-consejos-titulo">
+        <h3 id="guia-consejos-titulo">✨ Consejos para tu nueva mascota</h3>
+        <div id="guia-consejos" aria-live="polite"></div>
+      </section>
+      <div id="guia-secciones" class="guia-secciones"></div>
+      <p class="texto-suave texto-pequeno guia-aviso">Son recomendaciones generales: tu veterinario es quien mejor conoce a tu mascota.</p>
+      <div class="modal__acciones">
+        <button id="cerrar-guia" class="boton boton--primario" type="button">Cerrar</button>
+      </div>
+    </dialog>
+  </main>
+</body>
+</html>

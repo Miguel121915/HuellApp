@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Avisos, Base, Enrutador, ErrorHttp, Respuesta, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, Enrutador, ErrorHttp, Gemini, Moderacion, Procesos, Respuesta, Sesion, Solicitud, Validar};
 
 /** Rutas del foro: publicaciones, comentarios y "me gusta" (huella). */
 final class Foro
@@ -47,12 +47,24 @@ final class Foro
         return $estado === 'reunido' ? 'reunidos' : ($tipo === 'perdida' ? 'busca' : 'familia');
     }
 
+    /** HU-18: visible para todos, o en revisión y de quien consulta. Parámetros: [usuario] (el otro es el de ya_dio). */
+    private const VISIBLE_PUBLICACION = "p.moderacion = 'visible' OR (p.moderacion = 'revision' AND p.usuario_id = ?)";
+
     private static function cargar(int $usuarioId, ?int $id = null, int $limite = 100, ?string $categoria = null): array
     {
         $limite = max(1, min(200, $limite)); // ya es entero validado; se escribe directo en FETCH FIRST
-        $donde = $id ? 'WHERE p.id = ?' : ($categoria ? 'WHERE ' . self::CATEGORIAS[$categoria] : '');
+        // HU-18: lo que está en revisión solo lo ve su autor; lo quitado no lo ve nadie
+        $condiciones = [self::VISIBLE_PUBLICACION];
+        $parametros = [$usuarioId, $usuarioId];
+        if ($id) {
+            $condiciones[] = 'p.id = ?';
+            $parametros[] = $id;
+        } elseif ($categoria) {
+            $condiciones[] = self::CATEGORIAS[$categoria];
+        }
+        $donde = 'WHERE ' . implode(' AND ', array_map(static fn ($c) => "($c)", $condiciones));
         $filas = Base::todos(
-            "SELECT p.id, p.texto, p.foto, p.foto_alt, p.creado_en, p.reporte_id, u.nombre AS autor,
+            "SELECT p.id, p.texto, p.foto, p.foto_alt, p.creado_en, p.reporte_id, p.moderacion, p.usuario_id, u.nombre AS autor,
                     r.tipo AS reporte_tipo, r.estado AS reporte_estado, r.usuario_id AS reporte_usuario,
                     (SELECT COUNT(*) FROM likes_foro l WHERE l.publicacion_id = p.id) AS total_likes,
                     CASE WHEN EXISTS (SELECT 1 FROM likes_foro l WHERE l.publicacion_id = p.id AND l.usuario_id = ?) THEN 1 ELSE 0 END AS ya_dio
@@ -60,17 +72,19 @@ final class Foro
                LEFT JOIN reportes r ON r.id = p.reporte_id
               $donde
               ORDER BY " . ($categoria === 'reunidos' ? 'r.reunido_en DESC NULLS LAST, ' : '') . "p.creado_en DESC, p.id DESC FETCH FIRST $limite ROWS ONLY",
-            $id ? [$usuarioId, $id] : [$usuarioId],
+            $parametros,
         );
         if (!$filas) {
             return [];
         }
         $ids = array_column($filas, 'id');
         $comentarios = Base::todos(
-            'SELECT c.publicacion_id, u.nombre AS autor, c.texto
+            "SELECT c.publicacion_id, u.nombre AS autor, c.texto, c.moderacion
                FROM comentarios_foro c JOIN usuarios u ON u.id = c.usuario_id
-              WHERE c.publicacion_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ') ORDER BY c.id',
-            $ids,
+              WHERE c.publicacion_id IN (" . implode(',', array_fill(0, count($ids), '?')) . ")
+                AND (c.moderacion = 'visible' OR (c.moderacion = 'revision' AND c.usuario_id = ?))
+              ORDER BY c.id",
+            [...$ids, $usuarioId],
         );
         return array_map(static function (array $f) use ($comentarios, $usuarioId): array {
             return [
@@ -82,18 +96,37 @@ final class Foro
                 'texto' => $f['texto'], 'foto' => $f['foto'],
                 'fotoAlt' => $f['foto'] !== '' ? ($f['foto_alt'] ?: "Foto publicada por {$f['autor']}") : '',
                 'likes' => (int) $f['total_likes'] - (int) $f['ya_dio'], 'yaDioLike' => (bool) $f['ya_dio'],
+                // HU-18: solo su autor la ve mientras el administrador la revisa
+                'enRevision' => $f['moderacion'] === 'revision',
                 'comentarios' => array_values(array_map(
-                    static fn ($c) => ['autor' => $c['autor'], 'texto' => $c['texto']],
+                    static fn ($c) => ['autor' => $c['autor'], 'texto' => $c['texto'], 'enRevision' => $c['moderacion'] === 'revision'],
                     array_filter($comentarios, static fn ($c) => (int) $c['publicacion_id'] === (int) $f['id']),
                 )),
             ];
         }, $filas);
     }
 
+    /**
+     * HU-18: revisión instantánea por palabras y, si pasa, revisión con IA en segundo plano.
+     * Devuelve true si quedó en revisión (oculta para los demás).
+     */
+    public static function moderar(string $tipo, int $id, string $texto): bool
+    {
+        $motivo = Moderacion::porPalabras($texto);
+        if ($motivo !== null) {
+            Moderacion::marcar($tipo, $id, $motivo, 'palabras');
+            return true;
+        }
+        if (Gemini::disponible()) {
+            Procesos::artisan(['moderacion:revisar', $tipo, (string) $id]);
+        }
+        return false;
+    }
+
     private static function existe(string $idRuta): int
     {
         $id = Validar::idDeRuta($idRuta);
-        if (!Base::uno('SELECT 1 FROM publicaciones_foro WHERE id = ?', [$id])) {
+        if (!Base::uno("SELECT 1 FROM publicaciones_foro WHERE id = ? AND moderacion <> 'quitado'", [$id])) {
             throw new ErrorHttp(404, 'Esa publicación ya no existe.');
         }
         return $id;
@@ -118,6 +151,7 @@ final class Foro
             'INSERT INTO publicaciones_foro (usuario_id, texto, foto, foto_alt, creado_en) VALUES (?, ?, ?, ?, ?)',
             [$s->usuario['id'], $texto, $foto, $foto !== '' ? "Foto publicada por {$s->usuario['nombre']}" : '', Base::ahora()],
         );
+        self::moderar('publicacion', $id, $texto);
         return Respuesta::json(['ok' => true, 'publicacion' => self::cargar((int) $s->usuario['id'], $id)[0]], 201);
     }
 
@@ -125,9 +159,11 @@ final class Foro
     {
         $id = self::existe($s->parametro('id'));
         $texto = Validar::texto($s->cuerpo()['texto'] ?? null, 'El comentario', min: 1, max: 300);
-        Base::insertar('INSERT INTO comentarios_foro (publicacion_id, usuario_id, texto, creado_en) VALUES (?, ?, ?, ?)', [$id, $s->usuario['id'], $texto, Base::ahora()]);
+        $comentarioId = Base::insertar('INSERT INTO comentarios_foro (publicacion_id, usuario_id, texto, creado_en) VALUES (?, ?, ?, ?)', [$id, $s->usuario['id'], $texto, Base::ahora()]);
+        $oculto = self::moderar('comentario', $comentarioId, $texto);
         $autor = (int) Base::valor('SELECT usuario_id FROM publicaciones_foro WHERE id = ?', [$id]);
-        if ($autor !== (int) $s->usuario['id']) { // no se avisa de los comentarios propios
+        // No se avisa de los comentarios propios ni de los que quedaron en revisión (aún nadie más los ve)
+        if ($autor !== (int) $s->usuario['id'] && !$oculto) {
             Avisos::crear($autor, 'foro', "{$s->usuario['nombre']} comentó tu publicación", mb_substr($texto, 0, 120));
         }
         return Respuesta::json(['ok' => true, 'comentarios' => self::cargar((int) $s->usuario['id'], $id)[0]['comentarios']], 201);

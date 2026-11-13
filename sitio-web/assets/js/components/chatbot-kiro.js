@@ -22,7 +22,7 @@ const ENLACES = {
   favoritos: { texto: "Ver mis favoritos", ruta: "pages/usuario/favoritos.html" },
   foro: { texto: "Ir al foro", ruta: "pages/usuario/foro.html" },
   mensajes: { texto: "Ver mis mensajes", ruta: "pages/usuario/mensajes.html" },
-  solicitudes: { texto: "Ver refugios", ruta: "pages/usuario/refugios.html" },
+  solicitudes: { texto: "Ver mis solicitudes", ruta: "pages/usuario/solicitudes.html" },
 };
 const SUGERIDAS = ["Recomiéndame una mascota para un departamento", "¿Qué necesito para adoptar?", "Se me perdió mi mascota, ¿qué hago?", "¿Cómo cuido a un perrito recién adoptado?"];
 const MAX_GUARDADOS = 30;

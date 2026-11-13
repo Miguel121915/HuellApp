@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moderación · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/pages/admin.css">
+  <script type="module" src="../../assets/js/modules/admin/moderacion.js"></script>
+</head>
+<body class="pagina-admin" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner">Moderación del foro</h1>
+    <p class="texto-suave intro-seccion">Publicaciones y comentarios que el sistema marcó automáticamente (por palabras o con IA). Mientras están aquí, solo los ve su autor.</p>
+
+    <div class="moderacion__pestanas" role="tablist" aria-label="Qué mostrar">
+      <button class="boton boton--primario boton--pequeno" type="button" role="tab" aria-selected="true" data-estado="revision">Por revisar</button>
+      <button class="boton boton--contorno boton--pequeno" type="button" role="tab" aria-selected="false" data-estado="quitado">Quitados</button>
+    </div>
+    <div id="alerta" role="status" hidden></div>
+    <p id="anuncio" class="solo-lector" role="status" aria-live="polite"></p>
+
+    <ul id="lista-moderacion" class="moderacion__lista" aria-live="polite"></ul>
+    <section id="sin-elementos" class="vacio tarjeta tarjeta--blanca" hidden>
+      <h2>Todo en orden 🐾</h2>
+      <p id="sin-elementos-texto">No hay nada pendiente de revisar.</p>
+    </section>
+  </main>
+</body>
+</html>

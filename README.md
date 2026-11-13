@@ -3,10 +3,32 @@
 Plataforma de adopción de mascotas y reunificación de mascotas perdidas. Tiene dos clientes que comparten una sola API y una sola base de datos:
 
 ```
-App móvil (Flutter) ──┐
-                      ├──► API PHP (api/) ──► Base de datos Oracle (OCI)
-Sitio web (HTML/JS) ──┘
+App móvil (Flutter) ──┐                          ┌──► Base de datos Oracle Autonomous (OCI)
+                      ├──► API PHP (api/) ───────┤
+Sitio web (HTML/JS) ──┘                          └──► Google Gemini (IA, capa gratuita)
 ```
+
+## Qué hace
+
+| Para quién | Funciones |
+| --- | --- |
+| Visitante | Ver refugios y mascotas en adopción; KIRO, el asistente |
+| Usuario | Reportar mascotas perdidas/encontradas con foto y mapa; coincidencias con IA y seña secreta; foro por pestañas; favoritos y comparación; solicitud de adopción con documentos; guía de cuidado al adoptar; mensajes; avisos; KIRO busca mascotas y reportes |
+| Refugio | Registro con verificación; inventario con borrador de descripción con IA; publicaciones con republicación; solicitudes de adopción con resumen con IA; requisitos, preguntas frecuentes y mensajes |
+| Administrador | Revisión de refugios y documentos; estadísticas; moderación del foro |
+| Seguridad | Sesión con JWT, verificación en dos pasos (Google Authenticator) para refugio y admin, bloqueo por intentos, documentos privados |
+
+## Documentación
+
+| Documento | Contenido |
+| --- | --- |
+| [docs/manual-usuario.md](docs/manual-usuario.md) | Cómo se usa, por rol, y preguntas frecuentes |
+| [docs/api.md](docs/api.md) | Referencia de la API: las 94 rutas, quién puede usarlas, errores y sesión |
+| [docs/base-de-datos.md](docs/base-de-datos.md) | Diagrama y tablas de Oracle |
+| [docs/ia.md](docs/ia.md) | Qué hace la IA, qué datos recibe y qué pasa sin cuota |
+| [docs/pruebas-manuales.md](docs/pruebas-manuales.md) | Lista de pruebas por rol para antes de la entrega |
+| [api/README.md](api/README.md) | Instalar y correr la API, comandos de `php artisan` y pruebas automáticas |
+| [despliegue/README.md](despliegue/README.md) | Publicar en una máquina virtual de OCI |
 
 ## Estructura del repositorio
 

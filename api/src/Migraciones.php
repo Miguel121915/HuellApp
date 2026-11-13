@@ -47,7 +47,12 @@ final class Migraciones
             'latitud' => 'NUMBER(9,6)', 'longitud' => 'NUMBER(9,6)', 'sena_secreta' => 'VARCHAR2(200 CHAR)',
         ],
         // Muro por pestañas: la publicación de una alerta queda ligada a su reporte
-        'publicaciones_foro' => ['reporte_id' => 'NUMBER(10)'],
+        'publicaciones_foro' => [
+            'reporte_id' => 'NUMBER(10)',
+            // HU-18: moderación (visible | revision | quitado), por qué se marcó y quién (palabras | ia)
+            'moderacion' => "VARCHAR2(10 CHAR) DEFAULT 'visible' NOT NULL", 'moderacion_motivo' => 'VARCHAR2(300 CHAR)',
+            'moderacion_fuente' => 'VARCHAR2(10 CHAR)', 'moderacion_en' => 'TIMESTAMP(3)',
+        ],
         // Coincidencias (HU-8): 1 si la IA comparó las fotos; 1 si las dos usan la MISMA fotografía
         'coincidencias' => [
             'por_ia' => 'NUMBER(1) DEFAULT 0 NOT NULL', 'misma_foto' => 'NUMBER(1) DEFAULT 0 NOT NULL',
@@ -60,6 +65,17 @@ final class Migraciones
             'anio_fundacion' => 'NUMBER(4)', 'whatsapp' => 'VARCHAR2(25 CHAR)', 'redes' => 'VARCHAR2(1000 CHAR)',
             'necesidades' => 'VARCHAR2(1000 CHAR)', 'tiene_perros' => 'NUMBER(1) DEFAULT 1 NOT NULL',
             'tiene_gatos' => 'NUMBER(1) DEFAULT 1 NOT NULL',
+        ],
+        // HU-22: resumen con IA de cada solicitud (JSON), guardado para no gastar cuota cada vez que se abre
+        'solicitudes_adopcion' => [
+            'resumen_ia' => 'VARCHAR2(2000 CHAR)', 'resumen_ia_en' => 'TIMESTAMP(3)',
+            // HU-23: consejos de cuidado con IA para quien adoptó (JSON), guardados igual
+            'guia_ia' => 'VARCHAR2(1500 CHAR)',
+        ],
+        // HU-18: moderación (visible | revision | quitado), por qué se marcó y quién la marcó (palabras | ia)
+        'comentarios_foro' => [
+            'moderacion' => "VARCHAR2(10 CHAR) DEFAULT 'visible' NOT NULL", 'moderacion_motivo' => 'VARCHAR2(300 CHAR)',
+            'moderacion_fuente' => 'VARCHAR2(10 CHAR)', 'moderacion_en' => 'TIMESTAMP(3)',
         ],
     ];
 

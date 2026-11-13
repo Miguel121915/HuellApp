@@ -97,3 +97,20 @@
 
 /* HU-13 Mensajes del refugio */
 .filtro-mensajes { display: flex; gap: var(--e2); margin-block: var(--e4); }
+
+/* HU-22 Resumen con IA de una solicitud de adopción */
+.resumen-ia { margin-top: var(--e4); padding: var(--e3) var(--e4); background: var(--lila-tenue); border: 2px solid var(--lila); border-radius: var(--radio-m); }
+.resumen-ia__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
+.resumen-ia__cabecera .seccion-titulo { margin: 0; }
+.resumen-ia__sintesis { margin: var(--e3) 0; font-weight: 700; }
+.resumen-ia__bloques { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--e3); }
+.resumen-ia__bloque { padding: var(--e2) var(--e3); background: var(--blanco); border-radius: var(--radio-s); border-left: 4px solid var(--borde); }
+.resumen-ia__bloque--favor { border-left-color: var(--exito); }
+.resumen-ia__bloque--atencion { border-left-color: var(--amarillo-fuerte); }
+.resumen-ia__bloque--preguntas { border-left-color: var(--lila-fuerte); }
+.resumen-ia__bloque h4 { margin: 0 0 var(--e1); font-size: 0.9375rem; }
+.resumen-ia__bloque ul { margin: 0; padding-left: 1.1em; font-size: 0.875rem; display: grid; gap: 2px; }
+.resumen-ia__aviso { margin: var(--e3) 0 0; color: var(--tinta-suave); font-style: italic; }
+
+/* HU-17 Borrador de descripción con IA */
+.campo-descripcion__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e2); flex-wrap: wrap; }

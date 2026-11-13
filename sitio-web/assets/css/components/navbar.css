@@ -110,6 +110,7 @@
   padding: var(--e2) var(--e3); border: 0; border-radius: var(--radio-s);
   background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer;
 }
+a.cuenta__opcion { text-decoration: none; }
 .cuenta__opcion small { font-weight: 400; font-size: 0.75rem; color: var(--tinta-suave); }
 .cuenta__opcion:hover, .cuenta__opcion:focus-visible { background: var(--aqua-suave); }
 .cuenta__opcion--salir { color: #b42318; }

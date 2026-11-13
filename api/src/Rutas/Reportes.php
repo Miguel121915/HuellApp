@@ -472,10 +472,15 @@ final class Reportes
         ];
         $texto = implode("\n", array_filter($lineas, static fn ($l) => $l !== null && $l !== ''));
         try {
-            Base::insertar(
+            $publicacion = Base::insertar(
                 'INSERT INTO publicaciones_foro (usuario_id, texto, foto, foto_alt, reporte_id, creado_en) VALUES (?, ?, ?, ?, ?, ?)',
                 [$usuario['id'], mb_substr($texto, 0, 600), $r['foto'], mb_substr("Foto de la alerta: $quien", 0, 160), $reporteId, Base::ahora()],
             );
+            // HU-18: solo la revisión por palabras (la IA del reporte ya trabaja en segundo plano)
+            $motivo = \HuellApp\Moderacion::porPalabras((string) $r['descripcion']);
+            if ($motivo !== null) {
+                \HuellApp\Moderacion::marcar('publicacion', $publicacion, $motivo, 'palabras');
+            }
         } catch (\Throwable $e) {
             error_log('No se pudo publicar la alerta en el foro: ' . $e->getMessage()); // el reporte ya quedó guardado
         }

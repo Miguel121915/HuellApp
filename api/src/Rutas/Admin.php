@@ -30,7 +30,61 @@ final class Admin
             $r->get('/mascotas/{id}', [self::class, 'verMascota']);
             $r->patch('/documentos-mascota/{id}', [self::class, 'marcarDocumentoMascota']);
             $r->get('/documentos-mascota/{id}/archivo', [self::class, 'archivoMascota']);
+
+            // HU-18: bandeja de moderación del foro
+            $r->get('/moderacion', [self::class, 'bandejaModeracion']);
+            $r->post('/moderacion/{tipo}/{id}', [self::class, 'decidirModeracion']);
         });
+    }
+
+    /* ---------- Moderación de contenido (HU-18) ---------- */
+
+    // GET /api/admin/moderacion?estado=revision|quitado → publicaciones y comentarios marcados, los más recientes primero
+    public static function bandejaModeracion(Solicitud $s): array
+    {
+        $estado = Validar::enumerado($s->query['estado'] ?? 'revision', 'El estado', ['revision', 'quitado']);
+        $publicaciones = Base::todos(
+            "SELECT 'publicacion' AS tipo, p.id, p.texto, p.foto, p.creado_en, p.moderacion_motivo, p.moderacion_fuente, p.moderacion_en,
+                    u.nombre AS autor, u.correo AS autor_correo, NULL AS publicacion_texto
+               FROM publicaciones_foro p JOIN usuarios u ON u.id = p.usuario_id WHERE p.moderacion = ?",
+            [$estado],
+        );
+        $comentarios = Base::todos(
+            "SELECT 'comentario' AS tipo, c.id, c.texto, NULL AS foto, c.creado_en, c.moderacion_motivo, c.moderacion_fuente, c.moderacion_en,
+                    u.nombre AS autor, u.correo AS autor_correo, p.texto AS publicacion_texto
+               FROM comentarios_foro c JOIN usuarios u ON u.id = c.usuario_id JOIN publicaciones_foro p ON p.id = c.publicacion_id
+              WHERE c.moderacion = ?",
+            [$estado],
+        );
+        $elementos = array_map(static fn (array $f): array => [
+            'tipo' => $f['tipo'], 'id' => (string) $f['id'], 'texto' => $f['texto'], 'foto' => $f['foto'] ?: null,
+            'autor' => $f['autor'], 'autorCorreo' => $f['autor_correo'],
+            'enPublicacion' => $f['publicacion_texto'] !== null ? mb_substr((string) $f['publicacion_texto'], 0, 140) : null,
+            'motivo' => $f['moderacion_motivo'], 'fuente' => $f['moderacion_fuente'],
+            'fecha' => Serializadores::fecha($f['creado_en']), 'marcado' => Serializadores::fecha($f['moderacion_en']),
+        ], [...$publicaciones, ...$comentarios]);
+        usort($elementos, static fn ($a, $b) => strcmp((string) $b['marcado'], (string) $a['marcado']));
+        return ['elementos' => $elementos];
+    }
+
+    // POST /api/admin/moderacion/{publicacion|comentario}/{id}  { accion: aprobar|quitar }
+    public static function decidirModeracion(Solicitud $s): array
+    {
+        $tipo = Validar::enumerado($s->parametro('tipo'), 'El tipo', array_keys(\HuellApp\Moderacion::TABLAS));
+        $tabla = \HuellApp\Moderacion::TABLAS[$tipo];
+        $id = Validar::idDeRuta($s->parametro('id'));
+        $accion = Validar::enumerado($s->cuerpo()['accion'] ?? null, 'La acción', ['aprobar', 'quitar']);
+        $fila = Base::uno("SELECT usuario_id, texto, moderacion FROM $tabla WHERE id = ?", [$id]);
+        if ($fila === null) {
+            throw new ErrorHttp(404, 'Ya no existe.');
+        }
+        $nuevo = $accion === 'aprobar' ? 'visible' : 'quitado';
+        Base::ejecutar("UPDATE $tabla SET moderacion = ?, moderacion_fuente = 'admin', moderacion_en = TO_TIMESTAMP(?, 'YYYY-MM-DD HH24:MI:SS.FF3') WHERE id = ?", [$nuevo, Base::ahora(), $id]);
+        if ($accion === 'quitar' && $fila['moderacion'] !== 'quitado') {
+            Avisos::crear((int) $fila['usuario_id'], 'foro', $tipo === 'publicacion' ? 'Retiramos una publicación tuya del foro' : 'Retiramos un comentario tuyo del foro',
+                'No cumple las reglas de la comunidad de HuellApp: «' . mb_substr((string) $fila['texto'], 0, 80) . '…»');
+        }
+        return ['ok' => true, 'moderacion' => $nuevo];
     }
 
     private static function documentos(int $refugioId): array
@@ -138,7 +192,9 @@ final class Admin
     public static function resumen(): array
     {
         $cuenta = static fn (string $estado): int => (int) Base::valor('SELECT COUNT(*) FROM refugios WHERE estado = ?', [$estado]);
-        return ['pendientes' => $cuenta('pendiente'), 'aprobados' => $cuenta('aprobado'), 'rechazados' => $cuenta('rechazado'), 'suspendidos' => $cuenta('suspendido')];
+        $enRevision = (int) Base::valor("SELECT (SELECT COUNT(*) FROM publicaciones_foro WHERE moderacion = 'revision') + (SELECT COUNT(*) FROM comentarios_foro WHERE moderacion = 'revision') FROM dual");
+        return ['pendientes' => $cuenta('pendiente'), 'aprobados' => $cuenta('aprobado'), 'rechazados' => $cuenta('rechazado'), 'suspendidos' => $cuenta('suspendido'),
+            'moderacion' => $enRevision]; // HU-18: número rojo de «Moderación»
     }
 
     // ?estado=pendiente|aprobado|rechazado|suspendido (sin filtro devuelve todos)

@@ -8,7 +8,7 @@ import { montarNavbar } from "../../components/navbar.js";
 import { crearVisor } from "../../components/visor-documento.js";
 import {
   listarMascotas, guardarMascota, cambiarEstatus, eliminarMascota, contarPublicacionesDeMascota,
-  listarDocumentosMascota, subirDocumentoMascota, eliminarDocumentoMascota, descargarDocumentoMascota,
+  listarDocumentosMascota, subirDocumentoMascota, eliminarDocumentoMascota, descargarDocumentoMascota, sugerirDescripcionMascota,
 } from "../../core/servicios-refugio.js";
 import {
   crearElemento, debounce, formatearEdad, formatearFecha, formatearTamano, leerComoDataUrl, limpiarErroresAlEscribir, marcarError,
@@ -133,6 +133,7 @@ function abrirFormulario(mascota = null) {
   formulario.reset();
   ocultarAlerta(alertaModal);
   formulario.querySelectorAll(".campo").forEach((c) => marcarError(c, ""));
+  document.getElementById("ayuda-descripcion").textContent = AYUDA_DESCRIPCION;
   document.getElementById("modal-titulo").textContent = mascota ? `Editar a ${mascota.nombre}` : "Agregar mascota";
 
   if (mascota) {
@@ -199,6 +200,44 @@ async function guardarFormulario(evento) {
   await recargar(`${datos.nombre} fue ${era}.`);
 }
 
+/* ---------- Borrador de descripción con IA (HU-17) ---------- */
+
+const AYUDA_DESCRIPCION = "Llena los datos (y la foto, si tienes) y la IA te propone un borrador que puedes editar.";
+
+/**
+ * Pide a la API un borrador con los datos del formulario, lo que ya esté escrito en la descripción
+ * (como notas) y la foto. El texto queda en el campo para revisarlo: no se guarda hasta «Guardar».
+ */
+async function sugerirDescripcion() {
+  const f = formulario.elements;
+  const boton = document.getElementById("sugerir-descripcion");
+  const ayuda = document.getElementById("ayuda-descripcion");
+  const edad = Number(f.edad.value);
+  const datos = {
+    nombre: f.nombre.value.trim(), especie: f.especie.value, raza: f.raza.value.trim(),
+    edadMeses: Number.isInteger(edad) && edad > 0 ? (f.unidad.value === "anios" ? edad * 12 : edad) : null,
+    sexo: f.sexo.value, tamano: f.tamano.value, salud: f.salud.value.trim(),
+    notas: f.descripcion.value.trim(), foto: fotoActual || "",
+  };
+  if (!datos.especie && !datos.notas) {
+    marcarError(campo("descripcion"), "Elige al menos la especie o escribe unas notas para generar el borrador.");
+    return;
+  }
+  marcarError(campo("descripcion"), "");
+  boton.disabled = true;
+  boton.textContent = "Generando…";
+  ayuda.textContent = "Escribiendo un borrador… puede tardar unos segundos.";
+  const r = await sugerirDescripcionMascota(datos);
+  boton.disabled = false;
+  boton.textContent = "✨ Sugerir con IA";
+  if (!r.ok) { ayuda.textContent = AYUDA_DESCRIPCION; marcarError(campo("descripcion"), r.error); return; }
+  f.descripcion.value = r.descripcion;
+  f.descripcion.focus();
+  ayuda.textContent = r.iaUsada
+    ? "✨ Borrador hecho con IA: revísalo y corrige lo que no sea exacto antes de guardar."
+    : "La IA no respondió: te dejamos una plantilla para completar.";
+}
+
 /* ---------- Eventos ---------- */
 
 function enlazarEventos() {
@@ -247,6 +286,7 @@ function enlazarEventos() {
       marcarError(zona, "No pudimos leer esa imagen. Prueba con otra.");
     }
   });
+  document.getElementById("sugerir-descripcion").addEventListener("click", sugerirDescripcion);
   document.getElementById("quitar-foto").addEventListener("click", () => {
     fotoActual = "";
     formulario.elements.foto.value = "";

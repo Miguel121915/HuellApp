@@ -33,6 +33,8 @@ const ICONOS = {
   solicitudes: svg('<path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>'),
   perfil: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'),
   estadisticas: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  // HU-18: escudo con palomita
+  moderacion: svg('<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'),
 };
 // Decoran foro (huella dentro del globo) y reportar (huella dentro de la cámara)
 ICONOS.foro = ICONOS.foro.replace("</svg>", `<g transform="translate(5.5 3.2) scale(.55)">${PATA}</g></svg>`);
@@ -63,6 +65,7 @@ const MENUS = {
     { id: "solicitudes", etiqueta: "Solicitudes", ruta: "pages/admin/solicitudes.html", insignia: true },
     { id: "refugios", etiqueta: "Refugios", ruta: "pages/admin/refugios.html" },
     { id: "estadisticas", etiqueta: "Estadísticas", ruta: "pages/admin/estadisticas.html" },
+    { id: "moderacion", etiqueta: "Moderación", ruta: "pages/admin/moderacion.html", insignia: true }, // HU-18
   ],
 };
 // Visitante sin cuenta: solo entra a Refugios (mascotas en adopción). Las demás secciones se ven
@@ -114,6 +117,7 @@ export async function montarNavbar({ sesion, activa }) {
                   <span class="cuenta__correo"></span>
                   <span class="cuenta__rol">${ROL_TEXTO[sesion.rol] || ""}</span>
                 </div>
+                ${sesion.rol === "usuario" ? `<a class="cuenta__opcion" href="${rutaDesdeRaiz("pages/usuario/solicitudes.html")}"${activa === "solicitudes" ? ' aria-current="page"' : ""}>🐾 Mis solicitudes <small>Adopciones y guía de cuidado</small></a>` : ""}
                 <button class="cuenta__opcion" id="boton-seguridad" type="button">🔒 Seguridad <small>Verificación en dos pasos</small></button>
                 <button class="cuenta__opcion cuenta__opcion--salir" id="boton-salir" type="button">↩ Cerrar sesión</button>
               </div>
@@ -151,7 +155,7 @@ export async function montarNavbar({ sesion, activa }) {
     // La IA busca coincidencias en segundo plano: se revisa cada 30 s y se avisa si llegan nuevas
     setInterval(() => { if (!document.hidden) refrescarInsigniaCoincidencias(); }, 30000);
   }
-  if (sesion.rol === "admin") await refrescarInsigniaSolicitudes();
+  if (sesion.rol === "admin") { await refrescarInsigniaSolicitudes(); await refrescarInsigniaModeracion(); }
   if (sesion.rol === "refugio") await refrescarInsigniaMensajes();
 }
 
@@ -239,6 +243,21 @@ function avisarCoincidencias(nuevas) {
 }
 
 /** Actualiza el número rojo de "Solicitudes" (refugios pendientes de revisar). Solo administrador. */
+/** HU-18: número rojo de "Moderación" (publicaciones y comentarios por revisar). Solo administrador. */
+export async function refrescarInsigniaModeracion() {
+  const insignia = document.getElementById("insignia-moderacion");
+  if (!insignia) return;
+  let total = 0;
+  try {
+    total = (await obtenerResumenAdmin()).moderacion || 0;
+  } catch {
+    return; // sin conexión: la franja de aviso ya lo explica
+  }
+  insignia.textContent = String(total);
+  insignia.hidden = total === 0;
+  insignia.setAttribute("aria-label", `${total} por revisar`);
+}
+
 export async function refrescarInsigniaSolicitudes() {
   const insignia = document.getElementById("insignia-solicitudes");
   if (!insignia) return;

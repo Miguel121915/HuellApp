@@ -109,7 +109,19 @@ export async function listarSolicitudesAdopcion() {
 }
 
 /** @param {"pendiente"|"en revision"|"aprobada"|"rechazada"} estado  Rechazar exige `nota`. */
-export const cambiarEstadoAdopcion = (id, estado, nota = "") => intentar(async () => {
+/** HU-17: borrador de descripción con IA a partir de los datos del formulario → { ok, descripcion, iaUsada } */
+export const sugerirDescripcionMascota = (datos) => intentar(async () => {
+  const r = await post("/refugio/mascotas/borrador", datos);
+  return { ok: true, descripcion: r.descripcion, iaUsada: r.iaUsada };
+});
+
+/** HU-22: resumen con IA de una solicitud. Se guarda en la API; `regenerar` pide uno nuevo. */
+export const resumirSolicitudAdopcion = (id, regenerar = false) => intentar(async () => {
+  const r = await post(`/refugio/adopciones/${id}/resumen`, { regenerar });
+  return { ok: true, resumen: r.resumen };
+});
+
+export const cambiarEstadoAdopcion =(id, estado, nota = "") => intentar(async () => {
   const r = await patch(`/refugio/adopciones/${id}`, { estado, nota });
   return { ok: true, solicitud: r.solicitud };
 });

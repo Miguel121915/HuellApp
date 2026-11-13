@@ -233,7 +233,11 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                           itemBuilder: (_, i) => ListTile(
                             leading: const CircleAvatar(backgroundColor: _turquesa, child: Icon(Icons.person, color: Colors.white)),
                             title: Text(p.comentarios[i].autor, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                            subtitle: Text(p.comentarios[i].texto),
+                            subtitle: Text(
+                              p.comentarios[i].enRevision
+                                  ? '${p.comentarios[i].texto}\n🕒 En revisión: solo tú lo ves por ahora'
+                                  : p.comentarios[i].texto,
+                            ),
                           ),
                         ),
                 ),
@@ -481,6 +485,19 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                   ),
                 ),
             ]),
+            // HU-18: el sistema la marcó; los demás no la ven hasta que el administrador la apruebe
+            if (p.enRevision) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: const Color(0xFFFDECB5), borderRadius: BorderRadius.circular(8)),
+                child: const Text(
+                  '🕒 En revisión: por ahora solo tú ves esta publicación. Un administrador la revisará pronto.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF7A5A00)),
+                ),
+              ),
+            ],
             if (p.texto.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(p.texto, style: const TextStyle(fontSize: 14, height: 1.35)),

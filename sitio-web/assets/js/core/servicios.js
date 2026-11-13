@@ -81,6 +81,14 @@ export async function obtenerMisSolicitudesAdopcion() {
   return (await get("/adopciones")).solicitudes;
 }
 
+/** HU-23: guía de cuidado de una adopción aprobada → { ok, guia: { titulo, etapa, secciones, consejos|null } } */
+export const obtenerGuiaCuidados = (solicitudId) => intentar(async () =>
+  ({ ok: true, guia: (await get(`/adopciones/${encodeURIComponent(solicitudId)}/cuidados`)).guia }));
+
+/** HU-23: consejos con IA para esa mascota (la API los guarda) → { ok, consejos: [...]|null } */
+export const personalizarGuiaCuidados = (solicitudId) => intentar(async () =>
+  ({ ok: true, consejos: (await post(`/adopciones/${encodeURIComponent(solicitudId)}/cuidados`, {})).consejos }));
+
 /**
  * Envía una solicitud de adopción.
  * @param {object} datos  mascotaId, nombre, correo, telefono, direccion, ocupacion, tipoVivienda,

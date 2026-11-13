@@ -79,3 +79,14 @@
   .revision { grid-template-columns: 1fr; }
   .visor { position: static; }
 }
+
+/* ---------- HU-18 Moderación del foro ---------- */
+.pagina-admin .intro-seccion { max-width: 760px; margin-bottom: var(--e4); }
+.moderacion__pestanas { display: flex; gap: var(--e2); margin-bottom: var(--e4); }
+.moderacion__lista { display: grid; gap: var(--e3); max-width: 860px; padding: 0; list-style: none; }
+.moderacion__item { display: grid; gap: var(--e2); }
+.moderacion__cabecera { display: flex; align-items: center; gap: var(--e2); flex-wrap: wrap; }
+.moderacion__motivo { margin: 0; padding: var(--e2) var(--e3); background: var(--aviso-fondo); color: var(--aviso); border-radius: var(--radio-s); font-weight: 700; font-size: 0.875rem; }
+.moderacion__texto { margin: 0; padding: var(--e3); background: var(--lila-tenue); border-left: 4px solid var(--lila-fuerte); border-radius: var(--radio-s); white-space: pre-line; overflow-wrap: anywhere; }
+.moderacion__foto { max-width: 220px; max-height: 160px; border-radius: var(--radio-s); object-fit: cover; }
+.moderacion__acciones { display: flex; gap: var(--e2); justify-content: flex-end; }

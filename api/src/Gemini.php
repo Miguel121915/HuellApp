@@ -225,6 +225,61 @@ final class Gemini
     }
 
     /** Parte "inline_data" de una foto subida (/uploads/imagenes/...), o null si no existe. */
+    /**
+     * Imagen para Gemini desde una foto ya guardada (/uploads/imagenes/…) o recién elegida en el
+     * formulario (data URL JPEG/PNG/WebP, aún sin guardar). null si no es una foto válida.
+     */
+    public static function imagenDeFoto(string $foto): ?array
+    {
+        if (preg_match('#^data:(image/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$#', $foto, $m)) {
+            $bytes = base64_decode($m[2], true);
+            // Las fotos del formulario ya llegan reducidas; se rechaza lo que no sea una imagen real o pese demasiado
+            if ($bytes === false || strlen($bytes) > 6 * 1024 * 1024 || @getimagesizefromstring($bytes) === false) {
+                return null;
+            }
+            return ['inline_data' => ['mime_type' => $m[1], 'data' => $m[2]]];
+        }
+        return self::imagen($foto);
+    }
+
+    /**
+     * Borrador de descripción de una mascota para su publicación (HU-17). Usa los datos del formulario
+     * y, si hay, la foto. Devuelve el texto o null si no hay IA o falló.
+     */
+    public static function borradorDescripcion(string $datos, ?array $imagen, int $maximo): ?string
+    {
+        if (!self::disponible()) {
+            return null;
+        }
+        $prompt = <<<TXT
+            Eres el asistente de HuellApp, una plataforma de adopción de mascotas de refugios en México.
+            Escribe un BORRADOR de la descripción de esta mascota para su ficha de adopción, que el refugio revisará.
+            Datos que dio el refugio:
+            $datos
+            Reglas: en español de México con ortografía y acentos correctos, cálido y honesto, en 2 a 4 frases y máximo
+            $maximo caracteres. Habla de su carácter, con quién podría convivir y qué hogar le conviene.
+            El carácter, los gustos y la convivencia salen SOLO de las notas del refugio: no inventes que es tranquilo,
+            juguetón, que le gusta correr, etc. Si no hay notas, describe solo lo que se ve en la foto (aspecto) y qué
+            hogar le convendría por su tamaño y edad, e invita a conocerlo. Si algo no se sabe (por ejemplo, si convive
+            con gatos), no lo afirmes. No repitas edad, raza ni salud tal cual (ya salen en la ficha).
+            Sin emojis, sin hashtags, sin Markdown.
+            Responde SOLO con este JSON: {"descripcion": "..."}
+            TXT;
+        $r = self::pedirJson(array_values(array_filter([$imagen, ['text' => $prompt]])), null, null, 0.6, 20);
+        $texto = is_array($r) && is_string($r['descripcion'] ?? null) ? trim($r['descripcion']) : '';
+        $texto = trim(preg_replace('/(\*\*|__)(.+?)\1/u', '$2', $texto) ?? $texto);
+        if ($texto === '') {
+            return null;
+        }
+        // Si se pasa del límite, se corta en el último punto que quepa
+        if (mb_strlen($texto) > $maximo) {
+            $corto = mb_substr($texto, 0, $maximo);
+            $punto = mb_strrpos($corto, '.');
+            $texto = $punto !== false && $punto > $maximo / 2 ? mb_substr($corto, 0, $punto + 1) : rtrim($corto) . '…';
+        }
+        return $texto;
+    }
+
     private static function imagen(string $foto): ?array
     {
         if (!str_starts_with($foto, '/uploads/imagenes/')) {

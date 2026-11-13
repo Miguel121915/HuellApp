@@ -71,6 +71,18 @@
         <span id="sd-estado" class="insignia"></span>
       </div>
 
+      <!-- HU-22: resumen con IA (puntos a favor y focos de atención) -->
+      <section class="resumen-ia" aria-labelledby="resumen-ia-titulo">
+        <div class="resumen-ia__cabecera">
+          <h3 id="resumen-ia-titulo" class="seccion-titulo">✨ Resumen con IA</h3>
+          <button id="boton-resumen" class="boton boton--contorno boton--pequeno" type="button">Generar resumen</button>
+        </div>
+        <div id="resumen-ia-contenido" aria-live="polite">
+          <p class="texto-suave texto-pequeno">Genera un resumen con los puntos a favor, lo que conviene revisar y preguntas para la entrevista.</p>
+        </div>
+        <p class="resumen-ia__aviso texto-pequeno">Es una ayuda, no una decisión: revisa siempre los datos y documentos completos.</p>
+      </section>
+
       <h3 class="seccion-titulo">Solicitante</h3>
       <dl class="datos-fijos datos-fijos--rejilla">
         <div><dt>Nombre</dt><dd id="sd-nombre"></dd></div>

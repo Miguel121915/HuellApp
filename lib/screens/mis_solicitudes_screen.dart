@@ -4,6 +4,7 @@ import '../core/api_client.dart';
 import '../core/api_config.dart';
 import '../services/adopcion_service.dart';
 import '../widgets/foto_huellapp.dart';
+import 'guia_cuidados_screen.dart';
 
 /// «Mis solicitudes» (HU-14): las solicitudes de adopción del usuario con su estado y la nota
 /// que dejó el refugio al revisarla (HU-15).
@@ -150,6 +151,24 @@ class _MisSolicitudesScreenState extends State<MisSolicitudesScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: const Color(0xFFF4F7F6), borderRadius: BorderRadius.circular(10)),
               child: Text('Nota del refugio: $nota', style: const TextStyle(fontSize: 13)),
+            ),
+          ],
+          // HU-23: con la adopción aprobada, la guía para cuidar a la nueva mascota
+          if (s['estado'] == 'aprobada') ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: _oscuro),
+                icon: const Icon(Icons.favorite_outline),
+                label: const Text('Ver guía de cuidado'),
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => GuiaCuidadosScreen(
+                    solicitudId: '${s['id']}',
+                    mascotaNombre: s['mascotaNombre'] as String? ?? 'tu mascota',
+                  ),
+                )),
+              ),
             ),
           ],
         ]),

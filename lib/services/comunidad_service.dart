@@ -154,13 +154,19 @@ class ResultadoReporte {
 }
 
 class ComentarioForo {
-  const ComentarioForo({required this.autor, required this.texto});
+  const ComentarioForo({required this.autor, required this.texto, this.enRevision = false});
 
   final String autor;
   final String texto;
 
-  factory ComentarioForo.desdeApi(Map<String, dynamic> j) =>
-      ComentarioForo(autor: j['autor'] as String? ?? '', texto: j['texto'] as String? ?? '');
+  /// HU-18: el sistema lo marcó; solo lo ve su autor hasta que el administrador lo revise.
+  final bool enRevision;
+
+  factory ComentarioForo.desdeApi(Map<String, dynamic> j) => ComentarioForo(
+    autor: j['autor'] as String? ?? '',
+    texto: j['texto'] as String? ?? '',
+    enRevision: j['enRevision'] == true,
+  );
 }
 
 class PublicacionForo {
@@ -176,7 +182,11 @@ class PublicacionForo {
     this.categoria = 'comunidad',
     this.reporteId,
     this.esMiAlerta = false,
+    this.enRevision = false,
   });
+
+  /// HU-18: el sistema la marcó; solo la ve su autor hasta que el administrador la revise.
+  final bool enRevision;
 
   final String id;
   final String autor;
@@ -220,6 +230,7 @@ class PublicacionForo {
       categoria: j['categoria'] as String? ?? 'comunidad',
       reporteId: j['reporteId'] as String?,
       esMiAlerta: j['esMiAlerta'] == true,
+      enRevision: j['enRevision'] == true,
     );
   }
 }

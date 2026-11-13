@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Avisos, Base, DocumentosMascota, Enrutador, ErrorHttp, Respuesta, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Avisos, Base, DocumentosMascota, Enrutador, ErrorHttp, GuiaCuidados, Respuesta, ResumenSolicitud, Serializadores, Sesion, Solicitud, Validar};
 
 /**
  * Flujo de adopción:
@@ -34,6 +34,9 @@ final class Adopciones
         $r->grupo('/adopciones', [$sesion, Sesion::requiereRol('usuario')], static function (Enrutador $r): void {
             $r->get('', [self::class, 'misSolicitudes']);
             $r->post('', [self::class, 'solicitar']);
+            // HU-23: guía de cuidado después de adoptar (solo con la solicitud aprobada)
+            $r->get('/{id}/cuidados', [self::class, 'guiaCuidados']);
+            $r->post('/{id}/cuidados', [self::class, 'personalizarCuidados']);
         });
 
         $r->grupo('/refugio', [$sesion, Sesion::requiereRol('refugio'), [Sesion::class, 'requiereRefugioAprobado']], static function (Enrutador $r): void {
@@ -44,6 +47,7 @@ final class Adopciones
 
             $r->get('/adopciones', [self::class, 'recibidas']);
             $r->patch('/adopciones/{id}', [self::class, 'cambiarEstado']);
+            $r->post('/adopciones/{id}/resumen', [self::class, 'resumen']); // HU-22: resumen con IA
             $r->get('/adopciones/{id}/documentos/{doc}/archivo', [self::class, 'archivo']);
         });
     }
@@ -80,7 +84,16 @@ final class Adopciones
             'ocupacion' => $s['ocupacion'], 'tipoVivienda' => $s['tipo_vivienda'], 'viviendaPropia' => $s['vivienda_propia'],
             'otrasMascotas' => $s['otras_mascotas'], 'motivo' => $s['motivo'],
             'documentos' => array_map([self::class, 'documento'], $docs),
+            'resumenIa' => self::resumenGuardado($s),
         ];
+    }
+
+    /** Resumen con IA ya generado (HU-22), o null si aún no se pide. */
+    private static function resumenGuardado(array $s): ?array
+    {
+        $json = (string) ($s['resumen_ia'] ?? '');
+        $datos = $json !== '' ? json_decode($json, true) : null;
+        return is_array($datos) ? $datos + ['fecha' => Serializadores::fecha($s['resumen_ia_en'] ?? null)] : null;
     }
 
     /* ---------- Preguntas frecuentes ---------- */
@@ -257,6 +270,59 @@ final class Adopciones
         return Respuesta::json(['ok' => true, 'solicitud' => self::solicitud(Base::uno(self::SELECT_SOLICITUD . ' WHERE s.id = ?', [$id]), false)], 201);
     }
 
+    /* ---------- Guía de cuidado después de adoptar (HU-23) ---------- */
+
+    /** Solicitud APROBADA del usuario que consulta, con los datos de la mascota. */
+    private static function adopcionPropia(Solicitud $s): array
+    {
+        $f = Base::uno(self::SELECT_SOLICITUD . ' WHERE s.id = ? AND s.usuario_id = ?', [Validar::idDeRuta($s->parametro('id')), $s->usuario['id']]);
+        if ($f === null) {
+            throw new ErrorHttp(404, 'Esa solicitud ya no existe.');
+        }
+        if ($f['estado'] !== 'aprobada') {
+            throw new ErrorHttp(409, 'La guía de cuidado aparece cuando el refugio aprueba tu solicitud.');
+        }
+        return $f;
+    }
+
+    private static function mascotaDe(array $solicitud): array
+    {
+        return Base::uno('SELECT nombre, especie, raza, edad_meses, sexo, tamano, salud, descripcion FROM mascotas WHERE id = ?', [$solicitud['mascota_id']]) ?? [];
+    }
+
+    /** @return list<string>|null */
+    private static function consejosGuardados(array $solicitud): ?array
+    {
+        $datos = json_decode((string) ($solicitud['guia_ia'] ?? ''), true);
+        return is_array($datos) && $datos !== [] ? array_values(array_filter($datos, 'is_string')) : null;
+    }
+
+    // GET /api/adopciones/{id}/cuidados → { guia: {titulo, etapa, secciones, consejos|null} }
+    public static function guiaCuidados(Solicitud $s): array
+    {
+        $solicitud = self::adopcionPropia($s);
+        return ['guia' => GuiaCuidados::base(self::mascotaDe($solicitud)) + ['consejos' => self::consejosGuardados($solicitud)]];
+    }
+
+    // POST /api/adopciones/{id}/cuidados → { consejos: [...]|null } consejos con IA para esta mascota (se guardan)
+    public static function personalizarCuidados(Solicitud $s): array
+    {
+        $solicitud = self::adopcionPropia($s);
+        $guardados = self::consejosGuardados($solicitud);
+        if ($guardados !== null) {
+            return ['consejos' => $guardados];
+        }
+        $consejos = GuiaCuidados::personalizados(self::mascotaDe($solicitud), $solicitud);
+        if ($consejos !== null) {
+            // Cabe en VARCHAR2(1500): si no, se quitan consejos del final
+            while (count($consejos) > 1 && mb_strlen(json_encode($consejos, JSON_UNESCAPED_UNICODE)) > 1490) {
+                array_pop($consejos);
+            }
+            Base::ejecutar('UPDATE solicitudes_adopcion SET guia_ia = ? WHERE id = ?', [json_encode($consejos, JSON_UNESCAPED_UNICODE), $solicitud['id']]);
+        }
+        return ['consejos' => $consejos];
+    }
+
     /* ---------- Solicitudes que recibe el refugio ---------- */
 
     public static function recibidas(Solicitud $s): array
@@ -293,6 +359,30 @@ final class Adopciones
             }, $nota);
         }
         return ['ok' => true, 'solicitud' => self::solicitud(Base::uno(self::SELECT_SOLICITUD . ' WHERE s.id = ?', [$actual['id']]), true)];
+    }
+
+    /**
+     * POST /api/refugio/adopciones/{id}/resumen  { regenerar?: bool }
+     * Resumen con IA de la solicitud (HU-22). Se guarda: si ya existe se devuelve el mismo, salvo que
+     * pidan regenerarlo (por ejemplo, si el solicitante subió más datos). Usa la misma cuota que KIRO.
+     */
+    public static function resumen(Solicitud $s): array
+    {
+        $solicitud = self::recibidaPorId($s);
+        $guardado = self::resumenGuardado($solicitud);
+        if ($guardado !== null && empty($s->cuerpo()['regenerar'])) {
+            return ['resumen' => $guardado];
+        }
+        $resumen = ResumenSolicitud::generar($solicitud);
+        $ahora = Base::ahora();
+        // Solo se guarda el de la IA: el de reglas es instantáneo y así se reintenta con IA la próxima vez
+        if ($resumen['iaUsada']) {
+            Base::ejecutar(
+                "UPDATE solicitudes_adopcion SET resumen_ia = ?, resumen_ia_en = TO_TIMESTAMP(?, 'YYYY-MM-DD HH24:MI:SS.FF3') WHERE id = ?",
+                [ResumenSolicitud::aJson($resumen), $ahora, $solicitud['id']],
+            );
+        }
+        return ['resumen' => $resumen + ['fecha' => Serializadores::fecha($ahora)]];
     }
 
     public static function archivo(Solicitud $s): Respuesta

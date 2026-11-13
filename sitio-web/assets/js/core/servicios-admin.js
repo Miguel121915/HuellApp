@@ -66,3 +66,16 @@ export const marcarDocumentoMascota = (id, verificado) => intentar(async () => {
 });
 
 export const descargarDocumentoMascota = (id) => descargar(`/admin/documentos-mascota/${encodeURIComponent(id)}/archivo`);
+
+/* ---------- HU-18: moderación del foro ---------- */
+
+/** Publicaciones y comentarios marcados. estado: "revision" (por decidir) o "quitado". */
+export async function listarModeracion(estado = "revision") {
+  return (await get(`/admin/moderacion?estado=${encodeURIComponent(estado)}`)).elementos;
+}
+
+/** accion: "aprobar" (vuelve a verse) o "quitar" (se oculta y se avisa a su autor). */
+export const decidirModeracion = (tipo, id, accion) => intentar(async () => {
+  await post(`/admin/moderacion/${encodeURIComponent(tipo)}/${encodeURIComponent(id)}`, { accion });
+  return { ok: true };
+});

@@ -87,6 +87,13 @@ class RefugioService {
     return (r['mascotas'] as List? ?? []).cast<Map<String, dynamic>>().map(MascotaInventario.new).toList();
   }
 
+  /// HU-17: borrador de descripción con IA a partir de los datos del formulario (no guarda nada).
+  /// Devuelve (texto, iaUsada).
+  Future<(String, bool)> sugerirDescripcion(Map<String, dynamic> datos) async {
+    final r = await _api.post('/refugio/mascotas/borrador', datos, const Duration(seconds: 60));
+    return (r['descripcion'] as String? ?? '', r['iaUsada'] == true);
+  }
+
   /// Crea (sin [id]) o edita una mascota. [datos.foto] puede ser una data URL nueva o la ruta actual.
   Future<void> guardarMascota(Map<String, dynamic> datos, {String? id}) async {
     if (id == null) {

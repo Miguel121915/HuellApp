@@ -295,6 +295,23 @@ function cmdIaProcesar(array $args): void
 }
 
 /**
+ * HU-18: revisa con IA una publicacion o comentario del foro recien creado. La API lo lanza sola en
+ * segundo plano; si la IA lo marca, queda en la bandeja de Moderacion del administrador.
+ *   php artisan moderacion:revisar publicacion|comentario id
+ */
+function cmdModeracionRevisar(array $args): void
+{
+    $tipo = $args[0] ?? '';
+    $id = $args[1] ?? '';
+    if (!isset(\HuellApp\Moderacion::TABLAS[$tipo]) || !ctype_digit($id)) {
+        salir('Uso:  php artisan moderacion:revisar publicacion|comentario id');
+    }
+    conBase(static function () use ($tipo, $id): void {
+        echo ucfirst($tipo) . " $id: " . \HuellApp\Moderacion::revisarConIa($tipo, (int) $id) . "\n";
+    });
+}
+
+/**
  * Pruebas automaticas: usan un esquema de Oracle APARTE (DB_TEST_USER / DB_TEST_PASS en el .env),
  * que se BORRA en cada corrida; levanta un servidor temporal y ejecuta pruebas/api.test.js (Node.js).
  */
@@ -308,7 +325,9 @@ function cmdTest(): void
     if ($usuarioPrueba === '' || strcasecmp($usuarioPrueba, Config::obtener('DB_USER')) === 0) {
         salir("Las pruebas BORRAN su esquema. Crea un usuario aparte en Oracle (por ejemplo HUELLAPP_TEST)\n       y ponlo en DB_TEST_USER y DB_TEST_PASS del .env (distinto de DB_USER).");
     }
-    $entornoPrueba = ['DB_USER' => $usuarioPrueba, 'DB_PASS' => Config::obtener('DB_TEST_PASS')];
+    // Las cuentas demo de admin y refugio piden verificación en dos pasos: en las pruebas se apaga para poder
+    // entrar con correo y contraseña (la verificación tiene su propia prueba que la vuelve a exigir).
+    $entornoPrueba = ['DB_USER' => $usuarioPrueba, 'DB_PASS' => Config::obtener('DB_TEST_PASS'), 'DOS_PASOS_OBLIGATORIO' => '0'];
     foreach ($entornoPrueba as $clave => $valor) {
         putenv("$clave=$valor");
     }
@@ -404,6 +423,7 @@ match ($comando) {
     '2fa:reiniciar' => cmdReiniciar2fa($args),
     'publicaciones:republicar' => cmdRepublicar(),
     'ia:procesar' => cmdIaProcesar($args),
+    'moderacion:revisar' => cmdModeracionRevisar($args),
     'test' => cmdTest(),
     'help', 'list', '--help', '-h' => cmdAyuda(),
     default => salir("Comando desconocido: $comando\n       Escribe  php artisan help  para ver los comandos."),

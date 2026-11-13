@@ -1,11 +1,11 @@
 /**
  * adopciones.js — Solicitudes de adopción que recibe el refugio: lista con filtros, detalle con
- * datos del solicitante, visor de sus documentos (privados) y la respuesta del refugio.
+ * datos del solicitante, resumen con IA (HU-22), visor de sus documentos (privados) y la respuesta del refugio.
  */
 import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { crearVisor } from "../../components/visor-documento.js";
-import { listarSolicitudesAdopcion, cambiarEstadoAdopcion, descargarDocumentoAdopcion } from "../../core/servicios-refugio.js";
+import { listarSolicitudesAdopcion, cambiarEstadoAdopcion, descargarDocumentoAdopcion, resumirSolicitudAdopcion } from "../../core/servicios-refugio.js";
 import {
   crearElemento, debounce, formatearFecha, formatearTamano, limpiarErroresAlEscribir, marcarError, mostrarAlerta, normalizarTexto,
   ocultarAlerta, resolverImagen, tiempoRelativo,
@@ -35,6 +35,8 @@ const formulario = document.getElementById("formulario-estado");
 const alerta = document.getElementById("alerta-estado");
 const listaDocs = document.getElementById("sd-documentos");
 const zonaVisor = document.getElementById("sd-visor-zona");
+const contenidoResumen = document.getElementById("resumen-ia-contenido"); // HU-22
+const botonResumen = document.getElementById("boton-resumen");
 const visor = crearVisor({
   area: document.getElementById("sd-visor"),
   titulo: document.getElementById("sd-visor-titulo"),
@@ -136,6 +138,7 @@ function abrir(id) {
   }));
   zonaVisor.hidden = true;
   visor.reiniciar();
+  pintarResumen(s.resumenIa);
 
   formulario.reset();
   formulario.elements.estado.value = s.estado;
@@ -144,6 +147,52 @@ function abrir(id) {
   ocultarAlerta(alerta);
   actualizarNotaObligatoria();
   modal.showModal();
+}
+
+/* ---------- Resumen con IA (HU-22) ---------- */
+
+const SECCIONES_RESUMEN = [
+  { clave: "aFavor", titulo: "A favor", clase: "favor", icono: "✅" },
+  { clase: "atencion", clave: "atencion", titulo: "Para revisar", icono: "⚠️" },
+  { clase: "preguntas", clave: "preguntas", titulo: "Preguntas para la entrevista", icono: "💬" },
+];
+
+/** Muestra el resumen guardado, o la invitación a generarlo. Todo el texto entra con textContent. */
+function pintarResumen(resumen) {
+  botonResumen.textContent = resumen ? "Volver a generar" : "Generar resumen";
+  botonResumen.disabled = false;
+  if (!resumen) {
+    contenidoResumen.replaceChildren(crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "Genera un resumen con los puntos a favor, lo que conviene revisar y preguntas para la entrevista." }));
+    return;
+  }
+  const bloques = SECCIONES_RESUMEN.filter((sec) => (resumen[sec.clave] || []).length).map((sec) =>
+    crearElemento("div", { clase: `resumen-ia__bloque resumen-ia__bloque--${sec.clase}` }, [
+      crearElemento("h4", { texto: `${sec.icono} ${sec.titulo}` }),
+      crearElemento("ul", {}, resumen[sec.clave].map((t) => crearElemento("li", { texto: t }))),
+    ]));
+  const origen = resumen.iaUsada ? `Hecho con IA${resumen.fecha ? ` el ${formatearFecha(resumen.fecha)}` : ""}` : "Hecho con reglas básicas: la IA no respondió. Puedes volver a intentarlo.";
+  contenidoResumen.replaceChildren(
+    crearElemento("p", { clase: "resumen-ia__sintesis", texto: resumen.sintesis }),
+    crearElemento("div", { clase: "resumen-ia__bloques" }, bloques),
+    crearElemento("p", { clase: "texto-suave texto-pequeno", texto: origen }),
+  );
+}
+
+async function generarResumen() {
+  const solicitud = abierta;
+  const regenerar = Boolean(solicitud.resumenIa);
+  botonResumen.disabled = true;
+  botonResumen.textContent = "Generando…";
+  contenidoResumen.replaceChildren(crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "Leyendo la solicitud… puede tardar unos segundos." }));
+  const r = await resumirSolicitudAdopcion(solicitud.id, regenerar);
+  if (abierta !== solicitud) return; // ya abrieron otra solicitud
+  if (!r.ok) {
+    pintarResumen(solicitud.resumenIa);
+    contenidoResumen.prepend(crearElemento("p", { clase: "alerta alerta--error", texto: r.error }));
+    return;
+  }
+  if (r.resumen.iaUsada) solicitud.resumenIa = r.resumen; // el de reglas no se guarda en la API
+  pintarResumen(r.resumen);
 }
 
 /* ---------- Eventos ---------- */
@@ -166,6 +215,7 @@ function enlazarEventos() {
     visor.mostrar(() => descargarDocumentoAdopcion(abierta.id, d.id), `${DOCUMENTOS[d.tipo]} — ${d.nombre}`);
   });
 
+  botonResumen.addEventListener("click", generarResumen);
   document.getElementById("cerrar-solicitud").addEventListener("click", () => modal.close());
   modal.addEventListener("close", () => visor.reiniciar());
   limpiarErroresAlEscribir(formulario);

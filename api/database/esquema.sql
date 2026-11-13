@@ -170,6 +170,11 @@ CREATE TABLE publicaciones_foro (
   foto_alt    VARCHAR2(160 CHAR),
   creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
   reporte_id  NUMBER(10), -- alerta de un reporte (pestañas del muro), null = publicación de la comunidad
+  -- HU-18: moderación. visible | revision (oculta a los demás) | quitado; motivo y fuente (palabras | ia)
+  moderacion        VARCHAR2(10 CHAR) DEFAULT 'visible' NOT NULL,
+  moderacion_motivo VARCHAR2(300 CHAR),
+  moderacion_fuente VARCHAR2(10 CHAR),
+  moderacion_en     TIMESTAMP(3),
   CONSTRAINT pk_publicaciones_foro PRIMARY KEY (id),
   CONSTRAINT fk_foro_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
 );
@@ -182,6 +187,11 @@ CREATE TABLE comentarios_foro (
   usuario_id     NUMBER(10) NOT NULL,
   texto          VARCHAR2(300 CHAR) NOT NULL,
   creado_en      TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  -- HU-18: moderación, igual que en publicaciones_foro
+  moderacion        VARCHAR2(10 CHAR) DEFAULT 'visible' NOT NULL,
+  moderacion_motivo VARCHAR2(300 CHAR),
+  moderacion_fuente VARCHAR2(10 CHAR),
+  moderacion_en     TIMESTAMP(3),
   CONSTRAINT pk_comentarios_foro PRIMARY KEY (id),
   CONSTRAINT fk_coment_pub FOREIGN KEY (publicacion_id) REFERENCES publicaciones_foro (id) ON DELETE CASCADE,
   CONSTRAINT fk_coment_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
@@ -307,6 +317,11 @@ CREATE TABLE solicitudes_adopcion (
   nota_refugio    VARCHAR2(400 CHAR),
   creado_en       TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
   actualizado_en  TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  -- HU-22: resumen con IA para el refugio (JSON: síntesis, a favor, atención, preguntas)
+  resumen_ia      VARCHAR2(2000 CHAR),
+  resumen_ia_en   TIMESTAMP(3),
+  -- HU-23: consejos de cuidado con IA para quien adoptó (JSON: lista de consejos)
+  guia_ia         VARCHAR2(1500 CHAR),
   CONSTRAINT pk_solicitudes_adopcion PRIMARY KEY (id),
   CONSTRAINT ck_adopcion_vivienda CHECK (tipo_vivienda IN ('casa', 'departamento', 'otro')),
   CONSTRAINT ck_adopcion_propia CHECK (vivienda_propia IN ('propia', 'rentada', 'familiar')),

@@ -12,7 +12,7 @@ const CADA_MS = 30000;
 /** A qué página lleva cada sección del aviso. */
 const RUTAS = {
   coincidencias: "pages/usuario/coincidencias.html",
-  solicitudes: "pages/usuario/refugios.html",
+  solicitudes: "pages/usuario/solicitudes.html", // estado de la adopción y, si se aprobó, la guía de cuidado (HU-23)
   mensajes: "pages/usuario/mensajes.html",
   foro: "pages/usuario/foro.html",
   "refugio-mensajes": "pages/refugio/mensajes.html",

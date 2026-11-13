@@ -143,3 +143,6 @@
 .requisito--opcional .requisito__marca { background: var(--aqua-suave); color: var(--aqua-fuerte); border: 2px solid var(--aqua-fuerte); }
 .requisito__tipo { color: var(--tinta-suave); font-size: 0.8125rem; }
 .requisito p { margin-top: 2px; }
+
+/* HU-18: publicación o comentario en revisión (solo lo ve su autor) */
+.en-revision { display: block; margin: var(--e1) 0; padding: var(--e1) var(--e2); background: var(--aviso-fondo); color: var(--aviso); border-radius: var(--radio-s); font-size: 0.8125rem; font-weight: 700; }

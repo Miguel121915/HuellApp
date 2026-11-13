@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, DocumentosMascota, Enrutador, ErrorHttp, Republicacion, Respuesta, Serializadores, Sesion, Solicitud, Validar};
+use HuellApp\{Archivos, Base, DocumentosMascota, Enrutador, ErrorHttp, Gemini, Republicacion, Respuesta, Serializadores, Sesion, Solicitud, Validar};
 
 /**
  * Panel del refugio: perfil, inventario de mascotas y publicaciones.
@@ -28,6 +28,7 @@ final class Refugio
 
             $r->get('/mascotas', [self::class, 'listarMascotas']);
             $r->post('/mascotas', [self::class, 'crearMascota']);
+            $r->post('/mascotas/borrador', [self::class, 'borradorDescripcion']); // HU-17: borrador con IA
             $r->put('/mascotas/{id}', [self::class, 'editarMascota']);
             $r->patch('/mascotas/{id}/estatus', [self::class, 'cambiarEstatus']);
             $r->get('/mascotas/{id}/publicaciones/conteo', [self::class, 'contarPublicaciones']);
@@ -105,6 +106,75 @@ final class Refugio
             'estatus' => Validar::enumerado($b['estatus'] ?? 'disponible', 'El estatus', self::ESTATUS),
             'foto' => Archivos::resolverFoto($b['foto'] ?? null, 'La foto') ?: self::FOTO_POR_DEFECTO,
         ];
+    }
+
+    /* ---------- Borrador de descripción con IA (HU-17) ---------- */
+
+    private const MAX_BORRADORES = 20; // por refugio cada 10 minutos: la cuota de Gemini es limitada
+    private const MAX_DESCRIPCION = 400;
+
+    /**
+     * POST /api/refugio/mascotas/borrador  { nombre?, especie?, raza?, edadMeses?, sexo?, tamano?, salud?, notas?, foto? }
+     * → { descripcion, iaUsada }. No guarda nada: el refugio revisa y edita el texto antes de publicar.
+     * La foto puede ser la ya guardada o la recién elegida en el formulario (data URL).
+     */
+    public static function borradorDescripcion(Solicitud $s): array
+    {
+        $b = $s->cuerpo();
+        $campo = static fn (string $clave, int $max): string => mb_substr(trim(preg_replace('/\s+/u', ' ', is_string($b[$clave] ?? null) ? $b[$clave] : '') ?? ''), 0, $max);
+        $especie = in_array($b['especie'] ?? null, ['perro', 'gato'], true) ? $b['especie'] : '';
+        $meses = is_numeric($b['edadMeses'] ?? null) ? max(0, min(360, (int) $b['edadMeses'])) : 0;
+        $datos = array_filter([
+            'Nombre' => $campo('nombre', 40), 'Especie' => $especie, 'Raza' => $campo('raza', 60),
+            'Edad' => $meses ? ($meses < 12 ? "$meses meses" : intdiv($meses, 12) . ' años') : '',
+            'Sexo' => in_array($b['sexo'] ?? null, ['macho', 'hembra'], true) ? $b['sexo'] : '',
+            'Tamaño' => in_array($b['tamano'] ?? null, ['pequeño', 'mediano', 'grande'], true) ? $b['tamano'] : '',
+            'Salud' => $campo('salud', 120),
+            'Notas del refugio (carácter, convivencia, cuidados)' => $campo('notas', 400),
+        ]);
+        if (!isset($datos['Especie']) && !isset($datos['Notas del refugio (carácter, convivencia, cuidados)'])) {
+            throw new ErrorHttp(400, 'Elige al menos la especie o escribe unas notas sobre la mascota para generar el borrador.');
+        }
+        self::limitarBorradores((int) $s->refugio['id']);
+
+        $foto = is_string($b['foto'] ?? null) ? $b['foto'] : '';
+        $imagen = $foto !== '' ? Gemini::imagenDeFoto($foto) : null;
+        $texto = implode("\n", array_map(static fn ($k, $v) => "- $k: $v", array_keys($datos), $datos));
+        $ia = Gemini::borradorDescripcion($texto, $imagen, self::MAX_DESCRIPCION);
+        return $ia !== null
+            ? ['descripcion' => $ia, 'iaUsada' => true]
+            : ['descripcion' => self::borradorSinIa($datos), 'iaUsada' => false];
+    }
+
+    /** Plantilla sencilla cuando no hay IA: el refugio la completa. */
+    private static function borradorSinIa(array $d): string
+    {
+        $nombre = $d['Nombre'] ?? 'Esta mascota';
+        $quien = match ($d['Especie'] ?? '') { 'perro' => 'un perrito', 'gato' => 'un gatito', default => 'una mascota' };
+        $notas = $d['Notas del refugio (carácter, convivencia, cuidados)'] ?? '';
+        $texto = "$nombre es $quien" . (isset($d['Tamaño']) ? " de tamaño {$d['Tamaño']}" : '') . ' que busca una familia responsable y cariñosa.';
+        $texto .= $notas !== '' ? " $notas" : ' [Cuenta aquí su carácter, con quién convive y qué cuidados necesita.]';
+        return mb_substr($texto, 0, self::MAX_DESCRIPCION);
+    }
+
+    /** Mismo esquema que el inicio de sesión: contador en intentos_login por refugio, ventana de 10 min. */
+    private static function limitarBorradores(int $refugioId): void
+    {
+        $clave = "borrador|$refugioId";
+        $f = Base::uno('SELECT cuenta, desde FROM intentos_login WHERE clave = ?', [$clave]);
+        if ($f && (new \DateTimeImmutable($f['desde'], new \DateTimeZone('UTC')))->getTimestamp() < time() - 600) {
+            Base::ejecutar('DELETE FROM intentos_login WHERE clave = ?', [$clave]);
+            $f = null;
+        }
+        if ($f && (int) $f['cuenta'] >= self::MAX_BORRADORES) {
+            throw new ErrorHttp(429, 'Generaste muchos borradores seguidos. Espera unos minutos e inténtalo de nuevo.');
+        }
+        Base::ejecutar(
+            'MERGE INTO intentos_login t USING (SELECT ? AS clave, ? AS desde FROM dual) n ON (t.clave = n.clave)
+              WHEN MATCHED THEN UPDATE SET t.cuenta = t.cuenta + 1
+              WHEN NOT MATCHED THEN INSERT (clave, cuenta, desde) VALUES (n.clave, 1, TO_TIMESTAMP(n.desde, \'YYYY-MM-DD HH24:MI:SS.FF3\'))',
+            [$clave, Base::ahora()],
+        );
     }
 
     /** Busca una mascota del refugio de la sesión (si es de otro refugio, responde 404). */

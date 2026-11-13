@@ -34,6 +34,9 @@ class _MascotaFormScreenState extends State<MascotaFormScreen> {
   String _unidadEdad = 'meses';
   ArchivoElegido? _fotoNueva;
   bool _guardando = false;
+  bool _sugiriendo = false;
+  static const String _ayudaInicial = 'Llena los datos (y la foto) y la IA te propone un borrador que puedes editar.';
+  String _ayudaDescripcion = _ayudaInicial;
 
   bool get _esNueva => widget.mascota == null;
 
@@ -110,6 +113,44 @@ class _MascotaFormScreenState extends State<MascotaFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700),
       );
+    }
+  }
+
+  /// HU-17: pide un borrador con los datos del formulario; lo ya escrito en la descripción va como notas.
+  /// El texto queda en el campo para revisarlo: no se guarda hasta «Guardar».
+  Future<void> _sugerirDescripcion() async {
+    FocusScope.of(context).unfocus();
+    final numero = int.tryParse(_edad.text.trim());
+    final datos = <String, dynamic>{
+      'nombre': _nombre.text.trim(),
+      'especie': _especie,
+      'raza': _raza.text.trim(),
+      'edadMeses': numero == null ? null : (_unidadEdad == 'años' ? numero * 12 : numero),
+      'sexo': _sexo,
+      'tamano': _tamano,
+      'salud': _salud.text.trim(),
+      'notas': _descripcion.text.trim(),
+      'foto': _fotoNueva?.dataUrl ?? widget.mascota?.foto ?? '',
+    };
+    setState(() {
+      _sugiriendo = true;
+      _ayudaDescripcion = 'Escribiendo un borrador… puede tardar unos segundos.';
+    });
+    try {
+      final (texto, iaUsada) = await RefugioService.instancia.sugerirDescripcion(datos);
+      if (!mounted) return;
+      setState(() {
+        _descripcion.text = texto;
+        _ayudaDescripcion = iaUsada
+            ? '✨ Borrador hecho con IA: revísalo y corrige lo que no sea exacto antes de guardar.'
+            : 'La IA no respondió: te dejamos una plantilla para completar.';
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _ayudaDescripcion = _ayudaInicial);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.mensaje), backgroundColor: Colors.red.shade700));
+    } finally {
+      if (mounted) setState(() => _sugiriendo = false);
     }
   }
 
@@ -233,9 +274,27 @@ class _MascotaFormScreenState extends State<MascotaFormScreen> {
             TextFormField(
               controller: _descripcion,
               maxLines: 4,
+              maxLength: 400,
               decoration: _decoracion('Descripción'),
               validator: (v) => _texto(v, minimo: 10, maximo: 400),
             ),
+            // HU-17: borrador con IA a partir de los datos, lo ya escrito (como notas) y la foto
+            Row(children: [
+              OutlinedButton.icon(
+                onPressed: _sugiriendo ? null : _sugerirDescripcion,
+                icon: _sugiriendo
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('✨'),
+                label: Text(_sugiriendo ? 'Generando…' : 'Sugerir con IA'),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _ayudaDescripcion,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ),
+            ]),
             const SizedBox(height: 12),
             _opciones(
               'Estatus',

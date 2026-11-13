@@ -320,7 +320,29 @@ class _InicioScreenState extends State<InicioScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          if (lista.isEmpty)
+          // Antes decía «Aún no hay mascotas» también mientras cargaba o si la API fallaba
+          if (lista.isEmpty && CatalogoService.instancia.cargando)
+            const Padding(
+              padding: EdgeInsets.only(right: 14, bottom: 8),
+              child: Text('Cargando mascotas…', style: TextStyle(color: _mutedColor)),
+            )
+          else if (lista.isEmpty && CatalogoService.instancia.error != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 14, bottom: 8),
+              child: Row(children: [
+                Expanded(
+                  child: Text(
+                    CatalogoService.instancia.error!,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => CatalogoService.instancia.cargar(forzar: true),
+                  child: const Text('Reintentar'),
+                ),
+              ]),
+            )
+          else if (lista.isEmpty)
             const Padding(
               padding: EdgeInsets.only(right: 14, bottom: 8),
               child: Text(
