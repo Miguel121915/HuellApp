@@ -183,6 +183,44 @@ test("un refugio no puede ver ni tocar los datos de otro", async () => {
   assert.equal(mias.some((m) => m.id === mascotaA.id), false);
 });
 
+test("mi perfil (usuario): ver, editar lo permitido y rechazar lo inválido", async () => {
+  const correo = `perfil${Date.now()}@huellapp.mx`;
+  assert.equal((await api("POST", "/api/auth/registro-usuario", { cuerpo: { nombre: "Persona Perfil", correo, password: "Clave1234" } })).estado, 201);
+  const u = await entrar(correo, "usuario", "Clave1234");
+
+  const inicial = (await api("GET", "/api/perfil", { token: u.token })).datos;
+  assert.equal(inicial.perfil.nombre, "Persona Perfil");
+  assert.equal(inicial.perfil.correo, correo);
+  assert.equal(inicial.perfil.telefono, "");
+  assert.equal(inicial.perfil.dosPasos, false);
+  assert.deepEqual(inicial.actividad, { reportes: 0, favoritos: 0, solicitudes: 0, publicaciones: 0 });
+  assert.equal(JSON.stringify(inicial).includes("password"), false);
+
+  const cambios = { telefono: "55 1234 5678", ciudad: "Puebla", ocupacion: "Docente", tipoVivienda: "casa", otrasMascotas: "Un gato", sobreMi: "Me encantan los perros." };
+  const r = await api("PUT", "/api/perfil", { token: u.token, cuerpo: { ...cambios, nombre: "Otro nombre", correo: "otro@huellapp.mx" } });
+  assert.equal(r.estado, 200);
+  const { miembroDesde, conGoogle, dosPasos, ...editado } = r.datos.perfil;
+  assert.deepEqual(editado, { ...cambios, nombre: "Persona Perfil", correo }, "nombre y correo no se cambian desde el perfil");
+  assert.ok(miembroDesde);
+
+  // Borrar un dato opcional lo deja vacío
+  const vacio = await api("PUT", "/api/perfil", { token: u.token, cuerpo: { ...cambios, telefono: "", tipoVivienda: "" } });
+  assert.equal(vacio.datos.perfil.telefono, "");
+  assert.equal(vacio.datos.perfil.tipoVivienda, "");
+  // Solo cambia lo que se envía
+  const parcial = (await api("PUT", "/api/perfil", { token: u.token, cuerpo: { ciudad: "Cholula" } })).datos.perfil;
+  assert.equal(parcial.ciudad, "Cholula");
+  assert.equal(parcial.ocupacion, "Docente");
+
+  assert.equal((await api("PUT", "/api/perfil", { token: u.token, cuerpo: { telefono: "abc" } })).estado, 400);
+  assert.equal((await api("PUT", "/api/perfil", { token: u.token, cuerpo: { tipoVivienda: "castillo" } })).estado, 400);
+  assert.equal((await api("PUT", "/api/perfil", { token: u.token, cuerpo: { sobreMi: "x".repeat(301) } })).estado, 400);
+
+  assert.equal((await api("GET", "/api/perfil")).estado, 401);
+  const refugio = await entrar("refugio@huellapp.mx", "refugio");
+  assert.equal((await api("GET", "/api/perfil", { token: refugio.token })).estado, 403);
+});
+
 test("perfil del refugio: se edita y los usuarios lo ven; adoptadas se ocultan", async () => {
   const r = await entrar("refugio@huellapp.mx", "refugio");
   const u = await entrar("ana@huellapp.mx", "usuario");

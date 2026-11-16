@@ -117,6 +117,7 @@ export async function montarNavbar({ sesion, activa }) {
                   <span class="cuenta__correo"></span>
                   <span class="cuenta__rol">${ROL_TEXTO[sesion.rol] || ""}</span>
                 </div>
+                ${sesion.rol === "usuario" ? `<a class="cuenta__opcion" href="${rutaDesdeRaiz("pages/usuario/perfil.html")}"${activa === "perfil" ? ' aria-current="page"' : ""}>👤 Mi perfil <small>Tu cuenta, teléfono y datos del hogar</small></a>` : ""}
                 ${sesion.rol === "usuario" ? `<a class="cuenta__opcion" href="${rutaDesdeRaiz("pages/usuario/solicitudes.html")}"${activa === "solicitudes" ? ' aria-current="page"' : ""}>🐾 Mis solicitudes <small>Adopciones y guía de cuidado</small></a>` : ""}
                 <button class="cuenta__opcion" id="boton-seguridad" type="button">🔒 Seguridad <small>Verificación en dos pasos</small></button>
                 <button class="cuenta__opcion cuenta__opcion--salir" id="boton-salir" type="button">↩ Cerrar sesión</button>

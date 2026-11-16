@@ -4,7 +4,7 @@
  * de 1 a 3 fotos del espacio). Incluye el asistente KIRO con las preguntas frecuentes del refugio.
  */
 import { montarAsistente } from "../../components/asistente-adopcion.js";
-import { enviarSolicitudAdopcion } from "../../core/servicios.js";
+import { enviarSolicitudAdopcion, obtenerMiPerfil } from "../../core/servicios.js";
 import {
   crearElemento, esCorreoValido, leerComoDataUrl, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta,
   redimensionarImagen, resolverImagen, validarDocumento, validarImagen,
@@ -145,9 +145,26 @@ export function montarFormularioAdopcion({ sesion, alEnviar }) {
     contador.textContent = `0/${MAX_MOTIVO}`;
     formulario.querySelectorAll(".campo").forEach((c) => marcarError(c, ""));
     ocultarAlerta(alerta);
-    // Se precargan los datos que ya conocemos de la sesión
+    // Se precargan los datos que ya conocemos de la sesión y de "Mi perfil"
     f.nombre.value = sesion.nombre || "";
     f.correo.value = sesion.correo || "";
+    precargarPerfil();
+  }
+
+  /** Teléfono y datos del hogar guardados en "Mi perfil" (solo llena lo que siga vacío). */
+  async function precargarPerfil() {
+    if (sesion.rol !== "usuario") return; // un visitante no tiene perfil (y un 401 lo mandaría al login)
+    let perfil;
+    try {
+      ({ perfil } = await obtenerMiPerfil());
+    } catch {
+      return; // sin perfil a la mano se llena a mano, como siempre
+    }
+    const llenar = (nombre, valor) => { if (valor && !f[nombre].value) f[nombre].value = valor; };
+    llenar("telefono", perfil.telefono);
+    llenar("ocupacion", perfil.ocupacion);
+    llenar("tipoVivienda", perfil.tipoVivienda);
+    llenar("otrasMascotas", perfil.otrasMascotas);
   }
 
   return {

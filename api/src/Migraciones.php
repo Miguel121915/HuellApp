@@ -30,6 +30,9 @@ final class Migraciones
         'usuarios' => [
             'totp_secreto' => 'VARCHAR2(200 CHAR)', 'totp_activo' => 'NUMBER(1) DEFAULT 0 NOT NULL',
             'totp_ultimo_paso' => 'NUMBER(12)', 'google_sub' => 'VARCHAR2(64 CHAR)',
+            // Mi perfil: datos que el usuario edita (también precargan la solicitud de adopción)
+            'ciudad' => 'VARCHAR2(80 CHAR)', 'ocupacion' => 'VARCHAR2(100 CHAR)', 'tipo_vivienda' => 'VARCHAR2(15 CHAR)',
+            'otras_mascotas' => 'VARCHAR2(200 CHAR)', 'sobre_mi' => 'VARCHAR2(300 CHAR)',
         ],
         // Reportes (HU-5): especie y nombre opcionales, y lo que detectó la IA (JSON)
         'reportes' => [

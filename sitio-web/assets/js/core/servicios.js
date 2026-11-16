@@ -170,3 +170,19 @@ export const enviarMensajeRefugio = (datos) => intentar(async () => {
 export async function obtenerRequisitosRefugio(refugioId) {
   return (await get(`/refugios/${encodeURIComponent(refugioId)}/requisitos`)).requisitos;
 }
+
+/* ---------- Mi perfil ---------- */
+
+/** Datos de mi cuenta y mi actividad: { perfil: {...}, actividad: { reportes, favoritos, solicitudes, publicaciones } } */
+export async function obtenerMiPerfil() {
+  return get("/perfil");
+}
+
+/**
+ * Guarda los datos editables del perfil (el nombre y el correo no se cambian aquí).
+ * @param {{telefono?:string, ciudad?:string, ocupacion?:string, tipoVivienda?:string, otrasMascotas?:string, sobreMi?:string}} datos
+ */
+export const actualizarMiPerfil = (datos) => intentar(async () => {
+  const r = await put("/perfil", datos);
+  return { ok: true, perfil: r.perfil, actividad: r.actividad };
+});

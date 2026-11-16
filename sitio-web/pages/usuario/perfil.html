@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi perfil · HuellApp</title>
+  <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../../assets/css/base/layout.css">
+  <link rel="stylesheet" href="../../assets/css/components/navbar.css">
+  <link rel="stylesheet" href="../../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
+  <link rel="stylesheet" href="../../assets/css/components/formularios.css">
+  <link rel="stylesheet" href="../../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
+  <script type="module" src="../../assets/js/modules/usuario/perfil.js"></script>
+</head>
+<body class="pagina-usuario" data-protegida>
+  <header class="encabezado" id="encabezado"></header>
+  <main class="contenido">
+    <h1 class="titulo-banner titulo-banner--lima">Mi perfil</h1>
+    <p class="texto-suave intro-seccion">Revisa los datos de tu cuenta y actualiza tu información de contacto y de tu hogar.</p>
+    <div id="alerta-carga" role="status" hidden></div>
+
+    <div id="perfil" class="perfil-usuario" hidden>
+      <div class="perfil-usuario__lateral">
+        <section class="tarjeta tarjeta--blanca perfil-cuenta" aria-labelledby="titulo-cuenta">
+          <div class="perfil-cuenta__avatar" id="avatar" aria-hidden="true"></div>
+          <h2 id="titulo-cuenta" class="perfil-cuenta__nombre"></h2>
+          <p class="texto-suave texto-pequeno" id="miembro-desde"></p>
+          <dl class="perfil-datos">
+            <div><dt>Nombre</dt><dd id="dato-nombre"></dd></div>
+            <div><dt>Correo</dt><dd id="dato-correo"></dd></div>
+            <div><dt>Inicio de sesión</dt><dd id="dato-acceso"></dd></div>
+            <div><dt>Verificación en dos pasos</dt><dd><span id="dato-2fa" class="insignia"></span></dd></div>
+          </dl>
+          <p class="texto-pequeno texto-suave">Tu nombre y tu correo identifican tu cuenta, por eso no se cambian desde aquí.</p>
+          <button id="boton-seguridad" class="boton boton--contorno boton--bloque" type="button">🔒 Seguridad de la cuenta</button>
+        </section>
+
+        <section class="tarjeta tarjeta--blanca" aria-labelledby="titulo-actividad">
+          <h2 id="titulo-actividad" class="seccion-titulo perfil-usuario__subtitulo">Mi actividad</h2>
+          <ul class="perfil-actividad">
+            <li><a href="reportar.html"><strong id="cuenta-reportes">0</strong><span>Reportes</span></a></li>
+            <li><a href="favoritos.html"><strong id="cuenta-favoritos">0</strong><span>Favoritos</span></a></li>
+            <li><a href="solicitudes.html"><strong id="cuenta-solicitudes">0</strong><span>Solicitudes de adopción</span></a></li>
+            <li><a href="foro.html"><strong id="cuenta-publicaciones">0</strong><span>Publicaciones en el foro</span></a></li>
+          </ul>
+        </section>
+      </div>
+
+      <form id="formulario-perfil" class="tarjeta tarjeta--blanca" novalidate>
+        <h2 class="seccion-titulo perfil-usuario__subtitulo">Datos de contacto</h2>
+        <div class="formulario-grid">
+          <div class="campo" data-campo="telefono">
+            <label class="campo__etiqueta" for="p-telefono">Teléfono <span class="texto-suave">(opcional)</span></label>
+            <input id="p-telefono" name="telefono" class="campo__control" type="tel" inputmode="tel" maxlength="25" autocomplete="tel" placeholder="Ej. 55 1234 5678">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo" data-campo="ciudad">
+            <label class="campo__etiqueta" for="p-ciudad">Ciudad o municipio <span class="texto-suave">(opcional)</span></label>
+            <input id="p-ciudad" name="ciudad" class="campo__control" type="text" maxlength="80" autocomplete="address-level2" placeholder="Ej. Puebla">
+            <span class="campo__error" role="alert"></span>
+          </div>
+        </div>
+
+        <h2 class="seccion-titulo perfil-usuario__subtitulo">Sobre mi hogar</h2>
+        <p class="texto-pequeno texto-suave">Estos datos se llenan solos cuando envías una solicitud de adopción (ahí puedes cambiarlos).</p>
+        <div class="formulario-grid">
+          <div class="campo" data-campo="ocupacion">
+            <label class="campo__etiqueta" for="p-ocupacion">Ocupación <span class="texto-suave">(opcional)</span></label>
+            <input id="p-ocupacion" name="ocupacion" class="campo__control" type="text" maxlength="100" autocomplete="organization-title">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <fieldset class="campo campo--grupo" data-campo="tipoVivienda">
+            <legend class="campo__etiqueta">Tipo de vivienda <span class="texto-suave">(opcional)</span></legend>
+            <label class="opcion"><input type="radio" name="tipoVivienda" value="casa"><span>Casa</span></label>
+            <label class="opcion"><input type="radio" name="tipoVivienda" value="departamento"><span>Departamento</span></label>
+            <label class="opcion"><input type="radio" name="tipoVivienda" value="otro"><span>Otro</span></label>
+            <label class="opcion"><input type="radio" name="tipoVivienda" value=""><span>Prefiero no decir</span></label>
+            <span class="campo__error" role="alert"></span>
+          </fieldset>
+          <div class="campo campo--completo" data-campo="otrasMascotas">
+            <label class="campo__etiqueta" for="p-otras">¿Tienes otras mascotas? <span class="texto-suave">(opcional)</span></label>
+            <input id="p-otras" name="otrasMascotas" class="campo__control" type="text" maxlength="200" placeholder="Ej. Una gata de 3 años, esterilizada">
+            <span class="campo__error" role="alert"></span>
+          </div>
+          <div class="campo campo--completo" data-campo="sobreMi">
+            <label class="campo__etiqueta" for="p-sobre-mi">Sobre mí <span class="texto-suave">(opcional)</span></label>
+            <textarea id="p-sobre-mi" name="sobreMi" class="campo__control" maxlength="300" placeholder="Cuéntanos un poco de ti y qué tipo de compañero buscas."></textarea>
+            <span class="campo__ayuda" id="contador-sobre-mi" aria-live="polite">0/300</span>
+            <span class="campo__error" role="alert"></span>
+          </div>
+        </div>
+
+        <div id="alerta-perfil" role="status" hidden></div>
+        <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Guardar cambios</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

@@ -28,6 +28,12 @@ CREATE TABLE usuarios (
   totp_ultimo_paso NUMBER(12),
   -- Cuenta de Google vinculada («Continuar con Google»): identificador "sub" de Google
   google_sub       VARCHAR2(64 CHAR),
+  -- Mi perfil: datos que el usuario edita (también precargan la solicitud de adopción)
+  ciudad           VARCHAR2(80 CHAR),
+  ocupacion        VARCHAR2(100 CHAR),
+  tipo_vivienda    VARCHAR2(15 CHAR),
+  otras_mascotas   VARCHAR2(200 CHAR),
+  sobre_mi         VARCHAR2(300 CHAR),
   CONSTRAINT pk_usuarios PRIMARY KEY (id),
   CONSTRAINT uq_usuarios_correo UNIQUE (correo),
   CONSTRAINT ck_usuarios_rol CHECK (rol IN ('usuario', 'refugio', 'admin'))

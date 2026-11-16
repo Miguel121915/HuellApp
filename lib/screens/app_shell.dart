@@ -7,6 +7,7 @@ import 'package:huellapp/screens/coincidencias_screen.dart';
 import 'package:huellapp/screens/favoritos_screen.dart';
 import 'package:huellapp/screens/inicio_screen.dart';
 import 'package:huellapp/screens/login_screen.dart';
+import 'package:huellapp/screens/mi_perfil_screen.dart';
 import 'package:huellapp/screens/mis_mensajes_screen.dart';
 import 'package:huellapp/screens/mis_solicitudes_screen.dart';
 import 'package:huellapp/screens/muro_huellapp_screen.dart';
@@ -153,6 +154,17 @@ class _AppShellState extends State<AppShell> {
               subtitle: Text('${sesion.correo} · ${sesion.esRefugio ? 'Refugio' : 'Usuario'}'),
             ),
             const Divider(),
+            if (sesion.esUsuario)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Mi perfil'),
+                subtitle: const Text('Revisa tu cuenta y edita tu teléfono y datos del hogar'),
+                onTap: () {
+                  Navigator.pop(hoja);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MiPerfilScreen()));
+                },
+              ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.favorite_border),
