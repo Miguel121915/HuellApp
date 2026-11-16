@@ -146,25 +146,48 @@ export function montarFormularioAdopcion({ sesion, alEnviar }) {
     formulario.querySelectorAll(".campo").forEach((c) => marcarError(c, ""));
     ocultarAlerta(alerta);
     // Se precargan los datos que ya conocemos de la sesión y de "Mi perfil"
-    f.nombre.value = sesion.nombre || "";
-    f.correo.value = sesion.correo || "";
-    precargarPerfil();
+    relleno.hidden = true;
+    const rellenados = [];
+    if (sesion.nombre) { f.nombre.value = sesion.nombre; rellenados.push("nombre"); }
+    if (sesion.correo) { f.correo.value = sesion.correo; rellenados.push("correo"); }
+    precargarPerfil(rellenados);
   }
 
-  /** Teléfono y datos del hogar guardados en "Mi perfil" (solo llena lo que siga vacío). */
-  async function precargarPerfil() {
-    if (sesion.rol !== "usuario") return; // un visitante no tiene perfil (y un 401 lo mandaría al login)
-    let perfil;
-    try {
-      ({ perfil } = await obtenerMiPerfil());
-    } catch {
-      return; // sin perfil a la mano se llena a mano, como siempre
+  /* ---------- Rellenado automático con los datos básicos (avisa KIRO) ---------- */
+  const relleno = document.getElementById("adopcion-relleno");
+  document.getElementById("adopcion-relleno-cerrar").addEventListener("click", () => { relleno.hidden = true; });
+  const ETIQUETAS_RELLENO = {
+    nombre: "tu nombre", correo: "tu correo", telefono: "tu teléfono", ocupacion: "tu ocupación",
+    tipoVivienda: "el tipo de vivienda", otrasMascotas: "tus otras mascotas",
+  };
+  /** "a", "a y b", "a, b y c" */
+  const enLista = (partes) => (partes.length < 2 ? partes.join("") : `${partes.slice(0, -1).join(", ")} y ${partes.at(-1)}`);
+
+  /**
+   * Teléfono y datos del hogar guardados en "Mi perfil" (solo llena lo que siga vacío).
+   * Son datos que la persona ya escribió: se copian tal cual, sin IA, para no inventar nada.
+   * El motivo, la dirección y los documentos siempre los llena la persona.
+   */
+  async function precargarPerfil(rellenados) {
+    if (sesion.rol === "usuario") { // un visitante no tiene perfil (y un 401 lo mandaría al login)
+      try {
+        const { perfil } = await obtenerMiPerfil();
+        const llenar = (nombre, valor) => {
+          if (valor && !f[nombre].value) { f[nombre].value = valor; rellenados.push(nombre); }
+        };
+        llenar("telefono", perfil.telefono);
+        llenar("ocupacion", perfil.ocupacion);
+        llenar("tipoVivienda", perfil.tipoVivienda);
+        llenar("otrasMascotas", perfil.otrasMascotas);
+      } catch {
+        // sin perfil a la mano: se queda con el nombre y el correo de la sesión
+      }
     }
-    const llenar = (nombre, valor) => { if (valor && !f[nombre].value) f[nombre].value = valor; };
-    llenar("telefono", perfil.telefono);
-    llenar("ocupacion", perfil.ocupacion);
-    llenar("tipoVivienda", perfil.tipoVivienda);
-    llenar("otrasMascotas", perfil.otrasMascotas);
+    if (rellenados.length === 0) return;
+    document.getElementById("adopcion-relleno-detalle").textContent =
+      `Puse ${enLista(rellenados.map((n) => ETIQUETAS_RELLENO[n]))}. Revísalo antes de enviar; puedes cambiar lo que quieras.`
+      + (rellenados.includes("telefono") ? "" : " Si guardas tu teléfono en «Mi perfil», la próxima vez también lo pongo yo.");
+    relleno.hidden = false;
   }
 
   return {

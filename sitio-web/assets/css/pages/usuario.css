@@ -225,3 +225,20 @@
 @media (max-width: 900px) {
   .perfil-usuario { grid-template-columns: 1fr; }
 }
+
+/* Formulario de adopción: KIRO avisa qué datos básicos rellenó */
+.relleno-kiro { position: relative; display: flex; align-items: flex-start; gap: var(--e3); margin-block: var(--e3); }
+.relleno-kiro[hidden] { display: none; }
+.relleno-kiro__avatar { flex-shrink: 0; width: 56px; height: auto; }
+.relleno-kiro__globo {
+  position: relative; flex: 1; margin: 0; padding: var(--e3) var(--e6) var(--e3) var(--e4);
+  background: var(--aqua-suave); border: 2px solid var(--borde); border-radius: var(--radio-m);
+}
+.relleno-kiro__globo::before { /* colita del globo, apunta a KIRO */
+  content: ""; position: absolute; left: -10px; top: 18px; width: 16px; height: 16px;
+  background: var(--aqua-suave); border-left: 2px solid var(--borde); border-bottom: 2px solid var(--borde); transform: rotate(45deg);
+}
+.relleno-kiro__globo strong { display: block; margin-bottom: 2px; }
+.relleno-kiro__globo span { font-size: 0.9rem; color: var(--tinta-suave); }
+.relleno-kiro__cerrar { position: absolute; top: var(--e1); right: var(--e2); width: 32px; height: 32px; border: 0; background: transparent; font-size: 1.4rem; line-height: 1; color: var(--tinta-suave); cursor: pointer; }
+.relleno-kiro__cerrar:hover { color: var(--tinta); }

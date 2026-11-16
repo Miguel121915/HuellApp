@@ -116,9 +116,21 @@
 .asistente__formulario { display: flex; gap: var(--e2); padding: var(--e3); }
 .asistente__formulario .campo__control { min-height: 40px; }
 
+/* El botón de KIRO no debe tapar «Cancelar» y «Enviar solicitud»:
+   - Pantallas anchas: el botón y su chat salen del formulario, a la derecha de la pantalla.
+   - Pantallas angostas (no cabe afuera): se deja espacio al final del formulario para que,
+     al bajar hasta el final, los botones queden por encima de KIRO. */
+@media (min-width: 1360px) {
+  .asistente__boton,
+  .asistente__panel { right: 24px; }
+}
+@media (max-width: 1359px) {
+  .adopcion form { padding-bottom: calc(var(--e5) + 72px); }
+}
+
 @media (max-width: 720px) {
   .adopcion__cabecera { padding: var(--e3); }
-  .adopcion form { padding: var(--e3); }
+  .adopcion form { padding: var(--e3) var(--e3) calc(var(--e3) + 72px); } /* espacio para el botón de KIRO */
   .adopcion .formulario-grid { grid-template-columns: 1fr; }
   .asistente__boton span { display: none; } /* en móvil queda solo el avatar de KIRO */
   .asistente__boton { padding: var(--e1); }

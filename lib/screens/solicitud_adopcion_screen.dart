@@ -7,6 +7,7 @@ import '../models/refugio.dart';
 import '../services/adopcion_service.dart';
 import '../services/refugio_service.dart' show ArchivoElegido;
 import '../widgets/foto_huellapp.dart';
+import '../widgets/kiro_avatar.dart';
 import 'mis_solicitudes_screen.dart';
 
 /// Solicitud de adopción desde la app (HU-14). Los mismos datos y documentos que pide el sitio web:
@@ -46,12 +47,110 @@ class _SolicitudAdopcionScreenState extends State<SolicitudAdopcionScreen> {
   bool _enviando = false;
   bool _intentoEnviar = false;
 
+  /// Datos básicos que se llenaron solos (KIRO lo avisa arriba del formulario).
+  final List<String> _rellenados = [];
+  bool _mostrarKiro = false;
+
+  /// Cambia cuando el perfil llena el tipo de vivienda: el menú se vuelve a dibujar con el valor nuevo.
+  int _versionVivienda = 0;
+
+  static const Map<String, String> _etiquetasRelleno = {
+    'nombre': 'tu nombre',
+    'correo': 'tu correo',
+    'telefono': 'tu teléfono',
+    'ocupacion': 'tu ocupación',
+    'tipoVivienda': 'el tipo de vivienda',
+    'otrasMascotas': 'tus otras mascotas',
+  };
+
   @override
   void initState() {
     super.initState();
     final sesion = SesionService.instancia.actual;
-    _nombre.text = sesion?.nombre ?? '';
-    _correo.text = sesion?.correo ?? '';
+    if ((sesion?.nombre ?? '').isNotEmpty) {
+      _nombre.text = sesion!.nombre;
+      _rellenados.add('nombre');
+    }
+    if ((sesion?.correo ?? '').isNotEmpty) {
+      _correo.text = sesion!.correo;
+      _rellenados.add('correo');
+    }
+    _mostrarKiro = _rellenados.isNotEmpty;
+    _precargarPerfil();
+  }
+
+  /// Teléfono y datos del hogar guardados en «Mi perfil» (solo llena lo que siga vacío).
+  /// Son datos que la persona ya escribió: se copian tal cual, sin IA, para no inventar nada.
+  /// El motivo, la dirección y los documentos siempre los llena la persona.
+  Future<void> _precargarPerfil() async {
+    if (SesionService.instancia.actual?.esUsuario != true) return;
+    Map<String, dynamic> perfil;
+    try {
+      final r = await ApiClient.instancia.get('/perfil');
+      perfil = (r['perfil'] as Map?)?.cast<String, dynamic>() ?? {};
+    } on ApiException {
+      return; // sin perfil a la mano: se queda con el nombre y el correo de la sesión
+    }
+    if (!mounted) return;
+    setState(() {
+      void llenar(String clave, TextEditingController c) {
+        final valor = '${perfil[clave] ?? ''}'.trim();
+        if (valor.isNotEmpty && c.text.trim().isEmpty) {
+          c.text = valor;
+          _rellenados.add(clave);
+        }
+      }
+
+      llenar('telefono', _telefono);
+      llenar('ocupacion', _ocupacion);
+      llenar('otrasMascotas', _otrasMascotas);
+      final vivienda = '${perfil['tipoVivienda'] ?? ''}';
+      if (const ['casa', 'departamento', 'otro'].contains(vivienda)) {
+        _tipoVivienda = vivienda;
+        _versionVivienda++;
+        _rellenados.add('tipoVivienda');
+      }
+      _mostrarKiro = _rellenados.isNotEmpty;
+    });
+  }
+
+  /// "a", "a y b", "a, b y c"
+  static String _enLista(List<String> partes) =>
+      partes.length < 2 ? partes.join() : '${partes.sublist(0, partes.length - 1).join(', ')} y ${partes.last}';
+
+  Widget _avisoKiro() {
+    final lista = _enLista(_rellenados.map((c) => _etiquetasRelleno[c] ?? c).toList());
+    final sinTelefono = !_rellenados.contains('telefono');
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF9ED9D1), width: 2),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const KiroAvatar(size: 48),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('¡Hola! He rellenado algunas cosas para facilitarte el proceso.',
+                style: TextStyle(fontWeight: FontWeight.w800, color: _oscuro)),
+            const SizedBox(height: 4),
+            Text(
+              'Puse $lista. Revísalo antes de enviar; puedes cambiar lo que quieras.'
+              '${sinTelefono ? ' Si guardas tu teléfono en «Mi perfil», la próxima vez también lo pongo yo.' : ''}',
+              style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.35),
+            ),
+          ]),
+        ),
+        IconButton(
+          tooltip: 'Cerrar el mensaje de KIRO',
+          icon: const Icon(Icons.close, size: 20),
+          onPressed: () => setState(() => _mostrarKiro = false),
+        ),
+      ]),
+    );
   }
 
   @override
@@ -180,6 +279,7 @@ class _SolicitudAdopcionScreenState extends State<SolicitudAdopcionScreen> {
                       style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ]),
+                  if (_mostrarKiro) _avisoKiro(),
                   _titulo('Tus datos'),
                   _tarjeta([
                     _campo(_nombre, 'Nombre completo', Icons.person_outline, min: 3, max: 100),
@@ -193,6 +293,7 @@ class _SolicitudAdopcionScreenState extends State<SolicitudAdopcionScreen> {
                   _titulo('Tu hogar'),
                   _tarjeta([
                     DropdownButtonFormField<String>(
+                      key: ValueKey('vivienda-$_versionVivienda'),
                       initialValue: _tipoVivienda,
                       decoration: _decoracion('Tipo de vivienda', Icons.house_outlined),
                       items: const [
