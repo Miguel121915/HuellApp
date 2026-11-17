@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Arquitectura de HuellApp</title>
+<style>
+  @page { size: Letter; margin: 18mm 16mm; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #14312E; font-size: 11pt; line-height: 1.5; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4pt; color: #1B4F4A; }
+  .sub { color: #3F5F5B; margin: 0 0 14pt; }
+  h2 { font-size: 13.5pt; color: #1B4F4A; border-bottom: 2px solid #75E6DA; padding-bottom: 3pt; margin: 18pt 0 8pt; }
+  figure { margin: 0 0 6pt; text-align: center; }
+  figure img { width: 100%; max-width: 680px; }
+  figcaption { font-size: 9pt; color: #3F5F5B; }
+  ul { margin: 4pt 0 8pt; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+  tr { page-break-inside: avoid; } table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-top: 4pt; }
+  th, td { border: 1px solid #9ED9D1; padding: 5pt 6pt; vertical-align: top; text-align: left; }
+  th { background: #E6F8F5; }
+  code { font-family: Consolas, monospace; font-size: 9pt; background: #F1F6F5; padding: 0 2pt; border-radius: 3px; }
+  .salto { page-break-before: always; }
+  .nota { background: #FDECB5; color: #5C4300; padding: 8pt 10pt; border-radius: 6px; font-size: 10pt; }
+  .pie { margin-top: 16pt; font-size: 8.5pt; color: #3F5F5B; }
+</style>
+</head>
+<body>
+  <h1>Arquitectura de HuellApp</h1>
+  <p class="sub">App móvil y web de adopción de mascotas y reunificación de mascotas perdidas · Rama <code>integracion/web-api-oracle</code></p>
+
+  <figure>
+    <img src="arquitectura-huellapp.svg" alt="Diagrama de arquitectura de HuellApp">
+    <figcaption>Figura 1. Componentes de HuellApp y cómo se comunican.</figcaption>
+  </figure>
+
+  <h2>1. Cómo se comunican las partes</h2>
+  <ul>
+    <li><b>Clientes → API.</b> La app Flutter y el sitio web no hablan con la base de datos. Todo pasa por la <b>API en PHP</b>, con peticiones HTTPS que devuelven JSON y llevan un token de sesión (JWT).</li>
+    <li><b>API → Oracle.</b> Solo la API se conecta a <b>Oracle Autonomous Database</b>, en Oracle Cloud, usando el wallet (certificados de conexión segura).</li>
+    <li><b>Worker de IA.</b> Cuando alguien publica un reporte, la API lanza <code>php artisan ia:procesar</code> en segundo plano. Ese proceso llama a <b>Gemini</b> para analizar y comparar las fotos y luego actualiza las coincidencias. Así el reporte se publica al instante y la persona no espera a la IA.</li>
+    <li><b>Archivos subidos.</b> Las fotos y documentos se guardan en <code>api/storage/uploads</code>; en la base de datos solo se guarda su ruta.</li>
+    <li><b>Seguridad.</b> Verificación en dos pasos obligatoria para administradores y refugios, CAPTCHA en el sitio web y límite de intentos de inicio de sesión y de registros.</li>
+  </ul>
+
+  <h2>2. Servicios externos</h2>
+  <ul>
+    <li><b>Gemini (Google):</b> lo llama la API para analizar fotos, comparar mascotas y responder en el asistente KIRO. Si un modelo está saturado, usa modelos de respaldo.</li>
+    <li><b>Cloudflare Turnstile:</b> el navegador muestra el CAPTCHA y la API verifica la respuesta con Cloudflare.</li>
+    <li><b>Google Sign-In:</b> la app o la web obtienen el token de Google y la API lo valida.</li>
+    <li><b>OpenStreetMap:</b> lo usan directamente la app y la web para dibujar los mapas; no pasa por la API.</li>
+    <li><b>Firebase Cloud Messaging:</b> pendiente (HU-19). Servirá para enviar notificaciones push con la app cerrada.</li>
+  </ul>
+
+  <h2>3. Rutas de la API (<code>/api</code>)</h2>
+  <table>
+    <tr><th style="width:18%">Módulo</th><th style="width:50%">Rutas principales</th><th>Para qué</th></tr>
+    <tr><td>Auth</td><td><code>POST /auth/login</code>, <code>/auth/google</code>, <code>/auth/registro-usuario</code>, <code>/auth/registro-refugio</code>, <code>/auth/2fa/*</code></td><td>Registro, inicio de sesión y verificación en dos pasos</td></tr>
+    <tr><td>Refugios (público)</td><td><code>GET /refugios</code>, <code>/refugios/{id}/mascotas</code>, <code>/refugios/{id}/requisitos</code></td><td>Catálogo, filtros y mapa</td></tr>
+    <tr><td>Refugio (panel)</td><td><code>GET/POST/PUT /refugio/mascotas</code>, <code>/refugio/requisitos</code>, <code>/refugio/mensajes</code>, <code>/refugio/adopciones</code></td><td>Lo que administra cada refugio</td></tr>
+    <tr><td>Admin</td><td><code>GET /admin/refugios</code>, <code>POST /admin/refugios/{id}/aprobar</code> y <code>/rechazar</code>, <code>GET /admin/estadisticas</code></td><td>Verificación de refugios y estadísticas</td></tr>
+    <tr><td>Reportes</td><td><code>POST /reportes</code>, <code>POST /reportes/{id}/reunido</code>, <code>GET /coincidencias</code>, <code>POST /coincidencias/{id}/sena</code></td><td>Alertas, coincidencias por IA y seña secreta</td></tr>
+    <tr><td>Foro</td><td><code>GET /foro?categoria=…</code>, <code>POST /foro</code>, comentarios y "me gusta"</td><td>Muro con pestañas</td></tr>
+    <tr><td>Favoritos y mensajes</td><td><code>/favoritos</code>, <code>/mensajes</code></td><td>Guardar mascotas y escribir a refugios</td></tr>
+    <tr><td>Adopciones</td><td><code>GET/POST /adopciones</code></td><td>Solicitudes de adopción y su estado</td></tr>
+    <tr><td>KIRO</td><td><code>POST /kiro</code></td><td>Asistente con IA</td></tr>
+    <tr><td>Avisos</td><td><code>GET /avisos</code>, <code>POST /avisos/leidos</code></td><td>La campana de notificaciones</td></tr>
+  </table>
+
+  <h2>4. Tecnologías</h2>
+  <table>
+    <tr><th style="width:25%">Parte</th><th>Tecnología</th></tr>
+    <tr><td>App móvil</td><td>Flutter (Dart): web y Android, mapas con flutter_map</td></tr>
+    <tr><td>Sitio web</td><td>HTML, CSS y JavaScript sin frameworks, mapas con Leaflet</td></tr>
+    <tr><td>API</td><td>PHP 8 sin frameworks, extensión <code>pdo_oci</code>, tokens JWT</td></tr>
+    <tr><td>Base de datos</td><td>Oracle Autonomous Database en Oracle Cloud (OCI), conexión con wallet</td></tr>
+    <tr><td>Inteligencia artificial</td><td>Google Gemini (capa gratuita, con modelos de respaldo)</td></tr>
+  </table>
+
+  <h2>5. Despliegue (HU-25)</h2>
+  <p>Hoy la API y el sitio corren en la computadora de cada integrante. El plan de despliegue (carpeta <code>despliegue/</code>) los instala en una <b>máquina virtual de Oracle Cloud</b>, en la misma nube que la base de datos:</p>
+  <ul>
+    <li><b>nginx</b> recibe las peticiones de internet con HTTPS y reparte entre el sitio, la app compilada y la API.</li>
+    <li><b>systemd</b> mantiene la API encendida y la reinicia si se cae.</li>
+    <li>Así habrá un link público, funcionará aunque las laptops estén apagadas y todos compartirán la misma carpeta de fotos.</li>
+  </ul>
+  <p class="nota">Pendiente: crear la máquina virtual, instalar con <code>despliegue/instalar.sh</code> y configurar HTTPS. Las notificaciones push (HU-19) se completan después, porque necesitan HTTPS.</p>
+
+  <p class="pie">Documento generado el 17 de noviembre de 2026 · Equipo HuellApp</p>
+</body>
+</html>
