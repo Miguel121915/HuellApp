@@ -261,6 +261,7 @@
       "horario": "09:00 - 18:00",
       "estado": "pendiente",
       "motivoRechazo": "",
+      "extras": { "latitud": 19.4004, "longitud": -98.9877, "municipio": "Nezahualcóyotl" },
       "documentos": [
         {
           "tipo": "acta",
@@ -286,6 +287,7 @@
       "horario": "10:00 - 15:00",
       "estado": "rechazado",
       "motivoRechazo": "El comprobante de domicilio tiene más de 3 meses de antigüedad. Sube uno reciente.",
+      "extras": { "latitud": 19.3891, "longitud": -99.0055, "municipio": "Nezahualcóyotl" },
       "documentos": [
         {
           "tipo": "acta",

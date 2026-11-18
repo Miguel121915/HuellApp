@@ -92,6 +92,6 @@
   border-radius: 10px; background: #1f7a52; color: var(--blanco); font-size: 0.7rem; font-weight: 800;
 }
 .mascota-mini__datos { display: grid; padding: var(--e2) var(--e3); }
-.mascota-mini__nombre { font-weight: 800; }
+.mascota-mini__nombre { font-weight: 800; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mascota-mini__detalle { font-size: 0.8rem; color: var(--tinta-suave); }
 

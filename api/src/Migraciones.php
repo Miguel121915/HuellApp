@@ -97,6 +97,29 @@ final class Migraciones
         }
         self::actualizar();
         self::ligarAlertasViejas();
+        self::ubicarRefugiosDemo();
+    }
+
+    /**
+     * Los refugios de demostración se cargaron antes de existir las columnas latitud/longitud, así que
+     * quedaron sin ubicación y NO salían en el mapa. Se completan con las coordenadas de
+     * database/datos-demo.json, buscándolos por nombre. Solo toca los que siguen sin ubicación
+     * (nunca cambia la que un refugio haya puesto él mismo) y es seguro repetirlo.
+     */
+    private static function ubicarRefugiosDemo(): void
+    {
+        $ruta = RAIZ . '/database/datos-demo.json';
+        $datos = is_file($ruta) ? json_decode((string) file_get_contents($ruta), true) : null;
+        foreach (is_array($datos['refugios'] ?? null) ? $datos['refugios'] : [] as $r) {
+            $e = $r['extras'] ?? [];
+            if (!isset($r['nombre'], $e['latitud'], $e['longitud'])) {
+                continue;
+            }
+            Base::ejecutar(
+                'UPDATE refugios SET latitud = ?, longitud = ?, municipio = NVL(municipio, ?) WHERE nombre = ? AND (latitud IS NULL OR longitud IS NULL)',
+                [$e['latitud'], $e['longitud'], $e['municipio'] ?? null, $r['nombre']],
+            );
+        }
     }
 
     /**

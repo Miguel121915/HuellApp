@@ -34,8 +34,11 @@ const plantilla = `
   </div>`;
 
 /** Inserta los campos en `contenedor` (un <fieldset> vacío) y prepara el mapa. */
-export function montarDatosExtra(contenedor) {
-  contenedor.innerHTML = plantilla;
+export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = {}) {
+  // En el registro la ubicación es obligatoria (igual que en la app): sin ella el refugio no sale en el mapa
+  contenedor.innerHTML = ubicacionObligatoria
+    ? plantilla.replace("Ubicación y contacto (opcional)", "Ubicación y contacto").replace("Ubicación en el mapa</span>", "Ubicación en el mapa (obligatoria)</span>")
+    : plantilla;
   const lat = contenedor.querySelector("#latitud");
   const lng = contenedor.querySelector("#longitud");
   const texto = contenedor.querySelector("#texto-ubicacion");
@@ -109,6 +112,10 @@ export function montarDatosExtra(contenedor) {
     validar() {
       const cp = contenedor.querySelector("#codigoPostal").value.trim();
       const wa = contenedor.querySelector("#whatsapp").value.trim();
+      if (ubicacionObligatoria && (!lat.value || !lng.value)) {
+        divMapa.scrollIntoView({ block: "center", behavior: "smooth" });
+        return "Marca la ubicación del refugio en el mapa (o usa «Usar mi ubicación»): así aparecerá en el mapa de refugios.";
+      }
       if (cp && !/^\d{5}$/.test(cp)) return "El código postal debe tener 5 dígitos.";
       if (wa && !/^[\d\s+()-]{8,}$/.test(wa)) return "El WhatsApp debe tener al menos 8 dígitos.";
       return "";

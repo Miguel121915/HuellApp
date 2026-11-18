@@ -76,6 +76,23 @@ flutter:
     # Logo de HuellApp para las barras de arriba (copia recortada de public/Logo HuellApp.png)
     - assets/img/logo_huellapp.png
 
+  # Fuente Inter (la misma del sitio web), incluida en la app: funciona sin internet y cada
+  # grosor tiene su archivo, así las negritas de cada pantalla se ven de verdad.
+  # Archivos de Google Fonts (fonts.gstatic.com), licencia SIL Open Font License 1.1.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-ExtraBold.ttf
+          weight: 800
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

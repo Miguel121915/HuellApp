@@ -35,20 +35,29 @@ class _RefugiosCercanosScreenState extends State<RefugiosCercanosScreen> {
   LatLng? _centroPendiente;
   double _zoomPendiente = 12;
   bool _ajustarAlListo = false;
+  bool _encuadrados = false;
 
   LatLng? _miUbicacion;
   bool _cargando = true;
   String? _error;
-  double? _radioKm = 25; // null = sin límite
+  // null = «Todos». Antes empezaba en 25 km y los refugios más lejanos no se veían en el mapa.
+  double? _radioKm;
   Refugio? _seleccionado;
 
   // Distancia en km de la persona a cada refugio (por id)
   final Map<String, double> _distancias = {};
 
-  // Solo los refugios que ya tienen coordenadas
-  List<Refugio> get _refugios => listaRefugios
-      .where((r) => r.latitud != null && r.longitud != null)
-      .toList();
+  /// Coordenadas utilizables: en rango y no el punto vacío (0, 0) de un dato mal guardado.
+  static bool _ubicacionValida(Refugio r) {
+    final lat = r.latitud, lng = r.longitud;
+    return lat != null && lng != null && lat.abs() <= 90 && lng.abs() <= 180 && !(lat == 0 && lng == 0);
+  }
+
+  // Solo los refugios que tienen coordenadas válidas
+  List<Refugio> get _refugios => listaRefugios.where(_ubicacionValida).toList();
+
+  // Refugios aprobados que no registraron ubicación: no pueden ir al mapa, pero se avisa cuáles son
+  List<Refugio> get _sinUbicacion => listaRefugios.where((r) => !_ubicacionValida(r)).toList();
 
   LatLng _punto(Refugio r) => LatLng(r.latitud!, r.longitud!);
   double? _distanciaDe(Refugio r) => _distancias[r.id];
@@ -269,6 +278,11 @@ class _RefugiosCercanosScreenState extends State<RefugiosCercanosScreen> {
 
   Widget _buildMapa(List<Refugio> visibles) {
     final refugios = _refugios;
+    // Al llegar los refugios de la API se encuadran todos (antes el mapa se quedaba en el primero)
+    if (_miUbicacion == null && refugios.length > 1 && !_encuadrados) {
+      _encuadrados = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _ajustarVista());
+    }
     final centroInicial =
         _miUbicacion ??
         (refugios.isNotEmpty
@@ -426,6 +440,25 @@ class _RefugiosCercanosScreenState extends State<RefugiosCercanosScreen> {
                         ),
                       ),
                   ],
+                ),
+              ),
+            ),
+
+          // Aviso de los refugios sin ubicación (aparecen en «Refugios», pero no en el mapa)
+          if (_sinUbicacion.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Sin ubicación registrada (no salen en el mapa): '
+                  '${_sinUbicacion.map((r) => r.nombre).join(', ')}.',
+                  style: const TextStyle(fontSize: 12.5, color: _mutedColor, height: 1.35),
                 ),
               ),
             ),

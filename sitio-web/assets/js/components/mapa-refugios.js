@@ -5,15 +5,20 @@
  *
  * Leaflet se carga como <script> clásico en la página (variable global L).
  */
-import { crearElemento } from "../core/utils.js";
+import { crearElemento, rutaDesdeRaiz } from "../core/utils.js";
 
 const CENTRO_MEXICO = [19.4326, -99.1332]; // CDMX, si ningún refugio tiene ubicación
 let mapa = null;
 let capaMarcadores = null;
 let marcadorPersona = null;
 
-const tieneUbicacion = (r) => Number.isFinite(Number(r.latitud)) && Number.isFinite(Number(r.longitud))
-  && r.latitud !== null && r.longitud !== null && r.latitud !== "" && r.longitud !== "";
+/** Coordenadas utilizables: números, dentro de rango y no el punto vacío (0, 0) de un dato mal guardado. */
+const tieneUbicacion = (r) => {
+  if (r.latitud == null || r.longitud == null || r.latitud === "" || r.longitud === "") return false;
+  const lat = Number(r.latitud);
+  const lng = Number(r.longitud);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
+};
 
 /** Distancia en km entre dos puntos (fórmula de Haversine). */
 export function distanciaKm([lat1, lon1], [lat2, lon2]) {
@@ -53,8 +58,23 @@ export function dibujarMapaRefugios(contenedor, refugios, { alElegir, aviso }) {
   capaMarcadores.clearLayers();
 
   const conUbicacion = refugios.filter(tieneUbicacion);
-  const icono = L.divIcon({ className: "marcador-refugio", html: "🏠", iconSize: [34, 34], iconAnchor: [17, 30], popupAnchor: [0, -26] });
+  // Huellita (imagen SVG local: no depende de que el sistema tenga emojis ni de internet)
+  const icono = L.icon({
+    iconUrl: rutaDesdeRaiz("assets/img/iconos/huella-mapa.svg"),
+    iconSize: [36, 45], iconAnchor: [18, 44], popupAnchor: [0, -40], className: "marcador-refugio",
+  });
+  const usadas = new Map(); // refugios en el MISMO punto: se separan un poco para que se vean todos
   conUbicacion.forEach((r) => {
+    let lat = Number(r.latitud);
+    let lng = Number(r.longitud);
+    const clave = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    const repetidos = usadas.get(clave) || 0;
+    usadas.set(clave, repetidos + 1);
+    if (repetidos) { // ~20 m alrededor del punto original
+      const angulo = repetidos * 2.4;
+      lat += 0.00018 * Math.cos(angulo);
+      lng += 0.00018 * Math.sin(angulo);
+    }
     // El contenido del popup se arma con nodos (textContent): nunca HTML con datos del refugio
     const popup = crearElemento("div", { clase: "mapa-popup" }, [
       crearElemento("strong", { texto: r.nombre }),
@@ -63,15 +83,18 @@ export function dibujarMapaRefugios(contenedor, refugios, { alElegir, aviso }) {
       r.distanciaKm != null ? crearElemento("span", { texto: `A ${r.distanciaKm.toFixed(1)} km de ti` }) : null,
       crearElemento("a", { clase: "enlace", texto: "Ver mascotas →", atributos: { href: `?id=${encodeURIComponent(r.id)}`, "data-refugio": r.id } }),
     ].filter(Boolean));
-    L.marker([Number(r.latitud), Number(r.longitud)], { icon: icono, title: r.nombre, alt: r.nombre })
+    L.marker([lat, lng], { icon: icono, title: r.nombre, alt: r.nombre })
       .bindPopup(popup)
       .addTo(capaMarcadores);
   });
 
-  const sinUbicacion = refugios.length - conUbicacion.length;
+  // Los que no tienen ubicación válida se nombran: así se sabe exactamente cuál falta y por qué
+  const sinUbicacion = refugios.filter((r) => !tieneUbicacion(r)).map((r) => r.nombre);
+  const nombres = sinUbicacion.slice(0, 3).join(", ") + (sinUbicacion.length > 3 ? ` y ${sinUbicacion.length - 3} más` : "");
   aviso.textContent = conUbicacion.length === 0
-    ? "Ningún refugio de la lista ha registrado su ubicación en el mapa todavía."
-    : `${conUbicacion.length} refugio(s) en el mapa${sinUbicacion ? ` · ${sinUbicacion} sin ubicación registrada (aparecen en la lista)` : ""}.`;
+    ? (refugios.length ? `Ningún refugio ha registrado su ubicación todavía (${nombres}). Aparecen en la lista de abajo.` : "No hay refugios verificados todavía.")
+    : `${conUbicacion.length} de ${refugios.length} refugio(s) en el mapa.`
+      + (sinUbicacion.length ? ` Sin ubicación registrada: ${nombres} (aparecen en la lista; el refugio puede agregarla en su Perfil).` : "");
 
   const puntos = conUbicacion.map((r) => [Number(r.latitud), Number(r.longitud)]);
   if (marcadorPersona) puntos.push(marcadorPersona.getLatLng());

@@ -39,15 +39,23 @@
   border-radius: var(--radio-m);
   box-shadow: var(--sombra-s);
 }
-.mascota__foto { aspect-ratio: 4 / 3; background: var(--lila-suave); }
-.mascota__foto img { width: 100%; height: 100%; object-fit: cover; }
+/* La foto va en una caja de tamaño fijo (4:3) y se recorta al centro: una foto vertical u horizontal
+   nunca estira ni deforma la tarjeta (antes una foto alta empujaba la caja hacia abajo). */
+.mascota__foto { position: relative; aspect-ratio: 4 / 3; margin: 0; overflow: hidden; background: var(--lila-suave); flex: none; }
+.mascota__foto img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center; }
 .mascota__cuerpo { display: flex; flex-direction: column; gap: var(--e2); padding: var(--e4); background: var(--lila); flex: 1; }
 .mascota__encabezado { display: flex; align-items: center; justify-content: space-between; gap: var(--e2); }
-.mascota__nombre { font-size: 1.25rem; }
+.mascota__nombre { font-size: 1.3rem; font-weight: 800; line-height: 1.2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Textos de largo variable con alto fijo: todas las tarjetas miden lo mismo */
+.mascota__cuerpo > .texto-suave { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota__datos { min-height: 1.6rem; }
 .mascota__especie { padding: 2px var(--e3); border-radius: 999px; background: var(--amarillo); font-size: 0.8125rem; font-weight: 800; }
 .mascota__datos { display: flex; flex-wrap: wrap; gap: var(--e1) var(--e2); }
-.mascota__dato { padding: 2px var(--e2); border-radius: var(--radio-s); background: var(--blanco); font-size: 0.8125rem; font-weight: 700; }
-.mascota__descripcion { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); font-size: 0.9rem; flex: 1; }
+.mascota__dato { padding: 2px var(--e2); border-radius: var(--radio-s); background: var(--blanco); font-size: 0.8125rem; font-weight: 600; } /* datos secundarios: semibold, por debajo del nombre */
+.mascota__descripcion { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); font-size: 0.9rem; line-height: 1.5; flex: none;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; height: calc(3 * 1.5em + 2 * var(--e3)); box-sizing: border-box;
+  overflow: clip; overflow-clip-margin: content-box; } /* recorta en el borde del texto: no asoma una 4.ª línea en el relleno */
+.mascota__salud { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- Tarjeta de publicación (foro y refugios) ---------- */
 .publicacion { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: var(--e4); align-items: start; }

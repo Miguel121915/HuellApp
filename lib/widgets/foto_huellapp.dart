@@ -32,22 +32,40 @@ class FotoHuellApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) return _respaldo(context);
+    // Siempre dentro de una caja del tamaño pedido y recortada: la foto se ajusta con [fit]
+    // (por defecto cover = recorte centrado) y nunca estira ni deforma la tarjeta.
     if (url.toLowerCase().split('?').first.endsWith('.svg')) {
-      return Container(
-        width: width,
-        height: height,
-        color: const Color(0xFFF2FCFA),
-        child: SvgPicture.network(
-          url,
+      return ClipRect(
+        child: Container(
           width: width,
           height: height,
-          fit: BoxFit.contain,
-          placeholderBuilder: (_) => const Center(
-            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+          color: const Color(0xFFF2FCFA),
+          child: SvgPicture.network(
+            url,
+            width: width,
+            height: height,
+            fit: fit,
+            alignment: Alignment.center,
+            placeholderBuilder: (_) => const Center(
+              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
           ),
         ),
       );
     }
-    return Image.network(url, width: width, height: height, fit: fit, errorBuilder: (c, e, s) => _respaldo(c));
+    return ClipRect(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Image.network(
+          url,
+          width: width,
+          height: height,
+          fit: fit,
+          alignment: Alignment.center,
+          errorBuilder: (c, e, s) => _respaldo(c),
+        ),
+      ),
+    );
   }
 }

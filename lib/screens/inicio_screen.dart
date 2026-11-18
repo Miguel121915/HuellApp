@@ -448,15 +448,20 @@ class _InicioScreenState extends State<InicioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Una línea cada uno: todas las tarjetas miden lo mismo
                     Text(
                       m.nombre,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       '${m.tipo} · ${m.edad}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 12, color: _mutedColor),
                     ),
                   ],

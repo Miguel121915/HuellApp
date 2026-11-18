@@ -134,17 +134,22 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => mostrarPerfilMascota(context, mascota, m['refugioNombre'] as String? ?? ''),
-        child: Row(
+        // Alto fijo y textos de una línea: todas las tarjetas miden lo mismo
+        child: SizedBox(
+          height: 112,
+          child: Row(
           children: [
-            FotoHuellApp(mascota.imagenPrincipal, width: 96, height: 104, fit: BoxFit.cover),
+            FotoHuellApp(mascota.imagenPrincipal, width: 96, height: 112, fit: BoxFit.cover),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(mascota.nombre, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _tinta)),
-                  Text('${mascota.tipo} · ${mascota.edad} · ${mascota.genero}', style: const TextStyle(fontSize: 12)),
-                  Text(m['refugioNombre'] as String? ?? '', style: const TextStyle(fontSize: 12, color: _accent, fontWeight: FontWeight.w600)),
+                  Text(mascota.nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _tinta)),
+                  const SizedBox(height: 2),
+                  Text('${mascota.tipo} · ${mascota.edad} · ${mascota.genero}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5)),
+                  Text(m['refugioNombre'] as String? ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: _accent, fontWeight: FontWeight.w600)),
                   if (estatus != 'disponible')
                     Text(_estatusTexto[estatus] ?? estatus, style: const TextStyle(fontSize: 12, color: Color(0xFFB7791F), fontWeight: FontWeight.bold)),
                 ],
@@ -168,6 +173,7 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
               ],
             ),
           ],
+          ),
         ),
       ),
     );

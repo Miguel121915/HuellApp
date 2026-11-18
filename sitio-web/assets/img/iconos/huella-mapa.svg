@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
+  <!-- Marcador de refugio en el mapa: gota verde HuellApp con una huellita blanca -->
+  <path d="M20 48c-1.3 0-2.4-.7-3-1.8C11.2 36.6 2 28.6 2 18.5 2 8.8 10.1 1 20 1s18 7.8 18 17.5c0 10.1-9.2 18.1-15 27.7-.6 1.1-1.7 1.8-3 1.8z" fill="#1b4f4a" stroke="#ffffff" stroke-width="2"/>
+  <g fill="#75e6da">
+    <ellipse cx="20" cy="22.5" rx="6.2" ry="5"/>
+    <ellipse cx="11.6" cy="16.6" rx="2.6" ry="3.4" transform="rotate(-18 11.6 16.6)"/>
+    <ellipse cx="16.6" cy="11" rx="2.6" ry="3.5" transform="rotate(-6 16.6 11)"/>
+    <ellipse cx="23.4" cy="11" rx="2.6" ry="3.5" transform="rotate(6 23.4 11)"/>
+    <ellipse cx="28.4" cy="16.6" rx="2.6" ry="3.4" transform="rotate(18 28.4 16.6)"/>
+  </g>
+</svg>

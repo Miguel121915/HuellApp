@@ -31,7 +31,7 @@ const campo = (nombre) => f[nombre].closest(".campo");
 
 // Ubicación y contacto extra (opcionales; los mismos que pide la app móvil). En la apelación no se piden.
 const fieldsetExtra = document.getElementById("datos-extra");
-const datosExtra = MODO_APELACION ? null : montarDatosExtra(fieldsetExtra);
+const datosExtra = MODO_APELACION ? null : montarDatosExtra(fieldsetExtra, { ubicacionObligatoria: true });
 if (MODO_APELACION) fieldsetExtra.hidden = true;
 
 if (MODO_APELACION) {

@@ -1,7 +1,7 @@
 /* formularios.css — Campos, etiquetas, errores y alertas */
 .campo { display: flex; flex-direction: column; gap: var(--e1); margin-bottom: var(--e4); }
 
-.campo__etiqueta { font-weight: 700; font-size: 0.95rem; }
+.campo__etiqueta { font-weight: 600; font-size: 0.95rem; } /* etiquetas: semibold */
 .campo__ayuda { font-size: 0.8125rem; color: var(--tinta-suave); }
 
 .campo__control {

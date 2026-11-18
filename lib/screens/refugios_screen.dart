@@ -318,12 +318,17 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                                     MainAxisAlignment
                                                         .spaceBetween,
                                                 children: [
-                                                  Text(
-                                                    mascota.nombre,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
+                                                  // Nombre en una línea: uno largo no desacomoda la tarjeta
+                                                  Expanded(
+                                                    child: Text(
+                                                      mascota.nombre,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        fontSize: 17,
+                                                      ),
                                                     ),
                                                   ),
                                                   IconButton(
@@ -352,6 +357,8 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                               const SizedBox(height: 4),
                                               Text(
                                                 '${mascota.tipo} · ${mascota.edad} (${mascota.genero})',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
                                                   color: Colors.grey,
                                                   fontSize: 13,
@@ -360,10 +367,12 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                               const SizedBox(height: 6),
                                               Text(
                                                 '${mascota.fotos.length} foto(s) · Toca para ver perfil',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
                                                   color: Colors.teal,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
                                             ],
@@ -564,8 +573,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                         child: Text(
                                           refugio.nombre,
                                           style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
+                                            height: 1.2,
                                           ),
                                         ),
                                       ),
