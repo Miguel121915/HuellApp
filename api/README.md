@@ -63,7 +63,8 @@ Lo normal es revisar los refugios desde las pantallas del administrador del siti
 
 | Tabla | Para qué sirve |
 |---|---|
-| `usuarios` | Cuentas de los tres roles. `password_hash` guarda la contraseña **cifrada**: no se puede leer ni editar a mano (para entrar con otra contraseña, regístrate desde el sitio) |
+| `usuarios` | Cuentas de los tres roles. `password_hash` guarda la contraseña **cifrada**: no se puede leer ni editar a mano (para cambiarla usa «¿Olvidaste tu contraseña?»). `correo_verificado`: 1 si el usuario confirmó su correo con el código (las cuentas anteriores y las de demostración cuentan como confirmadas) |
+| `codigos_correo` | Códigos de 6 dígitos enviados por correo (`proposito`: verificar · recuperar). Solo guarda su huella HMAC-SHA256, vence en 15 minutos y admite 5 intentos |
 | `refugios` | Datos del refugio, ligado a la cuenta de su responsable. `estado`: pendiente · aprobado · rechazado · suspendido. `apelaciones`, `motivo_anterior` y `apelado_en`: cuántas veces reenvió la solicitud tras un rechazo, con qué motivo lo habían rechazado y cuándo |
 | `documentos_refugio` | Acta, comprobante de domicilio, identificación, permiso. `verificado` es la casilla del checklist del administrador; `con_error`, el documento que el administrador señaló al rechazar (el refugio debe reemplazarlo para apelar) |
 | `mascotas` | Inventario de cada refugio (`estatus`: disponible · en proceso · adoptado) |
@@ -92,6 +93,23 @@ Todo se configura en `.env` (copia de `.env.example`): `DB_TNS` (servicio del `t
 2. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicación web.** En *Orígenes de JavaScript autorizados* agrega `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:8080` y `http://127.0.0.1:8080` (sitio web y app de la demo). Copia el ID.
 3. En `api/.env`: `GOOGLE_CLIENT_ID=<ese id>.apps.googleusercontent.com` y reinicia `php artisan serve`.
 4. (Solo para el APK de Android) Crea otro ID de cliente tipo **Android** con el paquete `com.example.huellapp` y la huella SHA-1 de tu llave (`cd android` y `gradlew signingReport`). No hace falta copiarlo a ningún lado: la app usa el ID **web** que le da la API.
+
+### Compartir alertas y cartel con QR
+
+Cada alerta del foro tiene una página pública (`pages/alerta.html?id=…`) y un cartel imprimible con código QR (`pages/cartel.html?id=…`). Los enlaces que se comparten por WhatsApp o Facebook y el QR usan la dirección de `SITIO_URL` en `api/.env`. Mientras no la pongas, usan la dirección desde la que se abrió el sitio (por ejemplo `http://127.0.0.1:3000`), que **solo funciona en tu computadora**. Después del despliegue pon la de HTTPS, por ejemplo `SITIO_URL=https://huellapp.duckdns.org`.
+
+### Correos: confirmar el correo y recuperar la contraseña
+
+Al registrarse, el usuario recibe un **código de 6 dígitos** por correo y su cuenta se activa al escribirlo (web y app). Con el mismo mecanismo funciona **«¿Olvidaste tu contraseña?»**. Quien entra con Google no necesita código (Google ya verificó el correo). Los refugios no lo piden: ya pasan por la revisión del administrador.
+
+- **Sin configurar nada (modo de prueba):** no se envían correos; el código aparece en la consola donde corre `php artisan serve` como `[CORREO DE PRUEBA] … Tu código es: 123456`.
+- **Envío real con Brevo (gratis hasta 300 correos al día):**
+  1. Crea una cuenta en [brevo.com](https://www.brevo.com).
+  2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: agrega el correo que enviará los mensajes y confírmalo desde su bandeja.
+  3. **SMTP & API → API Keys → Generate a new API key**.
+  4. En `api/.env` (nunca en GitHub ni en un chat): `BREVO_API_KEY=…` y `CORREO_REMITENTE=el-correo-del-paso-2`. Reinicia `php artisan serve`.
+
+  Se usa la API web de Brevo (HTTPS), no SMTP: no necesita librerías y funciona aunque la nube bloquee los puertos de correo.
 
 ### IA de Gemini en los reportes (HU-5 y HU-8)
 
@@ -129,13 +147,18 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 | `POST /auth/2fa/verificar` | — | Segundo paso: `{desafio, codigo}` → `{token, sesion}`. El desafío dura 5 minutos (`401` con `codigo: "desafio-vencido"`); código incorrecto → `400`; 5 fallos en 10 minutos → `429` |
 | `GET /auth/2fa` · `POST /auth/2fa/preparar` | todos | ¿Está activa? `{activo}` / secreto nuevo `{secreto, enlace}` (`enlace` = `otpauth://…` para el QR) |
 | `POST /auth/2fa/activar` · `POST /auth/2fa/desactivar` | todos | `{codigo}` de Google Authenticator para confirmar |
-| `POST /auth/registro-usuario` | — | Alta de usuario |
+| `POST /auth/registro-usuario` | — | Alta de usuario. La cuenta nace sin confirmar: responde `201` con `{requiereVerificarCorreo: true, correo}` y envía un código de 6 dígitos al correo. `POST /auth/login` de una cuenta sin confirmar responde lo mismo (y reenvía el código si pasó 1 minuto) |
+| `POST /auth/verificar-correo` | — | `{correo, codigo}` → `{token, sesion}` (queda confirmado y entra). Código equivocado → `400` con `codigo: "codigo-incorrecto"`; vencido o con 5 fallos → `400` con `codigo: "codigo-vencido"`; ya confirmado → `409` |
+| `POST /auth/reenviar-codigo` | — | `{correo}` → `{esperaSegundos}`. Antes de 1 minuto → `429`. Misma respuesta si el correo no existe |
+| `POST /auth/recuperar` · `POST /auth/recuperar/confirmar` | — | «¿Olvidaste tu contraseña?»: `{correo}` manda un código (misma respuesta exista o no la cuenta) / `{correo, codigo, password}` cambia la contraseña |
 | `POST /auth/registro-refugio` | — | Alta de refugio con `documentos: [{tipo, nombre, dataUrl}]`. Opcionales (app móvil): `latitud`, `longitud`, `municipio`, `codigoPostal`, `rfc`, `tipoOrganizacion`, `anioFundacion`, `whatsapp`, `redes[]`, `necesidades[]`, `tienePerros`, `tieneGatos` (también en `PUT /refugio/perfil`) |
 | `GET /auth/yo` | todos | Sesión actualizada (y estado del refugio) |
 | `GET /auth/apelacion` · `POST /auth/apelacion` | refugio **rechazado** | Datos y documentos actuales (con `conError`) / reenviar `{nombreRefugio, responsable, telefono, direccion, horario, documentos}`: `documentos` trae solo los archivos nuevos y cada uno reemplaza al de su tipo; los señalados con error deben reemplazarse. La solicitud vuelve a `pendiente`. Si no está rechazada → `409` con `codigo: "no-rechazado"` |
 | `GET /foro` · `POST /foro` | usuario | Listar / publicar `{texto, foto?}` |
 | `POST /foro/:id/comentarios` · `PUT /foro/:id/like` | usuario | Comentar / `{activo: true\|false}` |
 | `GET /foro` | todos, **también sin sesión** (visitante) | Publicaciones del foro (publicar, comentar y like sí piden cuenta) |
+| `GET /alertas/{id}` | **sin sesión** | Una publicación del foro para la página que se comparte (`pages/alerta.html?id=…`) y el cartel con QR (`pages/cartel.html?id=…`): tipo, estado, nombre, especie, color, tamaño, collar, zona, fecha, foto y el primer nombre de quien publicó. **Nunca** incluye la seña secreta, el punto exacto del mapa, correos ni teléfonos |
+| `GET /alertas?tipo=perdida` (o `encontrada`) | **sin sesión** | Alertas activas para el mapa, con ubicación **aproximada** (redondeada a una cuadrícula de ~300 m) |
 | `GET /refugios` · `GET /refugios/:id` | todos, **también sin sesión** (visitante) | Refugios aprobados, con ubicación y datos de contacto. `GET /refugios?mascotas=1` trae cada refugio con sus mascotas disponibles en una sola petición (lo usan Inicio y el catálogo) |
 | `GET /refugios/:id/mascotas` · `/publicaciones` · `/preguntas` | todos (mascotas y publicaciones también sin sesión) | Mascotas disponibles / publicaciones / preguntas frecuentes activas. Mascotas acepta filtros opcionales `?q=` (nombre o raza) `&especie=` (perro o gato) `&tamano=` (pequeño, mediano o grande) `&edad=` (cachorro, joven, adulto o senior); `GET /refugios?mascotas=1` acepta los mismos |
 | `GET /adopciones` · `POST /adopciones` | usuario | Mis solicitudes de adopción / enviar una `{mascotaId, nombre, correo, telefono, direccion, ocupacion?, tipoVivienda, viviendaPropia, otrasMascotas?, motivo, aceptaTerminos, documentos}`: identificación y comprobante (uno de cada uno), de 1 a 3 fotos `vivienda` (solo imágenes) y un `otro` opcional. Solo mascotas disponibles; una solicitud abierta por mascota |

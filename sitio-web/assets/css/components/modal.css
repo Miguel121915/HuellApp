@@ -14,3 +14,18 @@
 /* Los formularios largos se desplazan dentro del diálogo en pantallas bajas */
 .modal { max-height: calc(100vh - 32px); overflow-y: auto; }
 .modal--ancho { width: min(780px, calc(100% - 32px)); }
+
+/* Menú «Compartir alerta» (components/compartir-alerta.js) */
+.compartir { width: min(440px, calc(100% - 32px)); }
+.compartir__opciones { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--e3); margin-top: var(--e4); }
+.compartir__opcion {
+  display: flex; align-items: center; gap: var(--e2);
+  min-height: 52px; padding: var(--e2) var(--e3);
+  border: 2px solid var(--borde); border-radius: var(--radio-m);
+  background: var(--aqua-suave); color: var(--tinta);
+  font: inherit; font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.compartir__opcion span { font-size: 1.35rem; }
+.compartir__opcion:hover, .compartir__opcion:focus-visible { border-color: var(--aqua-fuerte); background: var(--blanco); }
+.compartir__aviso { min-height: 1.4em; margin-top: var(--e3); color: var(--exito); font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 420px) { .compartir__opciones { grid-template-columns: 1fr; } }

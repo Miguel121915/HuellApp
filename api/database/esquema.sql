@@ -34,6 +34,8 @@ CREATE TABLE usuarios (
   tipo_vivienda    VARCHAR2(15 CHAR),
   otras_mascotas   VARCHAR2(200 CHAR),
   sobre_mi         VARCHAR2(300 CHAR),
+  -- 1 = el usuario confirmó su correo con el código que le llegó (las cuentas anteriores cuentan como confirmadas)
+  correo_verificado NUMBER(1) DEFAULT 1 NOT NULL,
   CONSTRAINT pk_usuarios PRIMARY KEY (id),
   CONSTRAINT uq_usuarios_correo UNIQUE (correo),
   CONSTRAINT ck_usuarios_rol CHECK (rol IN ('usuario', 'refugio', 'admin'))
@@ -420,3 +422,20 @@ CREATE TABLE avisos (
   CONSTRAINT fk_avisos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_avisos_usuario ON avisos (usuario_id, leido, creado_en);
+
+-- Códigos de 6 dígitos enviados por correo: confirmar el correo al registrarse y recuperar la contraseña.
+-- Solo se guarda la huella (HMAC-SHA256) del código, nunca el código; vence en 15 minutos y admite 5 intentos.
+CREATE SEQUENCE codigos_correo_seq;
+CREATE TABLE codigos_correo (
+  id          NUMBER(10) DEFAULT codigos_correo_seq.NEXTVAL NOT NULL,
+  usuario_id  NUMBER(10) NOT NULL,
+  proposito   VARCHAR2(10 CHAR) NOT NULL,
+  codigo_hash VARCHAR2(64 CHAR) NOT NULL,
+  intentos    NUMBER(2) DEFAULT 0 NOT NULL,
+  expira_en   TIMESTAMP(3) NOT NULL,
+  creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  CONSTRAINT pk_codigos_correo PRIMARY KEY (id),
+  CONSTRAINT fk_codigos_correo_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+  CONSTRAINT ck_codigos_correo_proposito CHECK (proposito IN ('verificar', 'recuperar'))
+);
+CREATE INDEX idx_codigos_correo_usuario ON codigos_correo (usuario_id, proposito);

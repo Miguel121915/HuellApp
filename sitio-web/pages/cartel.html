@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartel · HuellApp</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../assets/css/base/tipografia.css">
+  <link rel="stylesheet" href="../assets/css/components/botones.css">
+  <link rel="stylesheet" href="../assets/css/pages/alerta.css">
+  <script type="module" src="../assets/js/modules/publico/cartel.js"></script>
+</head>
+<body class="pagina-cartel">
+  <!-- Barra que NO se imprime -->
+  <div class="cartel-barra">
+    <p>Imprime este cartel en tamaño carta o guárdalo como PDF y pégalo en postes, tiendas y veterinarias.</p>
+    <div class="cartel-barra__acciones">
+      <button class="boton boton--primario" id="boton-imprimir" type="button" disabled>🖨️ Imprimir o guardar PDF</button>
+      <a class="boton boton--contorno" id="volver" href="alerta.html">Volver a la alerta</a>
+    </div>
+  </div>
+
+  <main class="cartel" id="cartel" aria-live="polite">
+    <p class="alerta__cargando">Preparando el cartel…</p>
+  </main>
+</body>
+</html>

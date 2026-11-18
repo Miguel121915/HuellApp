@@ -8,6 +8,8 @@ import { protegerAcciones } from "../../components/aviso-cuenta.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { escucharLikes } from "../../components/like-huella.js";
 import { crearTarjetaPublicacion, renderComentarios } from "../../components/tarjeta-publicacion.js";
+import { abrirCompartir } from "../../components/compartir-alerta.js";
+import { get } from "../../core/api.js";
 import { obtenerPublicacionesForo, crearPublicacionForo, agregarComentario, establecerLike, marcarReunido } from "../../core/servicios.js";
 import { crearElemento, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta, redimensionarImagen, resolverImagen, tiempoRelativo, validarImagen } from "../../core/utils.js";
 
@@ -104,6 +106,23 @@ async function iniciarForo() {
     const claves = Object.keys(PESTANAS);
     const i = (claves.indexOf(pestana) + (e.key === "ArrowRight" ? 1 : claves.length - 1)) % claves.length;
     mostrarPestana(claves[i]).then(() => barra.querySelector(`[data-pestana="${claves[i]}"]`).focus());
+  });
+
+  /* ----- «Compartir»: abre el menú con el enlace público de la alerta ----- */
+  feed.addEventListener("click", async (e) => {
+    const boton = e.target.closest(".publicacion__compartir");
+    if (!boton) return;
+    const id = boton.closest(".publicacion").dataset.id;
+    boton.disabled = true;
+    try {
+      // Con los datos de la alerta (nombre, zona) el mensaje para compartir es más claro
+      const { alerta } = await get(`/alertas/${id}`);
+      await abrirCompartir(alerta);
+    } catch {
+      await abrirCompartir({ id, esAlerta: false });
+    } finally {
+      boton.disabled = false;
+    }
   });
 
   /* ----- «¡Ya apareció!» (solo quien publicó la alerta) ----- */
@@ -267,6 +286,10 @@ function crearTarjeta(pub, opciones) {
       pie?.append(crearElemento("button", { clase: "boton boton--primario boton--pequeno publicacion__reunido", texto: "💚 ¡Ya apareció!", atributos: { type: "button" } }));
     }
   }
+  // Compartir con enlace (WhatsApp, Facebook, copiar) y, en las alertas, cartel con QR
+  tarjeta.querySelector(".publicacion__pie")?.append(
+    crearElemento("button", { clase: "boton boton--contorno boton--pequeno publicacion__compartir", texto: "📤 Compartir", atributos: { type: "button" } }),
+  );
   const foto = tarjeta.querySelector(".publicacion__foto");
   if (foto) foto.title = "Ver en grande";
   return tarjeta;

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp\Rutas;
 
-use HuellApp\{Archivos, Base, Captcha, Config, Enrutador, ErrorHttp, Google, RefugioExtra, Serializadores, Sesion, Solicitud, Totp, Validar};
+use HuellApp\{Archivos, Base, Captcha, CodigosCorreo, Config, Enrutador, ErrorHttp, Google, RefugioExtra, Serializadores, Sesion, Solicitud, Totp, Validar};
 
 /** Rutas de autenticación: inicio de sesión, registros y datos de la sesión actual. */
 final class Auth
@@ -15,6 +15,8 @@ final class Auth
     private const FALLOS_PARA_CAPTCHA = 3;
     /** Cuentas de usuario que se pueden crear desde una misma IP cada 10 minutos. */
     private const MAX_REGISTROS_POR_IP = 10;
+    /** Códigos por correo (confirmar correo y recuperar contraseña) que se pueden revisar o pedir por IP cada 10 minutos. */
+    private const MAX_CODIGOS_POR_IP = 30;
     private const TIPOS_DOCUMENTO = ['acta', 'domicilio', 'identificacion', 'permiso'];
     private const TIPOS_OBLIGATORIOS = ['acta', 'domicilio', 'identificacion'];
 
@@ -33,6 +35,11 @@ final class Auth
         $r->post('/auth/2fa/activar', [self::class, 'activar2fa'], $sesion);
         $r->post('/auth/2fa/desactivar', [self::class, 'desactivar2fa'], $sesion);
         $r->post('/auth/registro-usuario', [self::class, 'registroUsuario']);
+        // Código de 6 dígitos por correo: confirmar el correo al registrarse y recuperar la contraseña
+        $r->post('/auth/verificar-correo', [self::class, 'verificarCorreo']);
+        $r->post('/auth/reenviar-codigo', [self::class, 'reenviarCodigo']);
+        $r->post('/auth/recuperar', [self::class, 'recuperar']);
+        $r->post('/auth/recuperar/confirmar', [self::class, 'recuperarConfirmar']);
         $r->post('/auth/registro-refugio', [self::class, 'registroRefugio']);
         $r->get('/auth/yo', [self::class, 'yo'], [[Sesion::class, 'requiereSesion']]);
 
@@ -114,7 +121,19 @@ final class Auth
             throw new ErrorHttp(403, 'Esta cuenta no pertenece al rol seleccionado. Cambia la pestaña de rol arriba.');
         }
         Base::ejecutar('DELETE FROM intentos_login WHERE clave = ?', [$clave]);
+        // Usuario que se registró pero no confirmó su correo: se le manda (otro) código y se le pide
+        if ((int) ($usuario['correo_verificado'] ?? 1) === 0) {
+            return self::pedirVerificacion($usuario);
+        }
         return self::entregar($usuario);
+    }
+
+    /** Respuesta "falta confirmar el correo" (el sitio y la app muestran la pantalla del código). */
+    private static function pedirVerificacion(array $usuario): array
+    {
+        $codigo = CodigosCorreo::enviar($usuario, 'verificar');
+        return ['ok' => true, 'requiereVerificarCorreo' => true, 'correo' => $usuario['correo']]
+            + ($codigo !== null ? ['codigoPrueba' => $codigo] : []);
     }
 
     /**
@@ -184,7 +203,9 @@ final class Auth
     /* ---------- GET /api/auth/config — lo que el login necesita saber antes de mostrarse ---------- */
     public static function config(Solicitud $s): array
     {
-        return ['googleClientId' => Google::clientIdWeb(), 'captchaSiteKey' => Captcha::claveSitio(), 'captchaTrasFallos' => self::FALLOS_PARA_CAPTCHA];
+        return ['googleClientId' => Google::clientIdWeb(), 'captchaSiteKey' => Captcha::claveSitio(), 'captchaTrasFallos' => self::FALLOS_PARA_CAPTCHA,
+            // Dirección pública del sitio para los enlaces que se comparten y el QR del cartel ('' = la de esta API)
+            'sitioUrl' => rtrim(Config::obtener('SITIO_URL'), '/')];
     }
 
     /* ---------- POST /api/auth/google — «Continuar con Google» ---------- */
@@ -217,7 +238,9 @@ final class Auth
             $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [$google['correo']]);
         } elseif (($usuario['google_sub'] ?? '') === '') {
             // Cuenta creada con correo y contraseña: Google confirmó que ese correo es suyo, se vincula
-            Base::ejecutar('UPDATE usuarios SET google_sub = ? WHERE id = ?', [$google['sub'], $usuario['id']]);
+            // (y el correo queda confirmado: Google ya lo verificó)
+            Base::ejecutar('UPDATE usuarios SET google_sub = ?, correo_verificado = 1 WHERE id = ?', [$google['sub'], $usuario['id']]);
+            $usuario['correo_verificado'] = 1;
         } elseif ($usuario['google_sub'] !== $google['sub']) {
             throw new ErrorHttp(409, 'Ese correo ya está vinculado a otra cuenta de Google.');
         }
@@ -337,12 +360,85 @@ final class Auth
         if (Base::uno('SELECT 1 FROM usuarios WHERE correo = ?', [$correo])) {
             throw new ErrorHttp(409, 'Ya existe una cuenta con ese correo. Inicia sesión o usa otro correo.');
         }
+        // La cuenta nace SIN confirmar: se activa al escribir el código que le llega por correo
         Base::insertar(
-            "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en) VALUES (?, ?, ?, ?, 'usuario', ?)",
+            "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en, correo_verificado) VALUES (?, ?, ?, ?, 'usuario', ?, 0)",
             [$nombre, $correo, $telefono ?: null, password_hash($password, PASSWORD_DEFAULT), Base::ahora()],
         );
         self::anotarFallo($claveRegistro); // cuenta los registros de esta IP en la ventana de 10 minutos
-        return \HuellApp\Respuesta::json(['ok' => true], 201);
+        $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [$correo]);
+        return \HuellApp\Respuesta::json(self::pedirVerificacion($usuario), 201);
+    }
+
+    /* ---------- Código por correo: confirmar el correo y recuperar la contraseña ---------- */
+
+    /** Cuenta de usuario por correo (o null). Limita cuántas veces se puede intentar desde una IP. */
+    private static function cuentaParaCodigo(Solicitud $s, string $accion): ?array
+    {
+        $clave = "$accion|" . $s->ip();
+        self::revisarLimite($clave, self::MAX_CODIGOS_POR_IP);
+        self::anotarFallo($clave);
+        $correo = $s->cuerpo()['correo'] ?? null;
+        if (!is_string($correo) || trim($correo) === '') {
+            throw new ErrorHttp(400, 'Escribe tu correo electrónico.');
+        }
+        return Base::uno('SELECT * FROM usuarios WHERE correo = ?', [strtolower(trim($correo))]);
+    }
+
+    /* POST /api/auth/verificar-correo  { correo, codigo }  → si es correcto, inicia la sesión */
+    public static function verificarCorreo(Solicitud $s): array
+    {
+        $usuario = self::cuentaParaCodigo($s, 'verificar');
+        if ($usuario === null) {
+            throw new ErrorHttp(400, 'El código ya no es válido. Pide uno nuevo.', ['codigo' => 'codigo-vencido']);
+        }
+        if ((int) $usuario['correo_verificado'] === 1) {
+            throw new ErrorHttp(409, 'Tu correo ya está confirmado. Inicia sesión.', ['codigo' => 'ya-confirmado']);
+        }
+        CodigosCorreo::comprobar((int) $usuario['id'], 'verificar', $s->cuerpo()['codigo'] ?? null);
+        Base::ejecutar('UPDATE usuarios SET correo_verificado = 1 WHERE id = ?', [$usuario['id']]);
+        $usuario['correo_verificado'] = 1;
+        return self::entregar($usuario);
+    }
+
+    /* POST /api/auth/reenviar-codigo  { correo }  → manda otro código (si pasó 1 minuto) */
+    public static function reenviarCodigo(Solicitud $s): array
+    {
+        $usuario = self::cuentaParaCodigo($s, 'reenviar');
+        // Misma respuesta exista o no la cuenta: no se revela qué correos están registrados
+        if ($usuario === null || (int) $usuario['correo_verificado'] === 1) {
+            return ['ok' => true, 'esperaSegundos' => CodigosCorreo::ESPERA_REENVIO_SEGUNDOS];
+        }
+        $espera = CodigosCorreo::esperaParaReenviar((int) $usuario['id'], 'verificar');
+        if ($espera > 0) {
+            throw new ErrorHttp(429, "Espera $espera segundos para pedir otro código.", ['esperaSegundos' => $espera]);
+        }
+        $codigo = CodigosCorreo::enviar($usuario, 'verificar');
+        return ['ok' => true, 'esperaSegundos' => CodigosCorreo::ESPERA_REENVIO_SEGUNDOS] + ($codigo !== null ? ['codigoPrueba' => $codigo] : []);
+    }
+
+    /* POST /api/auth/recuperar  { correo }  → manda un código para cambiar la contraseña */
+    public static function recuperar(Solicitud $s): array
+    {
+        $usuario = self::cuentaParaCodigo($s, 'recuperar');
+        $codigo = $usuario !== null ? CodigosCorreo::enviar($usuario, 'recuperar') : null;
+        // Misma respuesta exista o no la cuenta: no se revela qué correos están registrados
+        return ['ok' => true, 'esperaSegundos' => CodigosCorreo::ESPERA_REENVIO_SEGUNDOS] + ($codigo !== null ? ['codigoPrueba' => $codigo] : []);
+    }
+
+    /* POST /api/auth/recuperar/confirmar  { correo, codigo, password }  → cambia la contraseña */
+    public static function recuperarConfirmar(Solicitud $s): array
+    {
+        $password = Validar::password($s->cuerpo()['password'] ?? null);
+        $usuario = self::cuentaParaCodigo($s, 'recuperar-confirmar');
+        if ($usuario === null) {
+            throw new ErrorHttp(400, 'El código ya no es válido. Pide uno nuevo.', ['codigo' => 'codigo-vencido']);
+        }
+        CodigosCorreo::comprobar((int) $usuario['id'], 'recuperar', $s->cuerpo()['codigo'] ?? null);
+        // Recibió el código en su correo: también queda confirmado. Se limpian sus intentos fallidos de login
+        Base::ejecutar('UPDATE usuarios SET password_hash = ?, correo_verificado = 1 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $usuario['id']]);
+        Base::ejecutar('DELETE FROM intentos_login WHERE clave LIKE ?', ['%|' . $usuario['correo']]);
+        return ['ok' => true];
     }
 
     /* ---------- Validaciones comunes del registro y la apelación ---------- */

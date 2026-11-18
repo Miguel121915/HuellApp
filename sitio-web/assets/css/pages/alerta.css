@@ -1,0 +1,94 @@
+/* ==========================================================
+   alerta.css — Página pública de una alerta (pages/alerta.html) y su cartel imprimible
+   con código QR (pages/cartel.html). Se ven sin cuenta.
+   ========================================================== */
+
+/* ---------- Página de la alerta ---------- */
+.pagina-alerta { min-height: 100vh; background: var(--aqua-suave); }
+.alerta-encabezado { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); max-width: 720px; margin: 0 auto; padding: var(--e4); }
+.alerta-encabezado img { display: block; width: auto; height: 52px; }
+
+.alerta { max-width: 720px; margin: 0 auto; padding: 0 var(--e4) var(--e7); }
+.alerta__cargando { padding: var(--e7) 0; text-align: center; color: var(--tinta-suave); }
+
+.alerta__tarjeta { overflow: hidden; background: var(--blanco); border-radius: var(--radio-l); box-shadow: 0 12px 32px rgb(20 49 46 / 0.14); }
+.alerta__banda {
+  margin: 0; padding: var(--e3) var(--e4);
+  font-family: var(--fuente-titulos); font-size: var(--titulo-m); font-weight: 700;
+  letter-spacing: 0.04em; text-align: center; text-transform: uppercase; color: var(--blanco);
+}
+.alerta__tarjeta--perdida .alerta__banda { background: #b42318; }
+.alerta__tarjeta--encontrada .alerta__banda { background: var(--aqua-fuerte); }
+.alerta__tarjeta--reunido .alerta__banda { background: var(--exito); }
+.alerta__tarjeta--comunidad .alerta__banda { background: var(--lila-fuerte); }
+.alerta__foto { display: block; width: 100%; max-height: 460px; object-fit: cover; background: var(--aqua-suave); }
+
+.alerta__cuerpo { display: grid; gap: var(--e4); padding: var(--e5); }
+.alerta__nombre { font-size: var(--titulo-l); color: var(--aqua-fuerte); }
+.alerta__datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--e3) var(--e5); margin: 0; }
+.alerta__datos dt { font-size: var(--texto-xs); font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--tinta-suave); }
+.alerta__datos dd { margin: 2px 0 0; font-size: var(--texto-l); font-weight: 600; }
+.alerta__descripcion { font-size: var(--texto-l); line-height: 1.6; white-space: pre-line; }
+.alerta__autor { color: var(--tinta-tenue); font-size: var(--texto-s); }
+.alerta__acciones { display: flex; flex-wrap: wrap; gap: var(--e3); }
+.alerta__ayuda { display: grid; gap: var(--e3); justify-items: start; padding: var(--e4); border-radius: var(--radio-m); background: var(--aqua-suave); color: var(--tinta-suave); }
+.alerta__vacia { display: grid; gap: var(--e3); justify-items: center; padding: var(--e7) var(--e4); text-align: center; background: var(--blanco); border-radius: var(--radio-l); }
+
+/* ---------- Cartel imprimible (tamaño carta) ---------- */
+.pagina-cartel { background: #e9eeed; }
+.cartel-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--e3); max-width: 816px; margin: 0 auto; padding: var(--e4); color: var(--tinta-suave); }
+.cartel-barra__acciones { display: flex; flex-wrap: wrap; gap: var(--e2); }
+.cartel { display: grid; justify-items: center; padding: 0 var(--e4) var(--e7); }
+
+.cartel__hoja {
+  --color-cartel: #b42318;
+  display: flex; flex-direction: column; gap: 14px;
+  width: min(816px, 100%); /* 8.5 in a 96 dpi */
+  padding: 36px 44px;
+  background: var(--blanco); color: var(--tinta);
+  border: 10px solid var(--color-cartel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.15);
+}
+.cartel__hoja--encontrada { --color-cartel: var(--aqua-fuerte); }
+.cartel__banda {
+  margin: -36px -44px 0; padding: 14px 20px;
+  background: var(--color-cartel); color: var(--blanco);
+  font-size: 4.2rem; font-weight: 700; line-height: 1; letter-spacing: 0.04em; text-align: center; text-transform: uppercase;
+}
+.cartel__nombre { margin: 0; font-family: var(--fuente-titulos); font-size: 3rem; font-weight: 700; line-height: 1.05; text-align: center; color: var(--color-cartel); overflow-wrap: anywhere; }
+.cartel__foto { display: block; width: 100%; height: 420px; object-fit: cover; border-radius: 12px; background: var(--aqua-suave); }
+.cartel__foto--vacia { display: grid; place-items: center; font-size: 6rem; }
+.cartel__datos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 24px; margin: 0; }
+.cartel__datos dt { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-suave); }
+.cartel__datos dd { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.cartel__descripcion { margin: 0; font-size: 1.15rem; line-height: 1.45; }
+.cartel__pie { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 22px; margin-top: auto; padding-top: 14px; border-top: 3px dashed var(--color-cartel); }
+.cartel__qr svg { display: block; width: 170px; height: 170px; }
+.cartel__llamado { display: grid; gap: 8px; }
+.cartel__llamado-texto { margin: 0; font-family: var(--fuente-titulos); font-size: 1.7rem; font-weight: 600; line-height: 1.15; }
+.cartel__url { margin: 0; font-size: 0.85rem; color: var(--tinta-suave); overflow-wrap: anywhere; }
+.cartel__logo { width: 170px; height: auto; }
+
+@media (max-width: 640px) {
+  .cartel__hoja { padding: 20px; border-width: 6px; }
+  .cartel__banda { margin: -20px -20px 0; font-size: 2.4rem; }
+  .cartel__nombre { font-size: 2rem; }
+  .cartel__foto { height: 260px; }
+  .cartel__datos { grid-template-columns: 1fr; }
+  .cartel__pie { grid-template-columns: 110px 1fr; }
+  .cartel__qr svg { width: 110px; height: 110px; }
+  .cartel__llamado-texto { font-size: 1.2rem; }
+}
+
+/* Al imprimir: solo la hoja, a todo color y en una sola página carta */
+@page { size: letter; margin: 0.4in; }
+@media print {
+  .pagina-cartel { background: var(--blanco); }
+  .cartel-barra { display: none; }
+  .cartel { padding: 0; }
+  .cartel__hoja { width: 100%; height: calc(11in - 0.8in); overflow: hidden; box-shadow: none; break-inside: avoid; }
+  /* Foto y descripción acotadas para que todo quepa siempre en una sola hoja */
+  .cartel__foto { height: 3.5in; }
+  .cartel__descripcion { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .cartel__hoja, .cartel__banda { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

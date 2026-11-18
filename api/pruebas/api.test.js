@@ -28,6 +28,12 @@ async function entrar(correo, rol, password = "Demo1234") {
   assert.equal(estado, 200, `login de ${correo}: ${datos?.error}`);
   return datos;
 }
+/** Confirma el correo de una cuenta recién registrada con el código que devolvió la API (solo en pruebas). */
+async function registrarYConfirmar(_, correo, codigo) {
+  const r = await api("POST", "/api/auth/verificar-correo", { cuerpo: { correo, codigo } });
+  assert.equal(r.estado, 200, `confirmar ${correo}: ${r.datos?.error}`);
+  return r.datos;
+}
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 const PDF = `data:application/pdf;base64,${Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n").toString("base64")}`;
 const MASCOTA = { nombre: "Rayo", especie: "perro", raza: "Beagle", edadMeses: 24, sexo: "macho", tamano: "mediano", salud: "Vacunado", descripcion: "Perro muy activo, ideal para familias.", estatus: "disponible" };
@@ -65,10 +71,62 @@ test("login: se bloquea tras demasiados intentos fallidos", async () => {
 
 test("registro de usuario: valida y no permite correos repetidos", async () => {
   const nuevo = { nombre: "Persona Nueva", correo: "nueva@ejemplo.mx", telefono: "55 1111 2222", password: "ClaveSegura1" };
-  assert.equal((await api("POST", "/api/auth/registro-usuario", { cuerpo: nuevo })).estado, 201);
+  const r = await api("POST", "/api/auth/registro-usuario", { cuerpo: nuevo });
+  assert.equal(r.estado, 201);
+  assert.equal(r.datos.requiereVerificarCorreo, true, "la cuenta nueva pide confirmar el correo");
   assert.equal((await api("POST", "/api/auth/registro-usuario", { cuerpo: { ...nuevo, correo: "NUEVA@ejemplo.mx" } })).estado, 409);
   assert.equal((await api("POST", "/api/auth/registro-usuario", { cuerpo: { ...nuevo, correo: "otra@ejemplo.mx", password: "corta" } })).estado, 400);
+  await registrarYConfirmar(null, "nueva@ejemplo.mx", r.datos.codigoPrueba);
   await entrar("nueva@ejemplo.mx", "usuario", "ClaveSegura1");
+});
+
+test("confirmar correo: sin código no entra; código equivocado, reenvío y código correcto", async () => {
+  const correo = `confirma${Date.now()}@huellapp.mx`;
+  const r = await api("POST", "/api/auth/registro-usuario", { cuerpo: { nombre: "Persona Confirma", correo, password: "Clave1234" } });
+  assert.match(r.datos.codigoPrueba, /^\d{6}$/);
+  // Con la contraseña correcta todavía no hay sesión: se pide el código
+  const login = await api("POST", "/api/auth/login", { cuerpo: { correo, password: "Clave1234", rol: "usuario" } });
+  assert.equal(login.estado, 200);
+  assert.equal(login.datos.requiereVerificarCorreo, true);
+  assert.equal(login.datos.token, undefined);
+  // Código equivocado: avisa cuántos intentos quedan
+  const malo = r.datos.codigoPrueba === "000000" ? "111111" : "000000";
+  const mal = await api("POST", "/api/auth/verificar-correo", { cuerpo: { correo, codigo: malo } });
+  assert.equal(mal.estado, 400);
+  assert.equal(mal.datos.codigo, "codigo-incorrecto");
+  // Reenviar antes de 1 minuto: hay que esperar
+  assert.equal((await api("POST", "/api/auth/reenviar-codigo", { cuerpo: { correo } })).estado, 429);
+  // Correo que no existe: misma respuesta que uno real (no se revela qué correos hay)
+  assert.equal((await api("POST", "/api/auth/reenviar-codigo", { cuerpo: { correo: "nadie@ejemplo.mx" } })).estado, 200);
+  // Código correcto: queda confirmado e inicia la sesión
+  const ok = await api("POST", "/api/auth/verificar-correo", { cuerpo: { correo, codigo: r.datos.codigoPrueba } });
+  assert.equal(ok.estado, 200, ok.datos?.error);
+  assert.ok(ok.datos.token);
+  assert.equal(ok.datos.sesion.correo, correo);
+  // El código ya se usó
+  assert.equal((await api("POST", "/api/auth/verificar-correo", { cuerpo: { correo, codigo: r.datos.codigoPrueba } })).estado, 409);
+  await entrar(correo, "usuario", "Clave1234");
+});
+
+test("recuperar contraseña con código por correo", async () => {
+  const correo = `recupera${Date.now()}@huellapp.mx`;
+  const r = await api("POST", "/api/auth/registro-usuario", { cuerpo: { nombre: "Persona Recupera", correo, password: "Clave1234" } });
+  await registrarYConfirmar(null, correo, r.datos.codigoPrueba);
+  // Correo que no existe: misma respuesta (no se revela)
+  const nadie = await api("POST", "/api/auth/recuperar", { cuerpo: { correo: "nadie@ejemplo.mx" } });
+  assert.equal(nadie.estado, 200);
+  assert.equal(nadie.datos.codigoPrueba, undefined);
+  const pedido = await api("POST", "/api/auth/recuperar", { cuerpo: { correo } });
+  assert.equal(pedido.estado, 200);
+  assert.match(pedido.datos.codigoPrueba, /^\d{6}$/);
+  // Contraseña nueva inválida o código equivocado: no cambia
+  assert.equal((await api("POST", "/api/auth/recuperar/confirmar", { cuerpo: { correo, codigo: pedido.datos.codigoPrueba, password: "corta" } })).estado, 400);
+  const malo = pedido.datos.codigoPrueba === "000000" ? "111111" : "000000";
+  assert.equal((await api("POST", "/api/auth/recuperar/confirmar", { cuerpo: { correo, codigo: malo, password: "ClaveNueva9" } })).estado, 400);
+  // Código correcto: cambia la contraseña; la anterior ya no sirve
+  assert.equal((await api("POST", "/api/auth/recuperar/confirmar", { cuerpo: { correo, codigo: pedido.datos.codigoPrueba, password: "ClaveNueva9" } })).estado, 200);
+  assert.equal((await api("POST", "/api/auth/login", { cuerpo: { correo, password: "Clave1234", rol: "usuario" } })).estado, 401);
+  await entrar(correo, "usuario", "ClaveNueva9");
 });
 
 /* ---------- Foro ---------- */
@@ -185,7 +243,9 @@ test("un refugio no puede ver ni tocar los datos de otro", async () => {
 
 test("mi perfil (usuario): ver, editar lo permitido y rechazar lo inválido", async () => {
   const correo = `perfil${Date.now()}@huellapp.mx`;
-  assert.equal((await api("POST", "/api/auth/registro-usuario", { cuerpo: { nombre: "Persona Perfil", correo, password: "Clave1234" } })).estado, 201);
+  const registro = await api("POST", "/api/auth/registro-usuario", { cuerpo: { nombre: "Persona Perfil", correo, password: "Clave1234" } });
+  assert.equal(registro.estado, 201);
+  await registrarYConfirmar(null, correo, registro.datos.codigoPrueba);
   const u = await entrar(correo, "usuario", "Clave1234");
 
   const inicial = (await api("GET", "/api/perfil", { token: u.token })).datos;
@@ -750,4 +810,36 @@ test("moderación (HU-18): lo marcado se oculta a los demás; el admin aprueba o
   // Un texto normal no se marca
   const normal = await api("POST", "/api/foro", { token: ana.token, cuerpo: { texto: "¿A qué edad conviene esterilizar a una perrita?" } });
   assert.equal(normal.datos.publicacion.enRevision, false);
+});
+
+/* ---------- Alertas públicas (compartir, cartel con QR y mapa) ----------
+   Va al final: usa las alertas que crean las pruebas de reportes. */
+test("alertas públicas: sin cuenta, sin datos privados y con ubicación aproximada", async () => {
+  // El mapa: alertas activas con punto aproximado
+  const lista = await api("GET", "/api/alertas");
+  assert.equal(lista.estado, 200, "se ven sin iniciar sesión");
+  for (const a of lista.datos.alertas) {
+    assert.ok(["perdida", "encontrada"].includes(a.tipo));
+    assert.equal(a.senaSecreta, undefined, "la seña secreta nunca se publica");
+    // Centro de una celda de 0.003°: el residuo respecto a la cuadrícula es medio paso
+    const enCuadricula = (v) => Math.abs(((v / 0.003) % 1 + 1) % 1 - 0.5) < 0.01;
+    assert.ok(enCuadricula(a.latitud) && enCuadricula(a.longitud), "la ubicación va redondeada (~300 m)");
+  }
+  assert.equal((await api("GET", "/api/alertas?tipo=otra")).estado, 400);
+
+  // Una alerta del foro, como la abre quien recibe el enlace o escanea el QR
+  const foro = await api("GET", "/api/foro");
+  const pub = foro.datos.publicaciones.find((p) => p.reporteId);
+  assert.ok(pub, "hay al menos una alerta (la crean las pruebas de reportes)");
+  const una = await api("GET", `/api/alertas/${pub.id}`);
+  assert.equal(una.estado, 200);
+  assert.equal(una.datos.alerta.esAlerta, true);
+  assert.ok(["perdida", "encontrada"].includes(una.datos.alerta.tipo));
+  const texto = JSON.stringify(una.datos);
+  for (const privado of ["correo", "telefono", "sena", "latitud", "longitud", "@huellapp.mx"]) {
+    assert.equal(texto.includes(privado), false, `no publica ${privado}`);
+  }
+  assert.equal(una.datos.alerta.publicadoPor.includes(" "), false, "solo el primer nombre");
+  assert.equal((await api("GET", "/api/alertas/999999")).estado, 404);
+  assert.equal((await api("GET", "/api/alertas/abc")).estado, 400);
 });

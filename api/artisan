@@ -416,7 +416,11 @@ function cmdTest(): void
     }
     // Las cuentas demo de admin y refugio piden verificación en dos pasos: en las pruebas se apaga para poder
     // entrar con correo y contraseña (la verificación tiene su propia prueba que la vuelve a exigir).
-    $entornoPrueba = ['DB_USER' => $usuarioPrueba, 'DB_PASS' => Config::obtener('DB_TEST_PASS'), 'DOS_PASOS_OBLIGATORIO' => '0'];
+    // Los correos no se envían en las pruebas: el código de 6 dígitos viene en la respuesta para poder probarlo.
+    $entornoPrueba = [
+        'DB_USER' => $usuarioPrueba, 'DB_PASS' => Config::obtener('DB_TEST_PASS'), 'DOS_PASOS_OBLIGATORIO' => '0',
+        'BREVO_API_KEY' => '', 'CORREO_CODIGO_EN_RESPUESTA' => '1',
+    ];
     foreach ($entornoPrueba as $clave => $valor) {
         putenv("$clave=$valor");
     }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../core/api_client.dart';
+import '../core/compartir.dart';
 import '../core/tipografia.dart';
 import '../core/requiere_sesion.dart';
 import '../services/comunidad_service.dart';
@@ -154,10 +155,8 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
     }
   }
 
-  Future<void> _compartir(PublicacionForo p) async {
-    await Clipboard.setData(ClipboardData(text: '${p.texto}\n\n— Compartido desde HuellApp'));
-    if (mounted) _aviso('Texto copiado: pégalo en WhatsApp o tus redes para que más gente lo vea.');
-  }
+  /// Compartir con el enlace público de la alerta (WhatsApp, Facebook, copiar) y, si es alerta, su cartel con QR.
+  Future<void> _compartir(PublicacionForo p) => Compartir.mostrar(context, p.id);
 
   void _abrirFoto(PublicacionForo p) {
     showDialog(

@@ -55,10 +55,14 @@ class Sesion {
 /// Resultado del primer paso del inicio de sesión: o ya hay [sesion], o falta el código
 /// de Google Authenticator para el [desafio] (válido 5 minutos).
 class ResultadoLogin {
-  const ResultadoLogin({this.sesion, this.desafio, this.configurar = false});
+  const ResultadoLogin({this.sesion, this.desafio, this.configurar = false, this.correoPorVerificar});
 
   final Sesion? sesion;
   final String? desafio;
+
+  /// Cuenta nueva que aún no confirma su correo: ya se le envió un código de 6 dígitos a este
+  /// correo. Hay que mostrar la pantalla del código (ver [SesionService.verificarCorreo]).
+  final String? correoPorVerificar;
 
   /// Admin o refugio sin verificación en dos pasos: es obligatoria y debe configurarla ahora
   /// (desafío válido 15 minutos). Ver [SesionService.configurarDosPasos].
@@ -161,6 +165,7 @@ class SesionService extends ChangeNotifier {
   }
 
   Future<ResultadoLogin> _recibir(Map<String, dynamic> r) async {
+    if (r['requiereVerificarCorreo'] == true) return ResultadoLogin(correoPorVerificar: r['correo'] as String?);
     if (r['requiere2fa'] == true) return ResultadoLogin(desafio: r['desafio'] as String);
     if (r['requiereConfigurar2fa'] == true) return ResultadoLogin(desafio: r['desafio'] as String, configurar: true);
     _api.token = r['token'] as String?;
@@ -192,19 +197,49 @@ class SesionService extends ChangeNotifier {
 
   Future<void> desactivarDosPasos(String codigo) => _api.post('/auth/2fa/desactivar', {'codigo': codigo});
 
-  /// Crea una cuenta de usuario. No inicia sesión: después hay que llamar a [iniciarSesion].
-  Future<void> registrarUsuario({
+  /// Crea una cuenta de usuario. La cuenta nace sin confirmar: el resultado trae
+  /// [ResultadoLogin.correoPorVerificar] y falta escribir el código que llegó al correo.
+  Future<ResultadoLogin> registrarUsuario({
     required String nombre,
     required String correo,
     required String password,
     String telefono = '',
   }) async {
-    await _api.post('/auth/registro-usuario', {
+    final r = await _api.post('/auth/registro-usuario', {
       'nombre': nombre.trim(),
       'correo': correo.trim(),
       'password': password,
       if (telefono.trim().isNotEmpty) 'telefono': telefono.trim(),
     });
+    return _recibir(r);
+  }
+
+  // ---------- Código por correo: confirmar el correo y recuperar la contraseña ----------
+
+  static String _soloDigitos(String codigo) => codigo.replaceAll(RegExp(r'\D'), '');
+
+  /// Confirma el correo con el código de 6 dígitos. Si es correcto, inicia la sesión.
+  Future<Sesion> verificarCorreo({required String correo, required String codigo}) async {
+    final r = await _api.post('/auth/verificar-correo', {'correo': correo, 'codigo': _soloDigitos(codigo)});
+    return (await _recibir(r)).sesion!;
+  }
+
+  /// Pide otro código para confirmar el correo. Devuelve los segundos que hay que esperar para el siguiente.
+  Future<int> reenviarCodigoCorreo(String correo) async {
+    final r = await _api.post('/auth/reenviar-codigo', {'correo': correo});
+    return (r['esperaSegundos'] as num?)?.toInt() ?? 60;
+  }
+
+  /// «¿Olvidaste tu contraseña?»: manda un código al correo (si la cuenta existe; no lo revela).
+  /// Devuelve los segundos que hay que esperar para pedir otro.
+  Future<int> pedirRecuperacion(String correo) async {
+    final r = await _api.post('/auth/recuperar', {'correo': correo.trim()});
+    return (r['esperaSegundos'] as num?)?.toInt() ?? 60;
+  }
+
+  /// Cambia la contraseña con el código que llegó por correo.
+  Future<void> confirmarRecuperacion({required String correo, required String codigo, required String password}) async {
+    await _api.post('/auth/recuperar/confirmar', {'correo': correo, 'codigo': _soloDigitos(codigo), 'password': password});
   }
 
   /// Vuelve a pedir la sesión al servidor (por ejemplo, para ver si ya aprobaron el refugio).

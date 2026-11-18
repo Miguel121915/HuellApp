@@ -73,6 +73,21 @@
 .inicio-acceso--reportar { background: #e6e0fa; }
 @media (max-width: 600px) { .inicio-accesos { grid-template-columns: repeat(2, 1fr); } }
 
+/* Alertas cerca de ti (mapa) */
+.inicio-alertas { display: grid; gap: var(--e3); }
+.inicio-alertas__mapa { height: 360px; border-radius: var(--radio-m); border: 2px solid var(--aqua); z-index: 0; }
+.inicio-alertas__leyenda { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2); color: var(--tinta-suave); font-size: var(--texto-s); }
+.punto { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--blanco); border-radius: 50%; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2); }
+.punto + .punto, .inicio-alertas__leyenda .punto:not(:first-child) { margin-left: var(--e3); }
+.punto--perdida { background: #b42318; }
+.punto--encontrada { background: #1b4f4a; }
+.mapa-popup { display: grid; gap: 4px; min-width: 170px; font-size: var(--texto-s); }
+.mapa-popup strong { font-family: var(--fuente-titulos); font-size: var(--texto-l); font-weight: 600; }
+.mapa-popup__tipo { justify-self: start; padding: 1px 8px; border-radius: 999px; color: var(--blanco); font-size: var(--texto-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.mapa-popup__tipo--perdida { background: #b42318; }
+.mapa-popup__tipo--encontrada { background: #1b4f4a; }
+@media (max-width: 600px) { .inicio-alertas__mapa { height: 280px; } }
+
 /* Mascotas en adopción (lista horizontal) */
 .inicio-mascotas { display: grid; gap: var(--e3); }
 .inicio-mascotas__encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); }

@@ -6,6 +6,8 @@ import { requerirRol } from "../../core/router-guard.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { obtenerRefugiosConMascotas } from "../../core/servicios.js";
 import { crearElemento, formatearEdad, irA, resolverImagen } from "../../core/utils.js";
+import { get } from "../../core/api.js";
+import { dibujarMapaAlertas } from "../../components/mapa-alertas.js";
 
 const MAX_MASCOTAS = 8;
 const sesion = requerirRol("usuario") // el visitante va al login: solo puede ver las mascotas en adopción;
@@ -21,7 +23,19 @@ if (sesion) {
   });
 
   cargarMascotas();
+  cargarAlertas();
   // KIRO ya no va aquí: es la burbuja flotante que monta navbar.js en todas las páginas
+}
+
+/** «Alertas cerca de ti»: mascotas perdidas y encontradas en el mapa (ubicación aproximada). */
+async function cargarAlertas() {
+  const aviso = document.getElementById("alertas-aviso");
+  try {
+    const { alertas } = await get("/alertas");
+    dibujarMapaAlertas(document.getElementById("mapa-alertas"), alertas, { aviso, botonCerca: document.getElementById("boton-alertas-cerca") });
+  } catch {
+    aviso.textContent = "No pudimos cargar las alertas. Inténtalo más tarde.";
+  }
 }
 
 /** Las primeras mascotas disponibles de todos los refugios, como en la app. */

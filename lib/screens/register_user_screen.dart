@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/api_client.dart';
 import '../core/sesion_service.dart';
+import 'verificar_correo_screen.dart';
 import '../navigation.dart';
 
 class RegisterUserScreen extends StatefulWidget {
@@ -342,19 +343,21 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
     setState(() => _enviando = true);
     final sesion = SesionService.instancia;
     try {
-      await sesion.registrarUsuario(
+      final resultado = await sesion.registrarUsuario(
         nombre: _usernameController.text,
         correo: _emailController.text,
         password: _passwordController.text,
         telefono: _phoneController.text,
       );
-      // La cuenta ya existe: se inicia sesión de una vez
-      await sesion.iniciarSesion(
-        correo: _emailController.text,
-        password: _passwordController.text,
-        rol: 'usuario',
-      );
       if (!mounted) return;
+      // La cuenta nace sin confirmar: le llegó un código al correo y se escribe en la siguiente pantalla
+      if (resultado.correoPorVerificar != null) {
+        setState(() => _enviando = false);
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => VerificarCorreoScreen(correo: resultado.correoPorVerificar!)),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('¡Cuenta creada! Bienvenido a HuellApp.')),
       );

@@ -186,6 +186,8 @@ function iniciar() {
   /** Después de la contraseña o de Google: entra, o pide el código de dos pasos. */
   function terminarPaso(resultado) {
     if (!resultado.ok) { mostrarAlerta(alerta, "error", resultado.error); return; }
+    // Cuenta que aún no confirma su correo: pantalla del código (ya se le envió uno)
+    if (resultado.requiereVerificarCorreo) { irA("pages/verificar-correo.html"); return; }
     if (resultado.requiere2fa) { mostrarPaso2fa(resultado.desafio); return; }
     if (resultado.requiereConfigurar2fa) { mostrarConfigurar2fa(resultado.desafio); return; }
     irA(destinoDeSesion(resultado.sesion));

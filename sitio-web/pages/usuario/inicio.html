@@ -18,6 +18,9 @@
   <link rel="stylesheet" href="../../assets/css/components/tarjetas.css">
   <link rel="stylesheet" href="../../assets/css/pages/usuario.css">
   <link rel="stylesheet" href="../../assets/css/pages/inicio.css">
+  <!-- Mapa de alertas cercanas (Leaflet + OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="../../assets/js/modules/usuario/inicio.js"></script>
 </head>
 <body class="pagina-usuario" data-protegida>
@@ -45,6 +48,19 @@
       <a class="inicio-acceso inicio-acceso--cerca" href="refugios.html"><span aria-hidden="true">📍</span>Refugios cerca de ti</a>
       <a class="inicio-acceso inicio-acceso--reportar" href="reportar.html"><span aria-hidden="true">📷</span>Reportar</a>
     </nav>
+
+    <section class="inicio-alertas" aria-labelledby="titulo-alertas">
+      <header class="inicio-mascotas__encabezado">
+        <div>
+          <p class="sobretitulo">Ayuda en tu zona</p>
+          <h2 id="titulo-alertas">Alertas cerca de ti</h2>
+        </div>
+        <button id="boton-alertas-cerca" class="boton boton--contorno boton--pequeno" type="button">📍 Cerca de mí</button>
+      </header>
+      <p class="inicio-alertas__leyenda"><span class="punto punto--perdida" aria-hidden="true"></span>Se busca <span class="punto punto--encontrada" aria-hidden="true"></span>Busca a su familia</p>
+      <div id="mapa-alertas" class="inicio-alertas__mapa" role="region" aria-label="Mapa de alertas de mascotas perdidas y encontradas"></div>
+      <p id="alertas-aviso" class="texto-pequeno texto-suave" role="status"></p>
+    </section>
 
     <section class="inicio-mascotas" aria-labelledby="titulo-mascotas">
       <header class="inicio-mascotas__encabezado">

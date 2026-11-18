@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HuellApp;
 
-use HuellApp\Rutas\{Admin, Adopciones, Auth, Favoritos, Foro, Kiro, Mensajes, Perfil, Refugio, Refugios, Reportes, Requisitos};
+use HuellApp\Rutas\{Admin, Adopciones, Alertas, Auth, Favoritos, Foro, Kiro, Mensajes, Perfil, Refugio, Refugios, Reportes, Requisitos};
 
 /** Aplicacion — Atiende una petición /api: CORS, rutas y errores (siempre responde JSON). */
 final class Aplicacion
@@ -44,6 +44,7 @@ final class Aplicacion
         }, [[Sesion::class, 'requiereSesion']]);
         Auth::registrar($r);
         Foro::registrar($r);
+        Alertas::registrar($r); // alertas públicas: página que se comparte, cartel con QR y mapa del Inicio
         Refugios::registrar($r);
         Refugio::registrar($r);
         Admin::registrar($r);

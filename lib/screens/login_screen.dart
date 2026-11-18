@@ -10,7 +10,9 @@ import '../widgets/boton_google.dart';
 import '../widgets/dialogo_codigo.dart';
 import 'configurar_dos_pasos_screen.dart';
 import 'register_shelter_screen.dart';
+import 'recuperar_contrasena_screen.dart';
 import 'register_user_screen.dart';
+import 'verificar_correo_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,8 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController _userOrEmailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _recoveryEmailController =
-      TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -47,7 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _tokensGoogle?.cancel();
     _userOrEmailController.dispose();
     _passwordController.dispose();
-    _recoveryEmailController.dispose();
     super.dispose();
   }
 
@@ -98,6 +97,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Después de la contraseña o de Google: entra, o pide el código de Google Authenticator.
   Future<void> _terminar(ResultadoLogin resultado) async {
+    // Cuenta que aún no confirma su correo: ya le llegó un código, se escribe en la siguiente pantalla
+    if (resultado.correoPorVerificar != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => VerificarCorreoScreen(correo: resultado.correoPorVerificar!)),
+      );
+      return;
+    }
     // Refugio sin verificación en dos pasos: es obligatoria, se configura antes de entrar
     if (resultado.configurar) {
       final sesion = await Navigator.of(context).push<Sesion>(
@@ -186,57 +192,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _olvideContrasena() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Recuperar contraseña'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Escribe tu correo y te enviaremos un enlace para crear una '
-              'nueva contraseña.',
-              style: TextStyle(fontSize: 14, color: _mutedColor),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _recoveryEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: _inputDecoration(
-                'Correo electrónico',
-                Icons.email_outlined,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar', style: TextStyle(color: _accent)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Si el correo está registrado, recibirás un enlace '
-                    'para recuperar tu contraseña',
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _turquoise,
-              foregroundColor: _textColor,
-            ),
-            child: const Text('Enviar enlace'),
-          ),
-        ],
-      ),
+  /// «¿Olvidaste tu contraseña?»: código por correo y contraseña nueva. Al volver, deja el correo escrito.
+  Future<void> _olvideContrasena() async {
+    final correo = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => RecuperarContrasenaScreen(correoInicial: _userOrEmailController.text.trim())),
     );
+    if (correo == null || !mounted) return;
+    setState(() {
+      _userOrEmailController.text = correo;
+      _passwordController.clear();
+    });
   }
 
   // ---------- Interfaz ----------

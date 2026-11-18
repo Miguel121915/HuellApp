@@ -29,6 +29,11 @@ export const esInvitado = (sesion) => sesion?.rol === "invitado";
 
 /** Guarda la sesión que devolvió el servidor, o avisa que falta el código de dos pasos. */
 function recibirLogin(r) {
+  // Cuenta nueva que aún no confirma su correo: falta el código que le llegó
+  if (r.requiereVerificarCorreo) {
+    guardarCorreoPendiente(r.correo);
+    return { ok: true, requiereVerificarCorreo: true, correo: r.correo };
+  }
   if (r.requiere2fa) return { ok: true, requiere2fa: true, desafio: r.desafio };
   // Admin y refugios: la verificación en dos pasos es obligatoria; si no la tienen, la configuran ahora
   if (r.requiereConfigurar2fa) return { ok: true, requiereConfigurar2fa: true, desafio: r.desafio };
@@ -90,10 +95,38 @@ export async function refrescarSesion() {
 
 /* ---------- Registros ---------- */
 
-export const registrarUsuario = (datos) => intentar(async () => {
-  await post("/auth/registro-usuario", datos);
-  return { ok: true };
+export const registrarUsuario = (datos) => intentar(async () =>
+  recibirLogin(await post("/auth/registro-usuario", datos)));
+
+/* ---------- Código por correo: confirmar el correo y recuperar la contraseña ---------- */
+
+/* El correo que espera su código se pasa entre páginas en sessionStorage (no en la URL: no queda en el historial). */
+const CORREO_PENDIENTE = "huellapp:correo-pendiente";
+export function guardarCorreoPendiente(correo) {
+  try { sessionStorage.setItem(CORREO_PENDIENTE, correo || ""); } catch { /* sin acceso */ }
+}
+export function leerCorreoPendiente() {
+  try { return sessionStorage.getItem(CORREO_PENDIENTE) || ""; } catch { return ""; }
+}
+
+const soloDigitos = (codigo) => String(codigo).replace(/\D/g, "");
+
+/** Confirma el correo con el código; si es correcto, inicia la sesión. */
+export const verificarCorreo = ({ correo, codigo }) => intentar(async () => {
+  const r = recibirLogin(await post("/auth/verificar-correo", { correo, codigo: soloDigitos(codigo) }));
+  guardarCorreoPendiente("");
+  return r;
 });
+
+/** Pide otro código para confirmar el correo (hay que esperar 1 minuto entre envíos). */
+export const reenviarCodigoCorreo = (correo) => intentar(async () => ({ ok: true, ...(await post("/auth/reenviar-codigo", { correo })) }));
+
+/** «¿Olvidaste tu contraseña?»: manda un código al correo (si la cuenta existe). */
+export const pedirRecuperacion = (correo) => intentar(async () => ({ ok: true, ...(await post("/auth/recuperar", { correo: correo.trim() })) }));
+
+/** Cambia la contraseña con el código que llegó por correo. */
+export const confirmarRecuperacion = ({ correo, codigo, password }) => intentar(async () =>
+  ({ ok: true, ...(await post("/auth/recuperar/confirmar", { correo, codigo: soloDigitos(codigo), password })) }));
 
 /**
  * Alta de refugio: el servidor crea la cuenta del responsable y la solicitud "pendiente".

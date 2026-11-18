@@ -40,6 +40,16 @@ final class Config
         // Vacío = sin CAPTCHA. Para desarrollo sirven las claves de prueba de Cloudflare (ver api/README.md).
         'TURNSTILE_SITE_KEY' => '',
         'TURNSTILE_SECRET_KEY' => '',
+        // Dirección pública del sitio (p. ej. https://huellapp.duckdns.org) para los enlaces que se comparten
+        // y el QR del cartel. Vacío = la misma dirección desde la que se abrió el sitio o la API.
+        'SITIO_URL' => '',
+        // Correos (códigos para confirmar el correo y recuperar la contraseña) con Brevo.
+        // Vacío = MODO DE PRUEBA: no se envía nada y el código se muestra en la consola de la API.
+        'BREVO_API_KEY' => '',
+        'CORREO_REMITENTE' => '',
+        'CORREO_REMITENTE_NOMBRE' => 'HuellApp',
+        // SOLO para "php artisan test": incluye el código en la respuesta. Nunca lo actives en producción.
+        'CORREO_CODIGO_EN_RESPUESTA' => '0',
     ];
 
     /** @var array<string,string> */

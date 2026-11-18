@@ -33,6 +33,8 @@ final class Migraciones
             // Mi perfil: datos que el usuario edita (también precargan la solicitud de adopción)
             'ciudad' => 'VARCHAR2(80 CHAR)', 'ocupacion' => 'VARCHAR2(100 CHAR)', 'tipo_vivienda' => 'VARCHAR2(15 CHAR)',
             'otras_mascotas' => 'VARCHAR2(200 CHAR)', 'sobre_mi' => 'VARCHAR2(300 CHAR)',
+            // Correo confirmado con código. DEFAULT 1: las cuentas que ya existían quedan como confirmadas
+            'correo_verificado' => 'NUMBER(1) DEFAULT 1 NOT NULL',
         ],
         // Reportes (HU-5): especie y nombre opcionales, y lo que detectó la IA (JSON)
         'reportes' => [
