@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/tipografia.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
@@ -208,8 +209,10 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                         child: Text(
                           'Mascotas en ${refugio.nombre}',
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: Tipografia.fuenteTitulos,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w600,
+                            color: Tipografia.aquaFuerte,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -325,9 +328,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                       style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                        fontSize: 17,
+                                                        fontFamily: Tipografia.fuenteTitulos,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 18.5,
                                                       ),
                                                     ),
                                                   ),
@@ -360,7 +363,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
-                                                  color: Colors.grey,
+                                                  color: Tipografia.tintaTenue,
                                                   fontSize: 13,
                                                 ),
                                               ),
@@ -370,9 +373,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
-                                                  color: Colors.teal,
+                                                  color: Tipografia.acento,
                                                   fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
+                                                  fontWeight: FontWeight.w700,
                                                 ),
                                               ),
                                             ],
@@ -466,7 +469,12 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
       appBar: AppBar(
         title: const Text(
           'Refugios y Adopciones',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontFamily: Tipografia.fuenteTitulos,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Tipografia.aquaFuerte,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -573,8 +581,9 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                         child: Text(
                                           refugio.nombre,
                                           style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w800,
+                                            fontFamily: Tipografia.fuenteTitulos,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
                                             height: 1.2,
                                           ),
                                         ),
@@ -592,13 +601,13 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                       const Icon(
                                         Icons.location_on,
                                         size: 14,
-                                        color: Colors.grey,
+                                        color: Tipografia.tintaTenue,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         refugio.ubicacion,
                                         style: const TextStyle(
-                                          color: Colors.grey,
+                                          color: Tipografia.tintaTenue,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -607,7 +616,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     refugio.descripcion,
-                                    style: const TextStyle(fontSize: 13),
+                                    style: const TextStyle(fontSize: 14, height: 1.45, color: Tipografia.tintaSuave),
                                   ),
                                   const SizedBox(height: 12),
                                   Row(

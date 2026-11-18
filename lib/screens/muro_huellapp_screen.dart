@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../core/api_client.dart';
+import '../core/tipografia.dart';
 import '../core/requiere_sesion.dart';
 import '../services/comunidad_service.dart';
 import '../widgets/foto_huellapp.dart';
@@ -219,7 +220,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Comentarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const Text('Comentarios', style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontWeight: FontWeight.w600, fontSize: 21, color: Tipografia.aquaFuerte)),
                     IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(hoja)),
                   ],
                 ),
@@ -294,7 +295,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Muro de la comunidad', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('Muro de la comunidad', style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 22, fontWeight: FontWeight.w600, color: Tipografia.aquaFuerte)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -325,7 +326,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  child: Text(_pestanas[_pestana]!.$2, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                  child: Text(_pestanas[_pestana]!.$2, style: const TextStyle(color: Tipografia.tintaSuave, fontSize: 13.5)),
                 ),
                 // Publicar texto libre solo en «Comunidad»; las alertas se crean desde «Reportar»
                 if (_pestana == 'comunidad') ...[
@@ -471,8 +472,8 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p.autor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text(_hace(p.fecha), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(p.autor, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontWeight: FontWeight.w600, fontSize: 17)),
+                  Text(_hace(p.fecha), style: const TextStyle(color: Tipografia.tintaTenue, fontSize: 12.5)),
                 ]),
               ),
               if (alerta)
@@ -500,7 +501,7 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
             ],
             if (p.texto.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(p.texto, style: const TextStyle(fontSize: 14, height: 1.35)),
+              Text(p.texto, style: const TextStyle(fontSize: 15, height: 1.5)),
             ],
             if (p.fotoUrl.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -521,8 +522,8 @@ class _MuroHuellAppScreenState extends State<MuroHuellAppScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('❤ ${p.meGusta}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                Text('${p.comentarios.length} comentarios', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('❤ ${p.meGusta}', style: const TextStyle(color: Tipografia.tintaTenue, fontSize: 12.5)),
+                Text('${p.comentarios.length} comentarios', style: const TextStyle(color: Tipografia.tintaTenue, fontSize: 12.5)),
               ],
             ),
             const Divider(),

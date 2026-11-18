@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/tipografia.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:huellapp/core/api_client.dart';
 import 'package:huellapp/core/api_config.dart';
@@ -323,7 +324,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
                         ),
                         Text('${d['descripcion'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
                         Text('Zona: ${d['zona'] ?? ''} · Reportó ${d['autor'] ?? ''}',
-                            style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                            style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue)),
                       ]),
                     ),
                   ]),
@@ -374,7 +375,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
                 const Text(
                   '🤖 La IA está revisando la foto y comparándola con otros reportes. '
                   'En uno o dos minutos verás el resultado en «Coincidencias».',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                  style: TextStyle(fontSize: 13, color: Tipografia.tintaTenue),
                 ),
               ],
               if (rasgos.isNotEmpty) ...[
@@ -393,7 +394,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
                 const SizedBox(height: 10),
                 const Text(
                   'La IA no estuvo disponible: comparamos por descripción y zona.',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(fontSize: 12, color: Tipografia.tintaTenue),
                 ),
               ],
             ],
@@ -515,7 +516,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
                       const Text(
                         'Solo unos segundos. La IA revisará la foto después.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                        style: TextStyle(fontSize: 12, color: Tipografia.tintaTenue),
                       ),
                     ],
                   ),
@@ -551,9 +552,9 @@ class _ReportarScreenState extends State<ReportarScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(titulo, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color.oscuro)),
+                      Text(titulo, style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 19, fontWeight: FontWeight.w600, color: color.oscuro)),
                       const SizedBox(height: 4),
-                      Text(texto, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                      Text(texto, style: const TextStyle(fontSize: 14, color: Tipografia.tintaSuave)),
                     ]),
                   ),
                   Icon(Icons.chevron_right, color: color.oscuro),
@@ -573,9 +574,9 @@ class _ReportarScreenState extends State<ReportarScreen> {
               padding: const EdgeInsets.all(20),
               children: [
                 const SizedBox(height: 12),
-                const Text('¿Qué pasó?', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: darkBorderColor)),
+                const Text('¿Qué pasó?', style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 28, fontWeight: FontWeight.w700, color: darkBorderColor)),
                 const SizedBox(height: 6),
-                const Text('Elige una opción para llenar el formulario correcto.', style: TextStyle(color: Colors.black54)),
+                const Text('Elige una opción para llenar el formulario correcto.', style: TextStyle(color: Tipografia.tintaSuave)),
                 const SizedBox(height: 24),
                 opcion('Extraviada', '🔎', 'Se me perdió mi mascota', 'Publica una alerta para que la comunidad te ayude a buscarla.', _paletaBusca),
                 opcion('Avistamiento', '🏠', 'Encontré una mascota', 'Ayúdale a volver con su familia.', _paletaEncontre),
@@ -654,8 +655,8 @@ class _ReportarScreenState extends State<ReportarScreen> {
                 Text(
                   p.titulo,
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
+                    fontFamily: Tipografia.fuenteTitulos, fontSize: 25,
+                    fontWeight: FontWeight.w700,
                     height: 1.12,
                     color: p.oscuro,
                   ),
@@ -821,7 +822,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
         ),
         const Text(
           'Sube una fotografía clara. Nuestra inteligencia artificial analizará los rasgos para buscar similitudes en reportes activos.',
-          style: TextStyle(fontSize: 12, height: 1.4, color: Colors.black54),
+          style: TextStyle(fontSize: 12, height: 1.4, color: Tipografia.tintaTenue),
         ),
       ],
     );
@@ -1085,8 +1086,8 @@ class _ReportarScreenState extends State<ReportarScreen> {
           child: Text(
             titulo,
             style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontFamily: Tipografia.fuenteTitulos, fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: darkBorderColor,
             ),
           ),
@@ -1099,7 +1100,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.black54, fontSize: 14),
+      labelStyle: const TextStyle(color: Tipografia.tintaSuave, fontSize: 14),
       prefixIcon: Icon(icon, color: darkBorderColor),
       filled: true,
       fillColor: Colors.white,

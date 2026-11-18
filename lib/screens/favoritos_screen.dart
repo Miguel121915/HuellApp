@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/tipografia.dart';
 
 import '../core/api_config.dart';
 import '../models/refugio.dart';
@@ -104,7 +105,7 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
                       children: const [
                         Icon(Icons.favorite_border, size: 64, color: _accent),
                         SizedBox(height: 12),
-                        Text('Aún no tienes favoritos', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                        Text('Aún no tienes favoritos', textAlign: TextAlign.center, style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 20, fontWeight: FontWeight.w600)),
                         SizedBox(height: 8),
                         Text(
                           'Toca el ♡ de una mascota en Inicio o en Refugios para guardarla aquí y compararla después.',
@@ -146,9 +147,9 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(mascota.nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _tinta)),
+                  Text(mascota.nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 18.5, fontWeight: FontWeight.w600, color: _tinta)),
                   const SizedBox(height: 2),
-                  Text('${mascota.tipo} · ${mascota.edad} · ${mascota.genero}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5)),
+                  Text('${mascota.tipo} · ${mascota.edad} · ${mascota.genero}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: Tipografia.tintaTenue)),
                   Text(m['refugioNombre'] as String? ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: _accent, fontWeight: FontWeight.w600)),
                   if (estatus != 'disponible')
                     Text(_estatusTexto[estatus] ?? estatus, style: const TextStyle(fontSize: 12, color: Color(0xFFB7791F), fontWeight: FontWeight.bold)),
@@ -235,7 +236,7 @@ class _ComparacionScreen extends StatelessWidget {
                           child: FotoHuellApp(ApiConfig.urlArchivo(m['foto'] as String? ?? ''), width: anchoColumna - 16, height: 96),
                         ),
                         const SizedBox(height: 6),
-                        Text(m['nombre'] as String? ?? '', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                        Text(m['nombre'] as String? ?? '', style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontWeight: FontWeight.w600, fontSize: 17)),
                       ]),
                     ),
                 ],

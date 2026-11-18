@@ -35,9 +35,10 @@ export function montarAvisos(contenedor) {
     clase: "boton boton--contorno boton--pequeno avisos__boton",
     atributos: { type: "button", "aria-haspopup": "true", "aria-expanded": "false", title: "Avisos" },
   }, [
-    crearElemento("span", { texto: "🔔", atributos: { "aria-hidden": "true" } }),
     crearElemento("span", { clase: "solo-lector", texto: "Avisos" }),
   ]);
+  // Ícono de campana de línea (toma el color del botón); SVG fijo, sin datos del usuario
+  boton.insertAdjacentHTML("afterbegin", '<svg class="avisos__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>');
   const insignia = crearElemento("span", { clase: "nav__insignia avisos__insignia", atributos: { hidden: true } });
   boton.append(insignia);
   const panel = crearElemento("div", { clase: "avisos__panel", atributos: { hidden: true, role: "dialog", "aria-label": "Avisos" } });

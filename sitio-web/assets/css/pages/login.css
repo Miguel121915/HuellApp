@@ -145,19 +145,29 @@
 .login { border: 0; border-radius: var(--radio-l); box-shadow: 0 12px 32px rgb(20 49 46 / 0.18); }
 .login__bienvenida { border-right: 0; background-color: var(--aqua); }
 .login__logo .logo-texto { color: var(--aqua-fuerte); }
-/* Logo de imagen: franja blanca porque la parte «App» es turquesa, igual que este panel */
+/* Logo de imagen sin recuadro: un contorno blanco que sigue la silueta (como calcomanía) evita que
+   la parte turquesa («App» y la curva) se pierda sobre este panel aqua, y una sombra suave lo despega */
 .login__logo .login__logo-imagen {
   display: block; width: min(380px, 100%); height: auto;
-  padding: var(--e2) var(--e3); background: var(--blanco); border-radius: var(--radio-l);
+  filter:
+    drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
+    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
+    drop-shadow(0 6px 10px rgb(20 49 46 / 0.22));
 }
 .login__bienvenida h1 { padding: 0; background: none; border: 0; color: var(--tinta); }
 .login__panel h2 { color: var(--aqua-fuerte); }
-.selector-rol { grid-template-columns: repeat(4, 1fr); background: transparent; border: 1px solid var(--borde); padding: 0; gap: 0; overflow: hidden; }
+.selector-rol { grid-template-columns: repeat(2, 1fr); background: transparent; border: 1px solid var(--borde); padding: 0; gap: 0; overflow: hidden; }
 .selector-rol__opcion { border-radius: 0; color: var(--tinta); font-size: 0.9rem; }
 .selector-rol__opcion + .selector-rol__opcion { border-left: 1px solid var(--borde); }
 .selector-rol__opcion[aria-selected="true"] { background: var(--aqua); color: var(--tinta); }
 .login__invitado { margin-bottom: var(--e4); color: var(--tinta-suave); }
-@media (max-width: 520px) { .selector-rol { grid-template-columns: repeat(2, 1fr); } }
+/* Accesos secundarios bajo el formulario: visitante (destacado) y administración (discreto) */
+.login__accesos { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--e2); margin-top: var(--e3); color: var(--tinta-tenue); font-size: var(--texto-s); }
+.login__acceso { padding: var(--e1) var(--e2); border: 0; background: none; color: var(--aqua-fuerte); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radio-s); }
+.login__acceso:hover { color: var(--tinta); }
+.login__acceso--admin { color: var(--tinta-tenue); font-weight: 500; }
+.login__modo { margin-bottom: var(--e4); padding: var(--e3); border-radius: var(--radio-s); background: var(--aqua-suave); color: var(--tinta-suave); }
+.login__invitado .enlace, .login__modo .enlace { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; cursor: pointer; }
 
 /* «Continuar con Google» y segundo paso (código de Google Authenticator) */
 .login__google { margin-top: var(--e4); display: grid; gap: var(--e4); justify-items: center; }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/tipografia.dart';
 
 import '../core/api_client.dart';
 import '../core/api_config.dart';
@@ -96,10 +97,10 @@ class _MisSolicitudesScreenState extends State<MisSolicitudesScreen> {
                       Icon(Icons.pets, size: 56, color: _oscuro),
                       SizedBox(height: 12),
                       Text('Aún no has enviado solicitudes',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+                          style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 19, fontWeight: FontWeight.w600, color: _oscuro)),
                       SizedBox(height: 6),
                       Text('Busca una mascota en «Refugios» y toca «Solicitar adopción».',
-                          textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+                          textAlign: TextAlign.center, style: TextStyle(color: Tipografia.tintaSuave)),
                     ]),
                   )
                 else
@@ -129,9 +130,9 @@ class _MisSolicitudesScreenState extends State<MisSolicitudesScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s['mascotaNombre'] as String? ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(s['mascotaNombre'] as String? ?? '', style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 18, fontWeight: FontWeight.w600)),
                 Text(s['refugioNombre'] as String? ?? '', style: const TextStyle(color: _oscuro)),
-                Text('Enviada el ${_fecha(s['fecha'] as String?)}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text('Enviada el ${_fecha(s['fecha'] as String?)}', style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue)),
               ]),
             ),
             Container(

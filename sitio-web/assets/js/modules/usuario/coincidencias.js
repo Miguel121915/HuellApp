@@ -128,7 +128,11 @@ function crearTarjeta(c) {
       crearElemento("section", { clase: "coincidencia__lado coincidencia__lado--hallazgo" }, [
         crearElemento("div", { clase: "coincidencia__cabecera" }, [
           crearElemento("h2", { clase: "coincidencia__subtitulo", texto: "Posible coincidencia" }),
-          crearElemento("span", { clase: "similitud", texto: `${c.similitud}% de similitud`, atributos: { "aria-label": `${c.similitud} por ciento de similitud` } }),
+          // Porcentaje grande (Fredoka) + texto pequeño; el lector de pantalla lee la frase completa
+          crearElemento("span", { clase: "similitud", atributos: { role: "img", "aria-label": `${c.similitud} por ciento de similitud` } }, [
+            crearElemento("strong", { clase: "similitud__numero", texto: `${c.similitud}%` }),
+            crearElemento("span", { clase: "similitud__texto", texto: "de similitud" }),
+          ]),
         ]),
         crearElemento("figure", { clase: "coincidencia__foto" }, imagen(otro.foto, otro.fotoAlt || (encontre ? "Mascota perdida" : "Mascota encontrada"))),
         crearElemento("p", { clase: "coincidencia__texto", texto: otro.descripcion }),

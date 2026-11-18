@@ -51,14 +51,15 @@ function iniciarReportar() {
   // Punto en el mapa: las coincidencias se buscan por distancia real
   const mapaPunto = montarMapaPunto(document.getElementById("mapa-reporte"), document.getElementById("texto-mapa"), document.getElementById("boton-mi-ubicacion"));
   const TEXTOS = {
-    perdida: { titulo: "2. Datos de tu mascota", fecha: "¿Cuándo se perdió?", zona: "¿Dónde se perdió?", collar: "Collar, placa o chip", mapa: "Marca en el mapa dónde se perdió (recomendado)", boton: "Publicar alerta de búsqueda" },
-    encontrada: { titulo: "2. Datos de la mascota que encontraste", fecha: "¿Cuándo la viste?", zona: "¿Dónde la encontraste?", collar: "¿Trae collar o placa? ¿Cómo es?", mapa: "Marca en el mapa dónde la encontraste (recomendado)", boton: "Publicar mascota encontrada" },
+    perdida: { titulo: "Datos de tu mascota", fecha: "¿Cuándo se perdió?", zona: "¿Dónde se perdió?", collar: "Collar, placa o chip", mapa: "Marca en el mapa dónde se perdió (recomendado)", boton: "Publicar alerta de búsqueda" },
+    encontrada: { titulo: "Datos de la mascota que encontraste", fecha: "¿Cuándo la viste?", zona: "¿Dónde la encontraste?", collar: "¿Trae collar o placa? ¿Cómo es?", mapa: "Marca en el mapa dónde la encontraste (recomendado)", boton: "Publicar mascota encontrada" },
   };
 
   function elegir(tipo) {
     formulario.elements.tipo.value = tipo;
     const t = TEXTOS[tipo];
-    document.getElementById("titulo-formulario").textContent = t.titulo;
+    // Solo el texto: el número del paso (círculo) se queda
+    document.getElementById("titulo-formulario-texto").textContent = t.titulo;
     document.getElementById("etiqueta-fecha").textContent = t.fecha;
     document.getElementById("etiqueta-zona").textContent = t.zona;
     document.getElementById("etiqueta-collar").textContent = t.collar;

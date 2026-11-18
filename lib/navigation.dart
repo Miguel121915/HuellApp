@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'main.dart';
 import 'screens/app_shell.dart';
 import 'screens/foro_screen.dart';
 import 'screens/kiro_home_screen.dart';
@@ -14,6 +15,8 @@ class AppNavigation extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'HuellApp',
+      // El mismo tema del login: colores de la marca y la escala de texto (Fredoka + Inter)
+      theme: MyApp.tema(),
       initialRoute: '/',
       routes: {
         '/': (context) => const AppShell(),

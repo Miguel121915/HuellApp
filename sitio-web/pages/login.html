@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
   <link rel="stylesheet" href="../assets/css/base/reset.css">
   <link rel="stylesheet" href="../assets/css/base/variables.css">
   <link rel="stylesheet" href="../assets/css/base/tipografia.css">
@@ -33,13 +33,12 @@
       <div class="selector-rol" id="selector-rol" role="tablist" aria-label="Tipo de cuenta">
         <button type="button" class="selector-rol__opcion" role="tab" data-rol="usuario" aria-selected="true" aria-controls="form-login">Usuario</button>
         <button type="button" class="selector-rol__opcion" role="tab" data-rol="refugio" aria-selected="false" aria-controls="form-login" tabindex="-1">Refugio</button>
-        <button type="button" class="selector-rol__opcion" role="tab" data-rol="admin" aria-selected="false" aria-controls="form-login" tabindex="-1">Administrador</button>
-        <button type="button" class="selector-rol__opcion" role="tab" data-rol="invitado" aria-selected="false" aria-controls="form-login" tabindex="-1">Invitado</button>
       </div>
 
       <form id="form-login" role="tabpanel" novalidate>
         <div id="alerta" role="alert" hidden></div>
 
+        <p class="login__modo" id="texto-admin" hidden><strong>Acceso de administración.</strong> Solo para el equipo de HuellApp. <button type="button" class="enlace" data-rol="usuario">Volver</button></p>
         <p class="login__invitado" id="texto-invitado" hidden>Como visitante solo puedes ver las mascotas en adopción de los refugios. Para adoptar, guardar favoritos, escribir a un refugio, reportar una mascota o usar el foro necesitas iniciar sesión o crear una cuenta.</p>
 
         <div class="campo" id="campo-correo">
@@ -98,6 +97,13 @@
       </form>
 
       <p class="login__registro" id="enlace-registro">¿No tienes cuenta? <a class="enlace" href="registro-usuario.html">Regístrate</a></p>
+
+      <!-- Accesos secundarios: el visitante y el administrador no compiten con las pestañas principales -->
+      <div class="login__accesos" id="accesos-rol">
+        <button type="button" class="login__acceso" data-rol="invitado">👀 Entrar sin cuenta</button>
+        <span aria-hidden="true">·</span>
+        <button type="button" class="login__acceso login__acceso--admin" data-rol="admin">Acceso de administración</button>
+      </div>
 
       <details class="demo">
         <summary>Cuentas de demostración</summary>

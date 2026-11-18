@@ -1,101 +1,167 @@
-/* navbar.css — Encabezado turquesa + navegación superior fija (escritorio) */
+/* navbar.css — Encabezado flotante verde turquesa con el logo en un panel blanco de borde curvo
+   a la izquierda (medidas tomadas del diseño de referencia). Se queda fijo arriba al hacer scroll. */
 .encabezado {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--aqua);
-  border-bottom: 3px solid var(--tinta);
+  padding: 14px var(--e4) var(--e2);
 }
 .encabezado__interno {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--e5);
+  gap: 0;
   max-width: var(--ancho-max);
-  min-height: var(--alto-encabezado);
+  min-height: 92px;
   margin-inline: auto;
-  padding-inline: var(--e5);
+  padding: 0 19px 0 0;
+  border-radius: 16px;
+  /* sin overflow: hidden, para que los menús de la cuenta y de la campana se desplieguen por fuera */
+  /* turquesa un poco más oscuro que el diseño de referencia para que el texto blanco se lea bien
+     (contraste de al menos 4.7 a 1 en todo el alto); aqua claro en la esquina del logo */
+  background:
+    linear-gradient(90deg, #55d7bc 0, #55d7bc 30px, rgb(85 215 188 / 0) 240px),
+    linear-gradient(180deg, #0d8274 0%, #0c7d70 55%, #0b766a 100%);
+  color: var(--blanco);
+  box-shadow: 0 6px 18px rgb(20 49 46 / 0.16), 0 1px 2px rgb(20 49 46 / 0.10);
 }
 
-.marca { display: inline-flex; align-items: center; gap: var(--e2); text-decoration: none; }
+/* Panel blanco del logo: esquina superior redondeada, borde menta y curva que se abre hacia abajo */
+.marca {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  align-self: stretch;
+  flex-shrink: 0;
+  width: 310px;
+  padding: 8px 0 0 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 166 50' preserveAspectRatio='none'%3E%3Cpath d='M2 51V24C2 11 11 3 24 3H112C124 3 133 6 139 13C147 24 151 38 157 44C160 48 162 50 166 50V51Z' fill='%23fff' stroke='%23b9f2e5' stroke-width='2.2'/%3E%3C/svg%3E") left top / 100% 100% no-repeat;
+  border-radius: 16px 0 0 16px; /* sigue las esquinas de la barra */
+  color: var(--tinta);
+  text-decoration: none;
+}
 .marca__texto { font-size: 2.25rem; }
 .marca__huella { width: 48px; height: 48px; }
-/* Logo de imagen (perro y gato + «HuellApp»). Franja blanca: la parte «App» es turquesa como la barra. */
-.marca__logo {
-  display: block; width: auto; height: 50px;
-  padding: 3px var(--e2); background: var(--blanco); border-radius: var(--radio-m);
-}
+/* Logo de imagen (perro y gato + «HuellApp»), tal cual */
+.marca__logo { display: block; width: auto; height: 74px; }
 
 /* Navegación principal (se rellena desde js/components/navbar.js) */
-.nav { display: flex; align-items: center; gap: var(--e1); }
+.nav { display: flex; align-items: center; gap: 0; margin-left: 10px; }
 .nav__enlace {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: var(--e2) var(--e4);
-  border-radius: var(--radio-m);
+  gap: 6px;
+  padding: 12px 17px;
+  border-radius: 12px;
+  color: var(--blanco);
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 500;
+  line-height: 1.2;
   text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s;
 }
-.nav__enlace:hover { background: rgb(255 255 255 / 0.55); }
-.nav__enlace[aria-current="page"] { background: var(--blanco); box-shadow: var(--sombra-s); }
-.nav__icono { width: 28px; height: 28px; }
+.nav__enlace:hover { background: rgb(255 255 255 / 0.14); }
+.nav__enlace[aria-current="page"] {
+  background: var(--blanco);
+  color: var(--aqua-fuerte);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+}
+.nav__enlace:focus-visible { box-shadow: 0 0 0 3px var(--blanco); }
+.nav__icono { width: 22px; height: 22px; }
 .nav__insignia {
   position: absolute;
-  top: 0; right: 6px;
-  min-width: 20px;
+  top: 6px; right: 14px;
+  min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #e11d48;
+  background: #ec143c;
   color: var(--blanco);
-  font-size: 0.75rem;
-  line-height: 20px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 18px;
   text-align: center;
 }
 
-.encabezado__acciones { display: flex; align-items: center; gap: var(--e3); flex-shrink: 0; }
-.marca { flex-shrink: 0; }
-
-/* Con 7-8 secciones (usuario y refugio) los enlaces se compactan antes de pasar a segunda fila */
-@media (max-width: 1360px) {
-  .nav__enlace { padding-inline: var(--e3); }
-  .marca__texto { font-size: 1.875rem; }
-  .marca__huella { width: 40px; height: 40px; }
-  .marca__logo { height: 44px; }
-  .encabezado__interno { gap: var(--e4); }
+/* Acciones a la derecha, separadas del menú por una línea blanca */
+.encabezado__acciones {
+  display: flex; align-items: center; gap: 17px; flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 28px;
+  position: relative;
 }
+.encabezado__acciones::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  width: 2px; height: 48px; transform: translateY(-50%);
+  border-radius: 2px; background: rgb(255 255 255 / 0.55);
+}
+/* Campana: círculo turquesa claro con ícono blanco de línea */
+.encabezado .avisos__boton {
+  display: grid; place-items: center;
+  width: 45px; height: 45px; min-height: 0; padding: 0;
+  border: 0; border-radius: 50%;
+  background: rgb(255 255 255 / 0.2);
+  color: var(--blanco);
+}
+.encabezado .avisos__boton:hover { background: rgb(255 255 255 / 0.3); }
+.avisos__icono { width: 22px; height: 22px; }
+/* Visitante: «Iniciar sesión» en blanco sobre el verde */
+.encabezado #boton-salir.boton--contorno { background: var(--blanco); color: var(--aqua-fuerte); border-color: var(--blanco); }
+
+/* Menú de 8 secciones (refugio): un poco más compacto para que quepa junto a la campana */
+.nav:has(> .nav__enlace:nth-child(8)) .nav__enlace { padding-inline: 10px; }
+.nav:has(> .nav__enlace:nth-child(8)) .nav__insignia { right: 6px; }
+
+/* Pantallas medianas: el menú se compacta antes de pasar a segunda fila */
 @media (max-width: 1240px) {
-  .nav__enlace { padding-inline: var(--e2); }
-  .nav__icono { width: 24px; height: 24px; }
+  .marca { width: 270px; }
+  .marca__logo { height: 64px; }
+  .nav__enlace { padding-inline: 12px; }
+  .nav__insignia { right: 8px; }
+  .encabezado__acciones { padding-left: 20px; gap: 12px; }
+}
+@media (max-width: 1160px) {
+  .marca { width: 236px; padding-left: 14px; }
+  .marca__logo { height: 56px; }
+  .nav__enlace { padding-inline: 8px; font-size: 0.75rem; }
+  .nav__icono { width: 20px; height: 20px; }
+  .nav:has(> .nav__enlace:nth-child(8)) .nav__enlace { padding-inline: 5px; }
 }
 
 /* Tablet / móvil: la navegación pasa a segunda fila completa (con scroll horizontal si no cabe) */
 @media (max-width: 1080px) {
-  .encabezado__interno { flex-wrap: wrap; padding-block: var(--e2); }
-  .nav { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; }
-  .marca__texto { font-size: 1.75rem; }
-  .marca__huella { width: 36px; height: 36px; }
-  .marca__logo { height: 40px; }
+  .encabezado__interno { flex-wrap: wrap; min-height: 0; padding: var(--e2) var(--e3); }
+  .marca {
+    width: auto; align-self: center;
+    padding: 4px 30px 4px var(--e3);
+    background: var(--blanco);
+    border: 2px solid #b9f2e5;
+    border-radius: 18px 999px 999px 18px;
+  }
+  .marca__logo { height: 44px; }
+  .encabezado__acciones { padding-left: 0; }
+  .encabezado__acciones::before { display: none; }
+  .nav { order: 3; width: 100%; margin: var(--e2) 0 0; padding-top: var(--e1); overflow-x: auto; justify-content: space-between; border-top: 1.5px solid rgb(255 255 255 / 0.3); }
+  .nav__enlace { padding: 8px 10px; }
 }
 
 /* Menú de cuenta: inicial + nombre; despliega datos, Seguridad y Cerrar sesión */
 .cuenta { position: relative; }
 .cuenta__boton {
   display: inline-flex; align-items: center; gap: var(--e2);
-  padding: 4px 10px 4px 4px;
-  border: 2px solid var(--tinta); border-radius: 999px;
-  background: var(--blanco); color: var(--tinta);
-  font: inherit; font-weight: 700; font-size: 0.875rem;
+  height: 45px;
+  padding: 0 14px 0 7px;
+  border: 0; border-radius: 999px;
+  background: var(--blanco); color: #203547;
+  font: inherit; font-weight: 700; font-size: 0.9375rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
   cursor: pointer;
 }
 .cuenta__boton:hover, .cuenta__boton[aria-expanded="true"] { background: var(--aqua-suave); }
 .cuenta__avatar {
   display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--tinta); color: var(--blanco);
+  width: 31px; height: 31px; border-radius: 50%;
+  background: #04342f; color: var(--blanco);
   font-size: 0.9375rem;
 }
 .cuenta__nombre { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

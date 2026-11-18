@@ -4,6 +4,7 @@
    ========================================================== */
 :root {
   --fuente: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fuente-titulos: "Fredoka", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
@@ -16,15 +17,45 @@ body {
 
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
-/* Jerarquía (una sola familia, Inter): títulos grandes y en negritas · subtítulos y etiquetas en
-   semibold · cuerpo legible con buen interlineado. Solo tamaño, peso e interlineado (no colores). */
-h1, h2, h3, h4 { line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; }
-h1 { font-size: clamp(2rem, 3.4vw, 3rem); }
-h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); }
-h3 { font-size: 1.3rem; }
-h4 { font-size: 1.05rem; font-weight: 700; }
+/* Jerarquía en dos familias para que el texto no se vea "plano":
+   - Fredoka (redondeada, cálida) en títulos, nombres de mascotas y números grandes.
+   - Inter (muy legible) en el texto normal, formularios y detalles.
+   Además de la fuente, cada nivel cambia de tamaño (escala --titulo-* / --texto-* de variables.css)
+   y el texto secundario va en un tono más suave (--tinta-suave, --tinta-tenue). */
+h1, h2, h3, h4 { font-family: var(--fuente-titulos); line-height: 1.12; font-weight: 600; letter-spacing: 0; }
+h1 { font-size: var(--titulo-l); font-weight: 700; }
+h2 { font-size: var(--titulo-m); }
+h3 { font-size: var(--titulo-s); }
+h4 { font-size: var(--texto-l); }
 p, li, dd { line-height: 1.6; }
 strong, b, dt { font-weight: 700; }
+
+/* Sobretítulo: etiqueta corta en mayúsculas encima de un título ("EN ADOPCIÓN", "BIENVENIDA, ANA") */
+.sobretitulo {
+  font-family: var(--fuente);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+/* Palabra destacada con "marcatextos" aqua por debajo */
+.resalte {
+  background: linear-gradient(transparent 62%, var(--aqua) 62%, var(--aqua) 92%, transparent 92%);
+  padding-inline: 0.08em;
+}
+
+/* Nombres y números que merecen personalidad aunque no sean títulos */
+.titulo-amigable,
+.mascota__nombre,
+.mascota-mini__nombre,
+.refugio-tarjeta__nombre,
+.refugio-tarjeta__accion,
+.tarjeta__titulo,
+.dato-resumen__numero {
+  font-family: var(--fuente-titulos);
+}
 
 /* Logotipo "HuellApp" en cursiva */
 .logo-texto {
@@ -35,7 +66,8 @@ strong, b, dt { font-weight: 700; }
 }
 
 .texto-suave { color: var(--tinta-suave); }
-.texto-pequeno { font-size: 0.875rem; line-height: 1.5; }
+.texto-tenue { color: var(--tinta-tenue); }
+.texto-pequeno { font-size: var(--texto-s); line-height: 1.5; }
 
 a.enlace {
   color: var(--lila-fuerte);

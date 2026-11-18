@@ -20,7 +20,9 @@
 
   /* Neutros */
   --tinta: #14312e;
-  --tinta-suave: #3f5f5b;
+  --tinta-suave: #3f5f5b;   /* texto secundario: lemas, descripciones */
+  --tinta-tenue: #5b7470;   /* detalles: fechas, edades, ayudas (solo sobre blanco) */
+  --acento: #0f6e63;        /* sobretítulos y palabras destacadas (legible sobre menta y blanco) */
   --blanco: #ffffff;
   --gris-huella: #d1d5db;   /* huellitas decorativas */
   --borde: #9ed9d1;
@@ -50,6 +52,15 @@
   --e6: 32px;
   --e7: 48px;
   --e8: 64px;
+
+  /* Escala de texto (misma que la app): cada nivel se distingue a simple vista del siguiente */
+  --texto-xs: 0.75rem;                      /* 12px  sobretítulos e insignias */
+  --texto-s: 0.875rem;                      /* 14px  detalles */
+  --texto-m: 1rem;                          /* 16px  texto normal */
+  --texto-l: 1.125rem;                      /* 18px  texto destacado */
+  --titulo-s: 1.25rem;                      /* 20px  títulos de tarjeta */
+  --titulo-m: 1.625rem;                     /* 26px  títulos de sección */
+  --titulo-l: clamp(2rem, 3.6vw, 2.875rem); /* 32–46px  título principal */
 
   /* Layout */
   --ancho-max: 1200px;

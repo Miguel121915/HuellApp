@@ -11,8 +11,8 @@
   background: var(--amarillo);
   padding: var(--e1) var(--e3);
   border-radius: var(--radio-s);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: var(--texto-l);
 }
 .tarjeta__cuerpo { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); }
 .tarjeta--blanca { background: var(--blanco); border-color: var(--borde); }
@@ -64,7 +64,7 @@
 .publicacion__foto img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .publicacion__contenido { display: flex; flex-direction: column; gap: var(--e3); min-width: 0; }
 .publicacion__cabecera { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); flex-wrap: wrap; }
-.publicacion__texto { font-size: 0.95rem; overflow-wrap: anywhere; }
+.publicacion__texto { font-size: var(--texto-m); line-height: 1.6; overflow-wrap: anywhere; }
 .publicacion__pie { display: flex; align-items: center; gap: var(--e3); flex-wrap: wrap; }
 
 .comentarios-toggle { min-height: 44px; padding: var(--e1) var(--e3); background: transparent; border: 0; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
@@ -132,7 +132,8 @@
 .mensaje__cabecera { display: flex; align-items: flex-start; gap: var(--e3); }
 .mensaje__foto { width: 48px; height: 48px; border-radius: var(--radio-s); object-fit: cover; flex-shrink: 0; }
 .mensaje__titulo { display: grid; gap: 2px; flex: 1; min-width: 0; }
-.mensaje__texto { white-space: pre-line; }
+.mensaje__titulo > .enlace { font-family: var(--fuente-titulos); font-size: var(--titulo-s); font-weight: 600; line-height: 1.2; }
+.mensaje__texto { white-space: pre-line; line-height: 1.6; }
 .mensaje__respuesta { padding: var(--e3); border-radius: var(--radio-s); background: var(--aqua-suave); border-left: 4px solid var(--aqua-fuerte); }
 .mensaje__respuesta p { margin-block: var(--e1); white-space: pre-line; }
 .mensaje__responder { display: grid; gap: var(--e2); }

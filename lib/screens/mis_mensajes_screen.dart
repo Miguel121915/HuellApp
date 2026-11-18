@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/tipografia.dart';
 
 import '../core/api_client.dart';
 import '../services/refugio_service.dart' show fechaCorta;
@@ -81,7 +82,7 @@ class _MisMensajesScreenState extends State<MisMensajesScreen> {
         child: ListView(padding: const EdgeInsets.all(32), children: const [
           Icon(Icons.mail_outline, size: 64, color: _accent),
           SizedBox(height: 12),
-          Text('Aún no le has escrito a ningún refugio', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text('Aún no le has escrito a ningún refugio', textAlign: TextAlign.center, style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 20, fontWeight: FontWeight.w600)),
           SizedBox(height: 8),
           Text(
             '¿Tienes dudas sobre una mascota o el proceso de adopción? Abre su perfil y toca «Preguntar al refugio».',
@@ -133,10 +134,10 @@ class _MisMensajesScreenState extends State<MisMensajesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(m['refugioNombre'] as String? ?? '', style: const TextStyle(fontWeight: FontWeight.w800, color: _tinta)),
+                      Text(m['refugioNombre'] as String? ?? '', style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 17.5, fontWeight: FontWeight.w600, color: _tinta)),
                       Text(
                         [if (mascota.isNotEmpty) 'Sobre $mascota', fechaCorta(m['fecha'] as String?)].join(' · '),
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue),
                       ),
                     ],
                   ),
@@ -167,7 +168,7 @@ class _MisMensajesScreenState extends State<MisMensajesScreen> {
                     const SizedBox(height: 4),
                     Text(respuesta),
                     if (m['respondido'] != null)
-                      Text(fechaCorta(m['respondido'] as String?), style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                      Text(fechaCorta(m['respondido'] as String?), style: const TextStyle(fontSize: 11, color: Tipografia.tintaTenue)),
                   ],
                 ),
               ),

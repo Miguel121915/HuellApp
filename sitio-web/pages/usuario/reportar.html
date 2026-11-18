@@ -7,7 +7,7 @@
   <link rel="icon" href="../../assets/img/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
   <link rel="stylesheet" href="../../assets/css/base/reset.css">
   <link rel="stylesheet" href="../../assets/css/base/variables.css">
   <link rel="stylesheet" href="../../assets/css/base/tipografia.css">
@@ -43,7 +43,7 @@
 
     <div class="reportar" id="pasos-reporte" hidden>
       <section class="camara tarjeta tarjeta--blanca" aria-labelledby="titulo-camara">
-        <h2 id="titulo-camara" class="seccion-titulo">1. Foto de la mascota</h2>
+        <h2 id="titulo-camara" class="seccion-titulo titulo-paso"><span class="paso-numero" aria-hidden="true">1</span><span class="solo-lector">Paso 1: </span>Foto de la mascota</h2>
         <div class="camara__visor">
           <video id="video" playsinline muted hidden></video>
           <img id="vista-previa" alt="Foto capturada de la mascota" hidden>
@@ -65,7 +65,7 @@
 
       <form id="formulario-reporte" class="tarjeta tarjeta--blanca" novalidate>
         <div class="reporte-tipo">
-          <h2 class="seccion-titulo" id="titulo-formulario">2. Datos de tu mascota</h2>
+          <h2 class="seccion-titulo titulo-paso" id="titulo-formulario"><span class="paso-numero" aria-hidden="true">2</span><span class="solo-lector">Paso 2: </span><span id="titulo-formulario-texto">Datos de tu mascota</span></h2>
           <button type="button" class="enlace" id="cambiar-tipo">Cambiar</button>
         </div>
         <input type="hidden" name="tipo" id="tipo">

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/tipografia.dart';
 
 import '../core/api_client.dart';
 import 'seguridad_screen.dart';
@@ -203,12 +204,12 @@ class _MiPerfilScreenState extends State<MiPerfilScreen> {
           backgroundColor: _turquoise,
           child: _iniciales.isEmpty
               ? const Icon(Icons.pets, size: 36, color: Colors.black)
-              : Text(_iniciales, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black)),
+              : Text(_iniciales, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 30, fontWeight: FontWeight.w700, color: Tipografia.aquaFuerte)),
         ),
       ),
       const SizedBox(height: 10),
       Text(_texto('nombre'),
-          textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _accent)),
+          textAlign: TextAlign.center, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 22, fontWeight: FontWeight.w600, color: _accent)),
       if (desde.isNotEmpty)
         Text('En HuellApp desde el $desde', textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 13)),
       const Divider(height: 28),
@@ -247,7 +248,7 @@ class _MiPerfilScreenState extends State<MiPerfilScreen> {
             ),
             child: Column(children: [
               Icon(icono, color: _accent, size: 20),
-              Text('${_actividad[clave] ?? 0}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              Text('${_actividad[clave] ?? 0}', style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 26, fontWeight: FontWeight.w700, color: Tipografia.aquaFuerte)),
               Text(etiqueta, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: _muted)),
             ]),
           ),
@@ -366,6 +367,6 @@ class _MiPerfilScreenState extends State<MiPerfilScreen> {
   Widget _titulo(IconData icono, String texto) => Row(children: [
         Icon(icono, color: _accent),
         const SizedBox(width: 8),
-        Expanded(child: Text(texto, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _accent))),
+        Expanded(child: Text(texto, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 19, fontWeight: FontWeight.w600, color: _accent))),
       ]);
 }

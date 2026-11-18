@@ -26,9 +26,9 @@
   border-radius: 50%;
   background: #bdeee4;
 }
-.inicio-banner__texto { position: relative; z-index: 1; display: grid; gap: var(--e2); flex: 1; max-width: 520px; }
-.inicio-banner h1 { color: #0f4a44; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.15; }
-.inicio-banner__lema { color: #0f4a44; font-weight: 700; }
+.inicio-banner__texto { position: relative; z-index: 1; display: grid; gap: var(--e3); flex: 1; max-width: 540px; }
+.inicio-banner h1 { color: var(--aqua-fuerte); font-size: var(--titulo-l); line-height: 1.08; }
+.inicio-banner__lema { color: var(--tinta-suave); font-size: var(--texto-l); line-height: 1.5; max-width: 42ch; }
 .inicio-banner__emoji { position: relative; z-index: 1; font-size: clamp(4rem, 10vw, 7.5rem); line-height: 1; }
 
 .inicio-buscador {
@@ -57,7 +57,9 @@
   padding: var(--e4) var(--e2);
   border-radius: var(--radio-m);
   color: var(--tinta);
-  font-weight: 700;
+  font-family: var(--fuente-titulos);
+  font-size: var(--texto-l);
+  font-weight: 600;
   text-align: center;
   text-decoration: none;
   box-shadow: 0 2px 6px rgb(27 73 67 / 0.08);
@@ -73,8 +75,9 @@
 
 /* Mascotas en adopción (lista horizontal) */
 .inicio-mascotas { display: grid; gap: var(--e3); }
-.inicio-mascotas__encabezado { display: flex; align-items: center; justify-content: space-between; }
-.inicio-mascotas__encabezado h2 { font-size: 1.2rem; color: var(--aqua-fuerte); }
+.inicio-mascotas__encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); }
+.inicio-mascotas__encabezado .sobretitulo { margin-bottom: 2px; }
+.inicio-mascotas__encabezado h2 { font-size: var(--titulo-m); color: var(--aqua-fuerte); }
 .inicio-mascotas__lista { display: grid; grid-auto-flow: column; grid-auto-columns: 180px; gap: var(--e3); overflow-x: auto; padding-bottom: var(--e2); }
 .mascota-mini {
   display: grid;
@@ -89,9 +92,9 @@
 .mascota-mini__foto img { width: 100%; height: 100%; object-fit: cover; }
 .mascota-mini__insignia {
   position: absolute; left: 8px; top: 8px; padding: 2px 8px;
-  border-radius: 10px; background: #1f7a52; color: var(--blanco); font-size: 0.7rem; font-weight: 800;
+  border-radius: 10px; background: #1f7a52; color: var(--blanco); font-size: var(--texto-xs); font-weight: 700; letter-spacing: 0.04em;
 }
-.mascota-mini__datos { display: grid; padding: var(--e2) var(--e3); }
-.mascota-mini__nombre { font-weight: 800; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mascota-mini__detalle { font-size: 0.8rem; color: var(--tinta-suave); }
+.mascota-mini__datos { display: grid; gap: 2px; padding: var(--e3); }
+.mascota-mini__nombre { font-weight: 600; font-size: var(--titulo-s); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota-mini__detalle { font-size: var(--texto-s); color: var(--tinta-tenue); }
 

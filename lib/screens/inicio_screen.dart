@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:huellapp/core/tipografia.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
@@ -151,22 +152,29 @@ class _InicioScreenState extends State<InicioScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Cada mascota merece un hogar',
-                  style: TextStyle(
-                    fontSize: 27,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                    color: Color(0xFF0F4A44),
+                const Text('ADOPTA · REPORTA · COMPARTE', style: Tipografia.sobretitulo),
+                const SizedBox(height: 6),
+                const Text.rich(
+                  TextSpan(
+                    text: 'Cada mascota merece un ',
+                    children: [
+                      // Palabra destacada con subrayado turquesa (como el marcatextos del sitio web)
+                      TextSpan(
+                        text: 'hogar',
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          decorationColor: Tipografia.aqua,
+                          decorationThickness: 4,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Adopta · Reporta · Comparte',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F4A44),
+                    fontFamily: Tipografia.fuenteTitulos,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                    color: Tipografia.aquaFuerte,
                   ),
                 ),
               ],
@@ -263,9 +271,10 @@ class _InicioScreenState extends State<InicioScreen> {
                 texto,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
+                  fontFamily: Tipografia.fuenteTitulos,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.15,
                   color: _textColor,
                 ),
               ),
@@ -298,12 +307,25 @@ class _InicioScreenState extends State<InicioScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.pets, size: 20, color: _darkTeal),
-              const SizedBox(width: 8),
               const Expanded(
-                child: Text(
-                  'Mascotas en adopción',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                child: Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ESPERAN UN HOGAR', style: Tipografia.sobretitulo),
+                      SizedBox(height: 2),
+                      Text(
+                        'Mascotas en adopción',
+                        style: TextStyle(
+                          fontFamily: Tipografia.fuenteTitulos,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                          color: Tipografia.aquaFuerte,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               TextButton(
@@ -420,7 +442,8 @@ class _InicioScreenState extends State<InicioScreen> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),
@@ -454,15 +477,17 @@ class _InicioScreenState extends State<InicioScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontFamily: Tipografia.fuenteTitulos,
+                        fontSize: 17.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
                       ),
                     ),
                     Text(
                       '${m.tipo} · ${m.edad}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: _mutedColor),
+                      style: const TextStyle(fontSize: 12.5, color: Tipografia.tintaTenue),
                     ),
                   ],
                 ),
@@ -500,7 +525,7 @@ class _InicioScreenState extends State<InicioScreen> {
           ),
           child: const Text(
             '¿Te ayudo?',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+            style: TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 14.5, fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: 8),

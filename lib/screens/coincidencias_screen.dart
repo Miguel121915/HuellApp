@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/tipografia.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/api_client.dart';
@@ -197,14 +198,14 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
             children: [
               Text('Contactar a $nombre',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _oscuro)),
+                  style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 20, fontWeight: FontWeight.w600, color: _oscuro)),
               const SizedBox(height: 6),
               Text(
                   encontre
                       ? 'Pídele una foto o señas de su mascota para confirmar que es la misma.'
                       : 'Pregunta por señas que solo tú conoces antes de ir por tu mascota.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                  style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue)),
               const SizedBox(height: 12),
               if (telefono.length >= 8)
                 ListTile(
@@ -429,9 +430,9 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
         child: Column(children: [
           Icon(icono, size: 56, color: _oscuro),
           const SizedBox(height: 12),
-          Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+          Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 19, fontWeight: FontWeight.w600, color: _oscuro)),
           const SizedBox(height: 6),
-          Text(texto, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black54)),
+          Text(texto, textAlign: TextAlign.center, style: const TextStyle(color: Tipografia.tintaSuave)),
         ]),
       );
 
@@ -495,7 +496,7 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                 ],
                 const SizedBox(height: 12),
                 Text(encontre ? 'Alguien busca a esta mascota' : 'Mascota encontrada',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _oscuro)),
+                    style: const TextStyle(fontFamily: Tipografia.fuenteTitulos, fontSize: 18, fontWeight: FontWeight.w600, color: _oscuro)),
                 const SizedBox(height: 4),
                 Row(children: [
                   const Icon(Icons.location_on, size: 16, color: Colors.redAccent),
@@ -514,11 +515,11 @@ class _CoincidenciasScreenState extends State<CoincidenciasScreen> {
                 if (analisis != null && (analisis['raza'] ?? '') != '') ...[
                   const SizedBox(height: 6),
                   Text('IA: ${[analisis['raza'], analisis['color'], analisis['tamano']].where((v) => v != null && v != '').join(' · ')}',
-                      style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue)),
                 ],
                 const SizedBox(height: 8),
                 Text('Tu reporte: ${mio['descripcion'] ?? ''}',
-                    maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Tipografia.tintaTenue)),
                 const SizedBox(height: 14),
                 Row(children: [
                   Expanded(

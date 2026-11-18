@@ -50,7 +50,8 @@ function cargarScript(src) {
 function iniciar() {
   const formulario = document.getElementById("form-login");
   const alerta = document.getElementById("alerta");
-  const pestanas = [...document.querySelectorAll("[data-rol]")];
+  // Pestañas principales (Usuario y Refugio); visitante y administrador se eligen con los enlaces de abajo
+  const pestanas = [...document.querySelectorAll("#selector-rol [data-rol]")];
   const enlaceRegistro = document.getElementById("enlace-registro");
   const campoCorreo = document.getElementById("campo-correo");
   const campoPassword = document.getElementById("campo-password");
@@ -66,6 +67,8 @@ function iniciar() {
     invitado: { href: "registro-usuario.html", texto: "Crea una cuenta" },
   };
   const textoInvitado = document.getElementById("texto-invitado");
+  const textoAdmin = document.getElementById("texto-admin");
+  const accesos = document.getElementById("accesos-rol");
 
   function seleccionarRol(rol) {
     rolActivo = rol;
@@ -80,6 +83,10 @@ function iniciar() {
     campoPassword.hidden = invitado;
     document.getElementById("zona-google").classList.toggle("login__google--oculto", invitado);
     textoInvitado.hidden = !invitado;
+    textoAdmin.hidden = rol !== "admin";
+    // Si el modo activo es visitante o administrador, ninguna pestaña queda marcada y su enlace se oculta
+    accesos.querySelectorAll("[data-rol]").forEach((a) => { a.hidden = a.dataset.rol === rol; });
+    accesos.querySelector("span").hidden = rol === "invitado" || rol === "admin";
     boton.textContent = invitado ? "Entrar como visitante" : "Entrar";
     const registro = REGISTRO_POR_ROL[rol];
     enlaceRegistro.hidden = !registro;
@@ -95,9 +102,17 @@ function iniciar() {
     if (pestana) seleccionarRol(pestana.dataset.rol);
   });
 
+  // Enlaces secundarios y el «Volver» del modo administrador
+  [accesos, textoAdmin].forEach((zona) => zona.addEventListener("click", (e) => {
+    const opcion = e.target.closest("[data-rol]");
+    if (opcion) seleccionarRol(opcion.dataset.rol);
+  }));
+  // «Volver» del visitante: regresa a la pestaña Usuario
+  textoInvitado.append(" ", Object.assign(document.createElement("button"), { type: "button", className: "enlace", textContent: "Volver", onclick: () => seleccionarRol("usuario") }));
+
   document.getElementById("selector-rol").addEventListener("keydown", (e) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    const i = pestanas.findIndex((p) => p.dataset.rol === rolActivo);
+    const i = Math.max(0, pestanas.findIndex((p) => p.dataset.rol === rolActivo));
     const siguiente = pestanas[(i + (e.key === "ArrowRight" ? 1 : pestanas.length - 1)) % pestanas.length];
     seleccionarRol(siguiente.dataset.rol);
     siguiente.focus();
@@ -181,7 +196,7 @@ function iniciar() {
   const alerta2fa = document.getElementById("alerta-2fa");
   const campoCodigo = document.getElementById("campo-codigo");
   const botonVerificar = document.getElementById("boton-verificar");
-  const ocultosEn2fa = [formulario, document.getElementById("selector-rol"), enlaceRegistro, document.querySelector(".demo")];
+  const ocultosEn2fa = [formulario, document.getElementById("selector-rol"), enlaceRegistro, document.querySelector(".demo"), document.getElementById("accesos-rol")];
   let desafio = null;
 
   function mostrarPaso2fa(nuevoDesafio) {
