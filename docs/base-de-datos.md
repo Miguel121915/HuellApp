@@ -71,6 +71,7 @@ erDiagram
 
 ## Archivos (fuera de la base)
 
-Las fotos y documentos se guardan en disco (`api/storage/uploads/imagenes` y `.../documentos`); la base solo
-guarda la ruta. En el servidor publicado quedan en `/opt/huellapp/api/storage/uploads`: **respáldenlos** si se
+Las fotos se guardan en `api/public/uploads/imagenes` (se suben al repositorio para que todo el equipo las vea) y los
+documentos en `api/storage/uploads/documentos` (privados, no se suben); la base solo
+guarda la ruta. En el servidor publicado quedan en `/opt/huellapp/api/public/uploads` y `/opt/huellapp/api/storage/uploads`: **respáldenlos** si se
 recrea la máquina virtual.

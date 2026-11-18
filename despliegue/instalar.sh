@@ -76,7 +76,7 @@ if [[ "$REPO" != "$DESTINO" ]]; then
   mkdir -p "$DESTINO"
   cp -a "$REPO/." "$DESTINO/"
 fi
-mkdir -p "$DESTINO/wallet" "$DESTINO/api/storage/uploads/imagenes" "$DESTINO/api/storage/uploads/documentos" "$DESTINO/build/web"
+mkdir -p "$DESTINO/wallet" "$DESTINO/api/public/uploads/imagenes" "$DESTINO/api/storage/uploads/documentos" "$DESTINO/build/web"
 chown -R huellapp:huellapp "$DESTINO"
 chmod 700 "$DESTINO/wallet"
 [[ -f "$DESTINO/api/.env" ]] && chmod 600 "$DESTINO/api/.env"

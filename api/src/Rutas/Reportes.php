@@ -357,7 +357,7 @@ final class Reportes
         if (!str_starts_with($foto, '/uploads/imagenes/')) {
             return null;
         }
-        $ruta = Archivos::dirImagenes() . '/' . basename($foto);
+        $ruta = Archivos::rutaImagen($foto);
         return is_file($ruta) ? hash_file('sha256', $ruta) : null;
     }
 

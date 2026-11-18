@@ -6,7 +6,8 @@ namespace HuellApp;
 /**
  * Archivos — Guarda imágenes y documentos que llegan como data URL (base64).
  *
- * - Las IMÁGENES (mascotas, foro, reportes) van a storage/uploads/imagenes y son públicas.
+ * - Las IMÁGENES (mascotas, foro, reportes) van a public/uploads/imagenes y son públicas. Esa carpeta
+ *   se sube al repositorio, para que todo el equipo vea las mismas fotos (la base de Oracle es compartida).
  * - Los DOCUMENTOS de los refugios (acta, identificación...) van a storage/uploads/documentos y NO
  *   se sirven públicamente: solo un administrador puede verlos por una ruta protegida.
  * Se valida el tipo real revisando los primeros bytes del archivo, no solo lo que diga el cliente.
@@ -25,7 +26,19 @@ final class Archivos
 
     public static function dirImagenes(): string
     {
-        return self::asegurar(Config::dirUploads() . '/imagenes');
+        return self::asegurar(Config::dirImagenesPublicas());
+    }
+
+    /**
+     * Ruta en disco de una foto subida. Busca primero en public/uploads/imagenes y, si no está,
+     * en la carpeta anterior (storage/uploads/imagenes), para no perder fotos guardadas antes del cambio.
+     */
+    public static function rutaImagen(string $archivo): string
+    {
+        $archivo = basename($archivo); // basename evita rutas con ../
+        $ruta = self::dirImagenes() . '/' . $archivo;
+        $anterior = Config::dirUploads() . '/imagenes/' . $archivo;
+        return !is_file($ruta) && is_file($anterior) ? $anterior : $ruta;
     }
 
     public static function dirDocumentos(): string
@@ -101,7 +114,7 @@ final class Archivos
             return $valor;
         }
         if (preg_match(self::RUTA_SUBIDA, $valor)) {
-            if (!is_file(self::dirImagenes() . '/' . basename($valor))) {
+            if (!is_file(self::rutaImagen($valor))) {
                 throw new ErrorHttp(400, "$nombre ya no existe.");
             }
             return $valor;
@@ -137,7 +150,7 @@ final class Archivos
     /** Entrega una foto subida (pública). Lo llama public/index.php para /uploads/imagenes/<archivo>. */
     public static function servirImagen(string $archivo): void
     {
-        $ruta = self::dirImagenes() . '/' . basename($archivo);
+        $ruta = self::rutaImagen($archivo);
         $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
         if (!isset(self::TIPOS_POR_EXTENSION[$extension]) || !is_file($ruta)) {
             http_response_code(404);

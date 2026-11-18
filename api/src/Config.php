@@ -79,8 +79,15 @@ final class Config
         return realpath($ruta) ?: $ruta;
     }
 
+    /** Archivos privados (documentos de refugios). Las fotos de antes del cambio pueden seguir en imagenes/. */
     public static function dirUploads(): string
     {
         return RAIZ . '/storage/uploads';
+    }
+
+    /** Fotos subidas (mascotas, foro, reportes): públicas y compartidas por el repositorio. */
+    public static function dirImagenesPublicas(): string
+    {
+        return RAIZ . '/public/uploads/imagenes';
     }
 }

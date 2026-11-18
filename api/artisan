@@ -138,8 +138,9 @@ function cmdMigrateFresh(array $args): void
     }
     conBase(static function () use ($args): void {
         Migraciones::reiniciar();
-        foreach (['imagenes', 'documentos'] as $carpeta) {
-            foreach (glob(Config::dirUploads() . "/$carpeta/*") ?: [] as $archivo) {
+        $carpetas = [Config::dirImagenesPublicas(), Config::dirUploads() . '/imagenes', Config::dirUploads() . '/documentos'];
+        foreach ($carpetas as $carpeta) {
+            foreach (glob("$carpeta/*") ?: [] as $archivo) {
                 if (is_file($archivo) && basename($archivo) !== '.gitkeep') {
                     @unlink($archivo); // fotos y documentos subidos
                 }
