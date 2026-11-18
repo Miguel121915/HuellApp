@@ -22,6 +22,8 @@ Sitio web (HTML/JS) ──┘                          └──► Google Gemin
 
 | Documento | Contenido |
 | --- | --- |
+| [docs/informe/informe-final.pdf](docs/informe/informe-final.pdf) | Informe final del proyecto (Fundamentos de IA): problema, objetivos, marco conceptual, metodología, resultados, ética, conclusiones y referencias. Se genera desde `docs/informe/informe-final.html` |
+| [docs/Requerimientos-HuellApp.pdf](docs/Requerimientos-HuellApp.pdf) | Especificación de requerimientos (IEEE 830) |
 | [docs/manual-usuario.md](docs/manual-usuario.md) | Cómo se usa, por rol, y preguntas frecuentes |
 | [docs/api.md](docs/api.md) | Referencia de la API: las 94 rutas, quién puede usarlas, errores y sesión |
 | [docs/base-de-datos.md](docs/base-de-datos.md) | Diagrama y tablas de Oracle |
