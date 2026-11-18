@@ -170,21 +170,11 @@ function cmdServe(array $args): void
     $host = opcion($args, 'host', Config::obtener('APP_HOST')) ?: '127.0.0.1';
     $puerto = opcion($args, 'port', Config::obtener('APP_PORT')) ?: '3000';
 
-    conBase(static function (): void {
-        Migraciones::migrar(); // si falta algo, se crea (es seguro repetirlo)
-        if (Migraciones::baseVacia()) {
-            echo "Base de datos nueva.\n";
-            sembrarDemo();
-        }
-    });
-
     $web = Config::dirWeb();
     $hayWeb = is_dir($web);
-    echo "\nHuellApp lista en http://$host:$puerto\n";
-    echo '  Base de datos: esquema ' . Base::nombreBase() . ' en Oracle (servicio ' . Config::obtener('DB_TNS') . ")\n";
-    echo $hayWeb ? "  Sitio web:     http://$host:$puerto  (carpeta $web)\n" : "  Sitio web:     no se encontro $web (usa tu propio servidor, ej. Live Server)\n";
-    echo "  Para detenerlo: Ctrl + C\n\n";
 
+    // 1. Primero se enciende el servidor: así el sitio web abre aunque Oracle tarde o no responda.
+    //    (Antes se esperaba a Oracle y, si no conectaba, el puerto nunca se abría.)
     $proceso = proc_open(
         [PHP_BINARY, '-d', 'memory_limit=512M', '-d', 'post_max_size=40M', '-d', 'upload_max_filesize=40M',
             '-S', "$host:$puerto", '-t', $hayWeb ? $web : __DIR__ . '/public', __DIR__ . '/public/index.php'],
@@ -194,8 +184,33 @@ function cmdServe(array $args): void
     if (!is_resource($proceso)) {
         salir('No se pudo iniciar el servidor.');
     }
+    echo "\nHuellApp encendida en http://$host:$puerto\n";
+    echo $hayWeb ? "  Sitio web:     http://$host:$puerto  (carpeta $web)\n" : "  Sitio web:     no se encontro $web (usa tu propio servidor, ej. Live Server)\n";
+    echo "  Para detenerlo: Ctrl + C\n\n";
+
+    // 2. Después, la base de datos (crea lo que falte y, si está vacía, carga la demo).
+    prepararBase();
     calentarConexion($host, $puerto);
     exit(proc_close($proceso));
+}
+
+/** Revisa las tablas en Oracle sin tumbar el servidor si la conexión falla. */
+function prepararBase(): void
+{
+    echo '  Conectando con Oracle (servicio ' . Config::obtener('DB_TNS') . ', esquema ' . Base::nombreBase() . ")...\n";
+    echo "  Si se queda aqui varios minutos, Oracle no responde: revisa tu internet y que la base este encendida (Available) en la consola de OCI.\n";
+    $inicio = microtime(true);
+    try {
+        Migraciones::migrar(); // si falta algo, se crea (es seguro repetirlo)
+        if (Migraciones::baseVacia()) {
+            echo "Base de datos nueva.\n";
+            sembrarDemo();
+        }
+        echo '  [OK] Base de datos lista en ' . number_format(microtime(true) - $inicio, 1) . " s.\n";
+    } catch (ErrorHttp | PDOException $e) {
+        echo "\n  [ERROR] Base de datos: {$e->getMessage()}\n";
+        echo "  El sitio web abre igual, pero no podra iniciar sesion ni cargar datos hasta que Oracle responda.\n\n";
+    }
 }
 
 /**
@@ -213,7 +228,7 @@ function calentarConexion(string $host, string $puerto): void
         }
         usleep(100000);
     }
-    echo "  Conectando con Oracle...\n";
+    echo "  Preparando la conexion del servidor con Oracle...\n";
     $inicio = microtime(true);
     $contexto = stream_context_create(['http' => ['timeout' => 90, 'ignore_errors' => true]]);
     $respuesta = @file_get_contents("http://$destino:$puerto/api/salud?db=1", false, $contexto);

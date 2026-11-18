@@ -24,18 +24,19 @@ start "HuellApp - API y sitio web (no cerrar)" cmd /k "cd /d "%~dp0api" && php a
 REM 3. App movil compilada en su propia ventana (puerto 8080)
 start "HuellApp - App movil (no cerrar)" cmd /k "php -S 127.0.0.1:8080 -t "%~dp0build\web""
 
-REM 4. Esperar a que la conexion con Oracle este lista (hasta 2 minutos)
-echo Conectando con Oracle, espera...
+REM 4. Esperar a que el servidor del sitio web responda (hasta 30 s).
+REM    Ya no se espera a Oracle: la API se conecta en su ventana y el sitio abre aunque Oracle tarde.
+echo Esperando a que encienda el servidor del sitio web...
 set /a intentos=0
 :esperar
-timeout /t 2 /nobreak > nul
+timeout /t 1 /nobreak > nul
 set /a intentos+=1
-curl -s -o nul -w "%%{http_code}" "http://127.0.0.1:3000/api/salud?db=1" 2>nul | findstr "200" > nul && goto listo
-if %intentos% GEQ 60 goto tarde
+curl -s -o nul -w "%%{http_code}" "http://127.0.0.1:3000/" 2>nul | findstr "200" > nul && goto listo
+if %intentos% GEQ 30 goto tarde
 goto esperar
 
 :tarde
-echo [Aviso] Oracle tarda en responder. Revisa la ventana "API y sitio web". Se abriran las pestanas de todos modos.
+echo [Aviso] El sitio web no respondio. Revisa la ventana "API y sitio web": ahi aparece el error.
 
 :listo
 echo Listo. Abriendo el sitio web y la app...
@@ -45,5 +46,6 @@ echo.
 echo   Sitio web:  http://127.0.0.1:3000
 echo   App movil:  http://127.0.0.1:8080
 echo.
+echo Si el sitio abre pero no carga datos, mira la ventana "API y sitio web" (conexion con Oracle).
 echo Para apagar todo, cierra las ventanas "API y sitio web" y "App movil".
 timeout /t 8 > nul
