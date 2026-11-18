@@ -73,7 +73,7 @@ const MENUS = {
 MENUS.invitado = MENUS.usuario.map(({ insignia, ...item }) => ({ ...item, bloqueado: item.id !== "refugios" }));
 
 const ROL_TEXTO = { usuario: "Usuario", refugio: "Refugio", admin: "Administrador" };
-const HUELLA_LOGO ="assets/img/logos/huella.svg";
+const LOGO = "assets/img/logos/logo-huellapp.png"; // copia recortada de public/Logo HuellApp.png
 const INICIO_POR_ROL = { usuario: "pages/usuario/inicio.html", refugio: "pages/refugio/panel.html", admin: "pages/admin/solicitudes.html", invitado: "pages/usuario/refugios.html" };
 
 /**
@@ -98,8 +98,7 @@ export async function montarNavbar({ sesion, activa }) {
   encabezado.innerHTML = `
     <div class="encabezado__interno">
       <a class="marca" href="${rutaDesdeRaiz(INICIO_POR_ROL[sesion.rol] || "index.html")}" aria-label="HuellApp, ir al inicio">
-        <span class="logo-texto marca__texto">HuellApp</span>
-        <img class="marca__huella" src="${rutaDesdeRaiz(HUELLA_LOGO)}" alt="" width="48" height="48">
+        <img class="marca__logo" src="${rutaDesdeRaiz(LOGO)}" alt="" width="900" height="312">
       </a>
       <nav class="nav" aria-label="Principal">${enlaces}</nav>
       <div class="encabezado__acciones">

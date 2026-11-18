@@ -17,6 +17,7 @@ import 'package:huellapp/screens/seguridad_screen.dart';
 import 'package:huellapp/services/comunidad_service.dart';
 import 'package:huellapp/widgets/barra_inferior.dart';
 import 'package:huellapp/widgets/campana_avisos.dart';
+import 'package:huellapp/widgets/logo_huellapp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Estructura principal de la app: la barra de arriba (HuellApp) y la de
@@ -234,15 +235,7 @@ class _AppShellState extends State<AppShell> {
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'HuellApp',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 26,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
+        title: const LogoHuellApp(),
         actions: [
           // HU-19: avisos (solo con sesión)
           ListenableBuilder(

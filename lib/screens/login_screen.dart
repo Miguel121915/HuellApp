@@ -273,21 +273,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildAnimalsHeader(),
-                          const SizedBox(height: 16),
-
-                          // Título
-                          const Text(
-                            'HuellApp',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              color: _accent,
-                              letterSpacing: 1.2,
+                          // Logo (ya trae al perro y al gato; sobre la tarjeta blanca no necesita franja)
+                          Center(
+                            child: Image.asset(
+                              'assets/img/logo_huellapp.png',
+                              width: 300,
+                              fit: BoxFit.contain,
+                              semanticLabel: 'HuellApp',
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 10),
                           const Text(
                             'Adopta, reporta y ayuda a que más huellitas '
                             'encuentren un hogar 🐾',
@@ -564,45 +559,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// Caritas de animales encimadas (perro, gato y cuyo).
-  Widget _buildAnimalsHeader() {
-    return Center(
-      child: SizedBox(
-        width: 204,
-        height: 80,
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              child: _animalAvatar('🐶', const Color(0xFFFFE3C7)),
-            ),
-            Positioned(
-              left: 62,
-              child: _animalAvatar('🐱', const Color(0xFFD8EEE6)),
-            ),
-            Positioned(
-              left: 124,
-              child: _animalAvatar('🐹', const Color(0xFFFFE4EA)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _animalAvatar(String emoji, Color color) {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 4),
-      ),
-      alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 36)),
-    );
-  }
-
   InputDecoration _inputDecoration(
     String label,
     IconData icon, {

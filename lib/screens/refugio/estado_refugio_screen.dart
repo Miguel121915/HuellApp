@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../core/sesion_service.dart';
+import '../../widgets/logo_huellapp.dart';
 import '../login_screen.dart';
 import 'panel_refugio_screen.dart';
 
@@ -96,10 +97,7 @@ class _EstadoRefugioScreenState extends State<EstadoRefugioScreen> {
       appBar: AppBar(
         backgroundColor: _turquoise,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'HuellApp',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
-        ),
+        title: const LogoHuellApp(alto: 36),
         actions: [
           IconButton(tooltip: 'Cerrar sesión', icon: const Icon(Icons.logout, color: Colors.black), onPressed: _salir),
         ],

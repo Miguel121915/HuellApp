@@ -123,6 +123,7 @@
 
 /* ---------- Splash de index.html ---------- */
 .cargando { display: grid; place-items: center; min-height: 100vh; gap: var(--e3); text-align: center; background: var(--aqua-suave); }
+.cargando__logo { display: block; width: min(420px, 80vw); height: auto; }
 
 /* ---------- Tablet / móvil (secundario) ---------- */
 @media (max-width: 900px) {
@@ -144,6 +145,11 @@
 .login { border: 0; border-radius: var(--radio-l); box-shadow: 0 12px 32px rgb(20 49 46 / 0.18); }
 .login__bienvenida { border-right: 0; background-color: var(--aqua); }
 .login__logo .logo-texto { color: var(--aqua-fuerte); }
+/* Logo de imagen: franja blanca porque la parte «App» es turquesa, igual que este panel */
+.login__logo .login__logo-imagen {
+  display: block; width: min(380px, 100%); height: auto;
+  padding: var(--e2) var(--e3); background: var(--blanco); border-radius: var(--radio-l);
+}
 .login__bienvenida h1 { padding: 0; background: none; border: 0; color: var(--tinta); }
 .login__panel h2 { color: var(--aqua-fuerte); }
 .selector-rol { grid-template-columns: repeat(4, 1fr); background: transparent; border: 1px solid var(--borde); padding: 0; gap: 0; overflow: hidden; }

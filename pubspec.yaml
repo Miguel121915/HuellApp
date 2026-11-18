@@ -73,6 +73,8 @@ flutter:
   # KIRO, el gato-robot asistente (la misma imagen que sitio-web/assets/img/kiro/kiro.svg)
   assets:
     - assets/img/kiro.svg
+    # Logo de HuellApp para las barras de arriba (copia recortada de public/Logo HuellApp.png)
+    - assets/img/logo_huellapp.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -20,6 +20,11 @@
 .marca { display: inline-flex; align-items: center; gap: var(--e2); text-decoration: none; }
 .marca__texto { font-size: 2.25rem; }
 .marca__huella { width: 48px; height: 48px; }
+/* Logo de imagen (perro y gato + «HuellApp»). Franja blanca: la parte «App» es turquesa como la barra. */
+.marca__logo {
+  display: block; width: auto; height: 50px;
+  padding: 3px var(--e2); background: var(--blanco); border-radius: var(--radio-m);
+}
 
 /* Navegación principal (se rellena desde js/components/navbar.js) */
 .nav { display: flex; align-items: center; gap: var(--e1); }
@@ -59,6 +64,7 @@
   .nav__enlace { padding-inline: var(--e3); }
   .marca__texto { font-size: 1.875rem; }
   .marca__huella { width: 40px; height: 40px; }
+  .marca__logo { height: 44px; }
   .encabezado__interno { gap: var(--e4); }
 }
 @media (max-width: 1240px) {
@@ -72,6 +78,7 @@
   .nav { order: 3; width: 100%; overflow-x: auto; justify-content: space-between; }
   .marca__texto { font-size: 1.75rem; }
   .marca__huella { width: 36px; height: 36px; }
+  .marca__logo { height: 40px; }
 }
 
 /* Menú de cuenta: inicial + nombre; despliega datos, Seguridad y Cerrar sesión */

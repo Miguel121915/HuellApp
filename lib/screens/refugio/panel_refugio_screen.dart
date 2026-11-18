@@ -8,6 +8,7 @@ import '../../widgets/foto_huellapp.dart';
 import '../../widgets/selector_ubicacion.dart';
 import '../login_screen.dart';
 import '../seguridad_screen.dart';
+import '../../widgets/logo_huellapp.dart';
 import 'mascota_form_screen.dart';
 import 'panel_secciones.dart';
 
@@ -83,10 +84,7 @@ class _PanelRefugioScreenState extends State<PanelRefugioScreen> with SingleTick
         elevation: 0,
         toolbarHeight: 64,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'HuellApp',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 26, fontStyle: FontStyle.italic),
-        ),
+        title: const LogoHuellApp(alto: 40),
         actions: [
           // HU-19: avisos (nuevas solicitudes de adopción y mensajes)
           CampanaAvisos(alElegir: (seccion) {
