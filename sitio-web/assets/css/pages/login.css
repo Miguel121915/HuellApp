@@ -138,36 +138,133 @@
 .banner-servidor { padding: var(--e3) var(--e5); background: var(--error); color: var(--blanco); font-weight: 700; text-align: center; }
 
 /* ==========================================================
-   Aspecto de la app móvil (adelanto del Sprint 1): tarjeta limpia sobre fondo turquesa,
-   título "HuellApp" en verde oscuro y selector de rol como el de la app.
+   Aspecto cálido: fondo crema, panel de bienvenida con degradado
+   turquesa → durazno y decoración suave (huellitas, corazones,
+   estrellas y hojas); formulario con controles en forma de píldora.
    ========================================================== */
-.pagina-login { background: var(--aqua-suave); }
-.login { border: 0; border-radius: var(--radio-l); box-shadow: 0 12px 32px rgb(20 49 46 / 0.18); }
-.login__bienvenida { border-right: 0; background-color: var(--aqua); }
-.login__logo .logo-texto { color: var(--aqua-fuerte); }
-/* Logo de imagen sin recuadro: un contorno blanco que sigue la silueta (como calcomanía) evita que
-   la parte turquesa («App» y la curva) se pierda sobre este panel aqua, y una sombra suave lo despega */
+.pagina-login {
+  --login-crema: #fcf7ef;
+  --login-beige: #f4e7d0;
+  --login-menta: #96dccb;
+  --login-borde: #8fd3c4;
+  --login-icono: #2e9c8a;
+  background: linear-gradient(180deg, #fdf3e8 0%, #fbe9da 100%);
+}
+.pagina-login .login {
+  border: 0;
+  min-height: 560px;
+  border-radius: 28px;
+  background: var(--login-crema);
+  box-shadow: 0 18px 40px rgb(120 80 40 / 0.14);
+}
+
+/* Panel de bienvenida */
+.pagina-login .login__bienvenida {
+  gap: var(--e5);
+  border-right: 0;
+  background:
+    url("../../img/login-decoracion.svg") center / 360px repeat,
+    linear-gradient(165deg, #8fdccd 0%, #b7e4d6 42%, #f1dcc6 78%, #f6cdb3 100%);
+}
+/* Logo de imagen sin recuadro: un contorno blanco fino que sigue la silueta evita que
+   la parte turquesa («App» y la curva) se pierda sobre el degradado */
 .login__logo .login__logo-imagen {
   display: block; width: min(380px, 100%); height: auto;
   filter:
-    drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff)
-    drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff)
-    drop-shadow(0 6px 10px rgb(20 49 46 / 0.22));
+    drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(0 6px 10px rgb(20 49 46 / 0.16));
 }
-.login__bienvenida h1 { padding: 0; background: none; border: 0; color: var(--tinta); }
-.login__panel h2 { color: var(--aqua-fuerte); }
-.selector-rol { grid-template-columns: repeat(2, 1fr); background: transparent; border: 1px solid var(--borde); padding: 0; gap: 0; overflow: hidden; }
-.selector-rol__opcion { border-radius: 0; color: var(--tinta); font-size: 0.9rem; }
-.selector-rol__opcion + .selector-rol__opcion { border-left: 1px solid var(--borde); }
-.selector-rol__opcion[aria-selected="true"] { background: var(--aqua); color: var(--tinta); }
+.pagina-login .login__bienvenida h1 {
+  padding: 0; background: none; border: 0;
+  color: var(--aqua-fuerte);
+  font-size: clamp(2rem, 3.2vw, 2.6rem);
+}
+.pagina-login .login__bienvenida p { color: var(--tinta); font-weight: 500; }
+
+/* Panel del formulario */
+.pagina-login .login__panel { background: var(--login-crema); }
+.pagina-login .login__panel h2 { color: var(--aqua-fuerte); font-weight: 700; }
+
+/* Selector de rol: dos píldoras */
+.pagina-login .selector-rol {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0; padding: 0;
+  border: 0; border-radius: 999px;
+  background: var(--login-beige);
+  overflow: hidden;
+}
+.pagina-login .selector-rol__opcion {
+  padding: var(--e2) var(--e3);
+  border-radius: 999px;
+  color: var(--tinta);
+  font-family: var(--fuente-titulos);
+  font-size: 1.05rem; font-weight: 600;
+}
+.pagina-login .selector-rol__opcion[aria-selected="true"] { background: var(--login-menta); color: var(--tinta); }
+.pagina-login .selector-rol__opcion:not([aria-selected="true"]):hover { background: #efdcbc; }
+
+/* Campos en forma de píldora; correo y contraseña llevan su icono a la izquierda */
+.pagina-login .campo__etiqueta { font-weight: 600; color: var(--tinta); }
+.pagina-login .campo { margin-bottom: var(--e2); }
+.pagina-login .campo__control {
+  min-height: 48px;
+  padding-inline: var(--e5);
+  border: 2px solid var(--login-borde);
+  border-radius: 999px;
+  background-color: var(--blanco);
+}
+.pagina-login .campo__control:hover { border-color: var(--login-icono); }
+.pagina-login #correo,
+.pagina-login #password {
+  padding-left: 50px;
+  background-repeat: no-repeat;
+  background-position: 18px center;
+  background-size: 22px 22px;
+}
+.pagina-login #correo {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232e9c8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2.5'/%3E%3Cpath d='m3.5 6.5 8.5 6.5 8.5-6.5'/%3E%3C/svg%3E");
+}
+.pagina-login #password {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232e9c8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2.5'/%3E%3Cpath d='M8 10.5V7.5a4 4 0 0 1 8 0v3'/%3E%3Ccircle cx='12' cy='15.5' r='1.3' fill='%232e9c8a'/%3E%3C/svg%3E");
+}
+.pagina-login .campo--error .campo__control { background-color: var(--error-fondo); }
+.pagina-login .campo__control--codigo { padding-inline: var(--e3); }
+
+/* Botón «Entrar» */
+.pagina-login .login__panel .boton--primario,
+.pagina-login .login__panel .boton--contorno { border-radius: 999px; min-height: 48px; }
+.pagina-login .login__panel .boton--primario {
+  font-family: var(--fuente-titulos);
+  font-size: 1.15rem; font-weight: 600;
+  box-shadow: 0 6px 14px rgb(27 79 74 / 0.28);
+}
+
+.pagina-login .login__registro { margin-top: var(--e4); color: var(--tinta); }
+.pagina-login .login__registro .enlace { color: var(--acento); font-weight: 700; text-decoration: none; }
+.pagina-login .login__registro .enlace:hover { text-decoration: underline; }
 .login__invitado { margin-bottom: var(--e4); color: var(--tinta-suave); }
+
 /* Accesos secundarios bajo el formulario: visitante (destacado) y administración (discreto) */
-.login__accesos { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--e2); margin-top: var(--e3); color: var(--tinta-tenue); font-size: var(--texto-s); }
-.login__acceso { padding: var(--e1) var(--e2); border: 0; background: none; color: var(--aqua-fuerte); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; border-radius: var(--radio-s); }
-.login__acceso:hover { color: var(--tinta); }
-.login__acceso--admin { color: var(--tinta-tenue); font-weight: 500; }
-.login__modo { margin-bottom: var(--e4); padding: var(--e3); border-radius: var(--radio-s); background: var(--aqua-suave); color: var(--tinta-suave); }
+.login__accesos { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--e4); margin-top: var(--e3); color: var(--tinta-tenue); font-size: var(--texto-s); }
+.login__accesos > span { display: none; } /* separador «·»: el espacio ya separa los dos accesos */
+.login__acceso { padding: var(--e1) var(--e2); border: 0; background: none; color: var(--tinta); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; border-radius: var(--radio-s); }
+.login__acceso:hover { color: var(--acento); text-decoration: underline; text-underline-offset: 3px; }
+.login__acceso--admin { color: var(--tinta-suave); font-weight: 500; }
+.login__modo { margin-bottom: var(--e4); padding: var(--e3); border-radius: var(--radio-m); background: var(--login-beige, var(--aqua-suave)); color: var(--tinta-suave); }
 .login__invitado .enlace, .login__modo .enlace { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* Cuentas de demostración */
+.pagina-login .demo { margin-top: 0; padding-top: var(--e4); text-align: center; }
+.pagina-login .demo summary { color: var(--aqua-fuerte); font-weight: 700; }
+.pagina-login .demo__lista { text-align: left; }
+.pagina-login .demo__item { background: var(--login-beige); border-radius: var(--radio-m); }
+
+@media (max-width: 900px) {
+  .pagina-login .login__bienvenida { border-bottom: 0; }
+  .pagina-login .login { width: min(1040px, calc(100% - 24px)); }
+}
+
 
 /* «Continuar con Google» y segundo paso (código de Google Authenticator) */
 .login__google { margin-top: var(--e4); display: grid; gap: var(--e4); justify-items: center; }
