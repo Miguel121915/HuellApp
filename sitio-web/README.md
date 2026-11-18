@@ -71,7 +71,7 @@ Los documentos de los refugios son privados: el visor los descarga con la sesió
 
 ## Dónde se guardan los datos
 
-Todo lo editable (usuarios, refugios, mascotas, publicaciones, foro, reportes, coincidencias) vive en la **base de datos Oracle** (esquema de `DB_USER`, ver `api/README.md`), y las fotos y documentos en `api/storage/uploads/`. El navegador solo recuerda en `localStorage` la **sesión** (`huellapp:sesion`: datos básicos y el token). Para empezar de cero: `php artisan migrate:fresh --seed` en `api/`.
+Todo lo editable (usuarios, refugios, mascotas, publicaciones, foro, reportes, coincidencias) vive en la **base de datos Oracle** (esquema de `DB_USER`, ver `api/README.md`), las fotos en `api/public/uploads/imagenes` (compartidas en el repositorio) y los documentos en `api/storage/uploads/documentos`. El navegador solo recuerda en `localStorage` la **sesión** (`huellapp:sesion`: datos básicos y el token). Para empezar de cero: `php artisan migrate:fresh --seed` en `api/`.
 
 Las fotos se reducen a 640 px en el navegador antes de enviarse (las de la cámara, a 1024 px). Los documentos de un refugio (PDF, JPG o PNG, máx. 5 MB) se guardan en una carpeta privada que solo el administrador puede consultar.
 

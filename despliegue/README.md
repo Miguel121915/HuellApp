@@ -134,6 +134,6 @@ Las tablas y columnas nuevas se crean solas al reiniciar (el servicio corre `php
 
 ## Notas
 
-- **Fotos y documentos** se guardan en `/opt/huellapp/api/storage/uploads` de la máquina virtual (no en la base). Respáldalos si la recreas.
+- **Fotos y documentos** se guardan en la máquina virtual (no en la base): fotos en `/opt/huellapp/api/public/uploads/imagenes` y documentos en `/opt/huellapp/api/storage/uploads/documentos`. Respáldalos si la recreas.
 - **Rendimiento**: el servicio usa el servidor integrado de PHP con 6 *workers* (`PHP_CLI_SERVER_WORKERS`), suficiente para la demo y un grupo de prueba. Para mucho tráfico convendría php-fpm.
 - **Seguridad**: `api/.env` y el wallet quedan con permisos solo para el usuario `huellapp`; la API escucha solo en `127.0.0.1` y nginx es la única puerta a internet.

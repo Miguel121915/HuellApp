@@ -5,7 +5,8 @@ Servidor en **PHP puro** que guarda todo en **Oracle** (Autonomous Database en e
 ```
 App móvil (Flutter) ──┐
                       ├──►  Servidor PHP (php artisan serve)  ──►  Oracle en OCI: esquema HUELLAPP_DEV
-Sitio web ────────────┘                                       └──►  storage/uploads/       (fotos y documentos)
+Sitio web ────────────┘                                       ├──►  public/uploads/imagenes (fotos, compartidas en el repositorio)
+                                                              └──►  storage/uploads/documentos (documentos privados)
 ```
 
 > **Sobre `artisan`:** el archivo `artisan` de esta carpeta es un script propio y sencillo con comandos parecidos a los de Laravel (`serve`, `migrate`, `db:seed`). **No es Laravel** (no hay Composer ni dependencias que instalar). Si algún día migran a Laravel, la API y la estructura de las tablas se pueden trasladar casi tal cual.
@@ -211,7 +212,8 @@ Todas las rutas empiezan con `/api` y responden JSON; los errores son `{ "error"
 
 - **Coincidencias:** con `GEMINI_API_KEY`, la IA compara las fotos en segundo plano (`php artisan ia:procesar`). Sin clave o sin cuota, la similitud se calcula comparando las palabras de las descripciones y la zona (`src/Similitud.php`). Detalle de todas las funciones con IA en [`../docs/ia.md`](../docs/ia.md).
 - `php artisan serve` usa el servidor integrado de PHP: está pensado para **desarrollo local** y atiende una petición a la vez (suficiente para probar, no para publicar).
-- Al borrar una mascota o publicación, su archivo de foto queda en `storage/uploads/imagenes`; `migrate:fresh` limpia todo.
+- Las fotos subidas se guardan en `public/uploads/imagenes` y **se suben al repositorio**: como la base de Oracle es compartida, así todo el equipo ve las mismas fotos (haz commit de las fotos nuevas y `git pull` para recibir las de los demás). Las fotos de antes del cambio que sigan en `storage/uploads/imagenes` se siguen mostrando. Los documentos de refugios siguen privados en `storage/uploads/documentos` y no se suben.
+- Al borrar una mascota o publicación, su archivo de foto queda en `public/uploads/imagenes`; `migrate:fresh` limpia todo.
 - Antes de publicar en internet: define `JWT_SECRET` en `.env`, usa HTTPS y un servidor web de verdad (Apache o Nginx; `public/.htaccess` ya está preparado), y usa el esquema `HUELLAPP_DEMO` (o uno de producción), nunca `ADMIN`.
 
 ## Pruebas automáticas (`php artisan test`)

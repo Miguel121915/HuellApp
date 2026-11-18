@@ -3,7 +3,7 @@
  * public/index.php — Punto de entrada del servidor (lo usa "php artisan serve").
  *
  *   /api/...               → la API
- *   /uploads/imagenes/...  → fotos subidas
+ *   /uploads/imagenes/...  → fotos subidas (guardadas en public/uploads/imagenes)
  *   cualquier otra ruta    → el sitio web (HTML/CSS/JS de la carpeta web/), que sirve el propio PHP
  */
 declare(strict_types=1);

@@ -86,7 +86,7 @@ function iniciar() {
     textoAdmin.hidden = rol !== "admin";
     // Si el modo activo es visitante o administrador, ninguna pestaña queda marcada y su enlace se oculta
     accesos.querySelectorAll("[data-rol]").forEach((a) => { a.hidden = a.dataset.rol === rol; });
-    accesos.querySelector("span").hidden = rol === "invitado" || rol === "admin";
+    accesos.querySelector(":scope > span").hidden = rol === "invitado" || rol === "admin";
     boton.textContent = invitado ? "Entrar como visitante" : "Entrar";
     const registro = REGISTRO_POR_ROL[rol];
     enlaceRegistro.hidden = !registro;

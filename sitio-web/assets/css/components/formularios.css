@@ -37,7 +37,8 @@ textarea.campo__control { min-height: 110px; resize: vertical; }
 }
 
 /* Mapa para marcar la ubicación del refugio (Leaflet) */
-.mapa-ubicacion { height: 280px; border: 2px solid var(--borde); border-radius: var(--radio-m); overflow: hidden; }
+/* isolation: las capas de Leaflet (z-index 400–1000) quedan dentro del mapa y no pasan por encima del encabezado fijo */
+.mapa-ubicacion { height: 280px; border: 2px solid var(--borde); border-radius: var(--radio-m); overflow: hidden; isolation: isolate; }
 .mapa-ubicacion__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e3); margin-top: var(--e2); }
 .datos-extra { margin-block: var(--e4); }
 

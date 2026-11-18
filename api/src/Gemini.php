@@ -286,7 +286,7 @@ final class Gemini
         if (!str_starts_with($foto, '/uploads/imagenes/')) {
             return null;
         }
-        $ruta = Archivos::dirImagenes() . '/' . basename($foto);
+        $ruta = Archivos::rutaImagen($foto);
         $datos = is_file($ruta) ? @file_get_contents($ruta) : false;
         if ($datos === false || $datos === '') {
             return null;
