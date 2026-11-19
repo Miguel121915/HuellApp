@@ -1,8 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:huellapp/core/api_client.dart';
+import 'package:huellapp/core/geocodificar.dart';
 import 'package:huellapp/services/refugio_service.dart';
 import 'package:huellapp/widgets/selector_ubicacion.dart';
+import 'package:latlong2/latlong.dart';
 
 class RegisterShelterScreen extends StatefulWidget {
   const RegisterShelterScreen({super.key});
@@ -99,6 +101,10 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
   double? _latitud;
   double? _longitud;
   bool _ubicacionError = false;
+  // Dirección escrita ↔ mapa: aviso de lo que pasó y contador para descartar respuestas viejas
+  String? _avisoUbicacion;
+  int _consultaGeo = 0;
+  bool get _hayUbicacion => _latitud != null && _longitud != null;
 
   // 7. Aceptación
   bool _acceptTerms = false;
@@ -511,25 +517,77 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
     );
   }
 
+  /// Marca en el mapa la dirección escrita (con municipio y CP si los hay).
+  Future<void> _buscarDireccionEscrita() async {
+    final calle = _addressController.text.trim();
+    if (calle.length < 8) return;
+    final id = ++_consultaGeo;
+    setState(() => _avisoUbicacion = 'Buscando la dirección en el mapa…');
+    final busqueda = [calle, _municipalityController.text.trim(), _zipCodeController.text.trim(), 'México']
+        .where((t) => t.isNotEmpty)
+        .join(', ');
+    final punto = await Geocodificar.buscarDireccion(busqueda);
+    if (!mounted || id != _consultaGeo) return;
+    setState(() {
+      if (punto == null) {
+        _avisoUbicacion = 'No encontramos esa dirección en el mapa. Toca el lugar del refugio o usa tu ubicación actual.';
+        return;
+      }
+      _latitud = punto.latitude;
+      _longitud = punto.longitude;
+      _ubicacionError = false;
+      _avisoUbicacion = 'Marcamos la dirección en el mapa. Si no quedó exacta, toca el lugar correcto.';
+    });
+  }
+
+  /// Al marcar con «Usar mi ubicación» o tocando el mapa: si no escribió dirección, se llena con la de ese punto.
+  Future<void> _completarDireccion(LatLng punto) async {
+    if (_addressController.text.trim().isNotEmpty) return;
+    final id = ++_consultaGeo;
+    setState(() => _avisoUbicacion = 'Buscando la dirección de ese punto…');
+    final datos = await Geocodificar.direccionDe(punto);
+    if (!mounted || id != _consultaGeo) return;
+    setState(() {
+      if (datos == null || datos.direccion.isEmpty) {
+        _avisoUbicacion = null;
+        return;
+      }
+      if (_addressController.text.trim().isEmpty) _addressController.text = datos.direccion;
+      if (_municipalityController.text.trim().isEmpty) _municipalityController.text = datos.municipio;
+      if (_zipCodeController.text.trim().isEmpty) _zipCodeController.text = datos.codigoPostal;
+      _avisoUbicacion = 'Llenamos la dirección con la de ese punto: revísala y corrígela si hace falta.';
+    });
+  }
+
+  /// Al salir de un campo de la dirección se busca en el mapa (no en cada tecla).
+  Widget _alSalirBuscar(Widget campo) => Focus(
+        skipTraversal: true,
+        onFocusChange: (enfocado) {
+          if (!enfocado) _buscarDireccionEscrita();
+        },
+        child: campo,
+      );
+
   // Etapa 3: Ubicación
   Widget _stepLocation() {
     return Column(
       children: [
-        _buildTextField(
+        // Basta con una: la dirección escrita (se marca sola en el mapa) o «Usar mi ubicación» (llena la dirección)
+        _alSalirBuscar(_buildTextField(
           _addressController,
           'Dirección completa (Calle, #, Colonia)',
           Icons.location_on,
-          validator: (v) => _minimo(v, 8),
-        ),
+          validator: (v) => (v ?? '').trim().isEmpty && _hayUbicacion ? null : _minimo(v, 8),
+        )),
         const SizedBox(height: 12),
-        _buildTextField(
+        _alSalirBuscar(_buildTextField(
           _municipalityController,
           'Municipio / Alcaldía y Estado',
           Icons.map,
-          validator: _required,
-        ),
+          validator: (v) => (v ?? '').trim().isEmpty && _hayUbicacion ? null : _required(v),
+        )),
         const SizedBox(height: 12),
-        _buildTextField(
+        _alSalirBuscar(_buildTextField(
           _zipCodeController,
           'Código Postal',
           Icons.markunread_mailbox,
@@ -538,7 +596,7 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
             final t = (v ?? '').trim();
             return t.isEmpty || RegExp(r'^\d{5}$').hasMatch(t) ? null : 'El código postal tiene 5 dígitos';
           },
-        ),
+        )),
         const SizedBox(height: 12),
         _buildTextField(
           _scheduleController,
@@ -555,12 +613,27 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
           latitud: _latitud,
           longitud: _longitud,
           hayError: _ubicacionError,
-          onCambio: (punto) => setState(() {
-            _latitud = punto?.latitude;
-            _longitud = punto?.longitude;
-            _ubicacionError = false;
-          }),
+          descripcion: 'Escribe la dirección arriba y se marca sola, o usa tu '
+              'ubicación actual si estás en el refugio. También puedes tocar el mapa.',
+          textoError: 'Falta la ubicación: escribe una dirección que aparezca en el '
+              'mapa, usa tu ubicación actual o toca el mapa.',
+          onCambio: (punto) {
+            setState(() {
+              _latitud = punto?.latitude;
+              _longitud = punto?.longitude;
+              _ubicacionError = false;
+              _avisoUbicacion = null;
+            });
+            if (punto != null) _completarDireccion(punto);
+          },
         ),
+        if (_avisoUbicacion != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            _avisoUbicacion!,
+            style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF1B4F4A), fontWeight: FontWeight.w600),
+          ),
+        ],
       ],
     );
   }

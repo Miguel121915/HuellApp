@@ -5,7 +5,11 @@
  *
  * Lo usan registro-refugio.html y refugio/perfil.html. El HTML lo inserta montarDatosExtra();
  * el mapa usa Leaflet + OpenStreetMap (se carga en la página con <script src="…leaflet.js">).
+ *
+ * Con { campoDireccion } (el registro), la dirección escrita y el mapa van juntos: al escribir la dirección
+ * se marca sola en el mapa, y al usar «Usar mi ubicación» (o hacer clic) se llena la dirección si estaba vacía.
  */
+import { buscarDireccion, direccionDe } from "../core/geocodificar.js";
 
 const CENTRO_POR_DEFECTO = [19.4006, -99.0148]; // Cd. Nezahualcóyotl
 const plantilla = `
@@ -34,7 +38,7 @@ const plantilla = `
   </div>`;
 
 /** Inserta los campos en `contenedor` (un <fieldset> vacío) y prepara el mapa. */
-export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = {}) {
+export function montarDatosExtra(contenedor, { ubicacionObligatoria = false, campoDireccion = null } = {}) {
   // En el registro la ubicación es obligatoria (igual que en la app): sin ella el refugio no sale en el mapa
   contenedor.innerHTML = ubicacionObligatoria
     ? plantilla.replace("Ubicación y contacto (opcional)", "Ubicación y contacto").replace("Ubicación en el mapa</span>", "Ubicación en el mapa (obligatoria)</span>")
@@ -45,8 +49,15 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
   const lng = contenedor.querySelector("#longitud");
   const texto = contenedor.querySelector("#texto-ubicacion");
   const divMapa = contenedor.querySelector("#mapa-ubicacion");
+  const municipio = contenedor.querySelector("#municipio");
+  const codigoPostal = contenedor.querySelector("#codigoPostal");
   let mapa = null;
   let marcador = null;
+  let consulta = 0; // descarta respuestas viejas si la persona cambia la dirección mientras se busca
+  const AYUDA = campoDireccion
+    ? "Escribe la dirección y se marca sola, o usa «Usar mi ubicación». También puedes hacer clic en el mapa."
+    : "Haz clic en el mapa para marcar el refugio.";
+  texto.textContent = AYUDA;
 
   function marcar(latitud, longitud, centrar = false) {
     lat.value = latitud.toFixed(6);
@@ -58,13 +69,53 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
     if (centrar) mapa.setView([latitud, longitud], 16);
   }
 
+  /** Marca a mano (mi ubicación o clic) y, si la dirección está vacía, la llena con la de ese punto. */
+  async function marcarYCompletar(latitud, longitud, centrar) {
+    marcar(latitud, longitud, centrar);
+    if (!campoDireccion || campoDireccion.value.trim()) return;
+    const id = ++consulta;
+    texto.textContent = "Ubicación marcada. Buscando la dirección de ese punto…";
+    const datos = await direccionDe(latitud, longitud);
+    if (id !== consulta) return;
+    if (!datos?.direccion) { texto.textContent = `Ubicación marcada: ${lat.value}, ${lng.value}`; return; }
+    if (!campoDireccion.value.trim()) campoDireccion.value = datos.direccion;
+    if (!municipio.value.trim()) municipio.value = datos.municipio;
+    if (!codigoPostal.value.trim()) codigoPostal.value = datos.codigoPostal;
+    texto.textContent = "Ubicación marcada. Llenamos la dirección con la de ese punto: revísala y corrígela si hace falta.";
+  }
+
+  /** Marca en el mapa la dirección escrita (con municipio y CP si los hay). */
+  async function marcarDireccionEscrita() {
+    const calle = campoDireccion.value.trim();
+    if (calle.length < 8) return;
+    const id = ++consulta;
+    texto.textContent = "Buscando la dirección en el mapa…";
+    const busqueda = [calle, municipio.value.trim(), codigoPostal.value.trim(), "México"].filter(Boolean).join(", ");
+    const punto = await buscarDireccion(busqueda);
+    if (id !== consulta) return;
+    if (!punto) {
+      texto.textContent = "No encontramos esa dirección en el mapa. Haz clic en el lugar del refugio o usa «Usar mi ubicación».";
+      return;
+    }
+    marcar(punto.latitud, punto.longitud, true);
+    texto.textContent = "Marcamos la dirección en el mapa. Si no quedó exacta, haz clic en el lugar correcto.";
+  }
+
+  if (campoDireccion) {
+    // "change" = al terminar de escribir (salir del campo o Enter), no en cada tecla
+    campoDireccion.addEventListener("change", marcarDireccionEscrita);
+    campoDireccion.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); marcarDireccionEscrita(); } });
+    municipio.addEventListener("change", marcarDireccionEscrita);
+    codigoPostal.addEventListener("change", marcarDireccionEscrita);
+  }
+
   if (window.L) {
     mapa = window.L.map(divMapa).setView(CENTRO_POR_DEFECTO, 12);
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "© OpenStreetMap",
     }).addTo(mapa);
-    mapa.on("click", (e) => marcar(e.latlng.lat, e.latlng.lng));
+    mapa.on("click", (e) => marcarYCompletar(e.latlng.lat, e.latlng.lng, false));
   } else {
     divMapa.hidden = true;
     texto.textContent = "No se pudo cargar el mapa (revisa tu internet). Puedes usar «Usar mi ubicación».";
@@ -74,7 +125,7 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
     if (!navigator.geolocation) { texto.textContent = "Tu navegador no permite obtener la ubicación."; return; }
     texto.textContent = "Obteniendo tu ubicación…";
     navigator.geolocation.getCurrentPosition(
-      (p) => marcar(p.coords.latitude, p.coords.longitude, true),
+      (p) => marcarYCompletar(p.coords.latitude, p.coords.longitude, true),
       () => { texto.textContent = "No pudimos obtener tu ubicación. Marca el refugio haciendo clic en el mapa."; },
       { enableHighAccuracy: true, timeout: 15000 },
     );
@@ -120,7 +171,9 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
       const wa = contenedor.querySelector("#whatsapp").value.trim();
       if (ubicacionObligatoria && (!lat.value || !lng.value)) {
         divMapa.scrollIntoView({ block: "center", behavior: "smooth" });
-        return "Marca la ubicación del refugio en el mapa (o usa «Usar mi ubicación»): así aparecerá en el mapa de refugios.";
+        return campoDireccion
+          ? "Falta la ubicación: escribe una dirección que aparezca en el mapa, usa «Usar mi ubicación» o haz clic en el mapa."
+          : "Marca la ubicación del refugio en el mapa (o usa «Usar mi ubicación»): así aparecerá en el mapa de refugios.";
       }
       if (cp && !/^\d{5}$/.test(cp)) return "El código postal debe tener 5 dígitos.";
       if (wa && !/^[\d\s+()-]{8,}$/.test(wa)) return "El WhatsApp debe tener al menos 8 dígitos.";

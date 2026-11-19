@@ -40,7 +40,7 @@ let independiente = false;
 const documentos = () => (independiente ? DOCUMENTOS_INDEPENDIENTE : DOCUMENTOS_FORMAL);
 
 // Ubicación y contacto (paso 3). En la apelación no se piden.
-const datosExtra = MODO_APELACION ? null : montarDatosExtra(document.getElementById("datos-extra"), { ubicacionObligatoria: true });
+const datosExtra = MODO_APELACION ? null : montarDatosExtra(document.getElementById("datos-extra"), { ubicacionObligatoria: true, campoDireccion: document.getElementById("direccion") });
 
 if (MODO_APELACION) {
   iniciarApelacion();
@@ -99,9 +99,17 @@ function erroresDelPaso(n) {
   return errores;
 }
 
+function errorDireccion(direccion) {
+  const hayUbicacion = datosExtra && datosExtra.leer().latitud != null;
+  if (!direccion) return hayUbicacion ? "" : "Escribe la dirección del refugio o usa «Usar mi ubicación» en el mapa.";
+  return direccion.length < 8 ? "Escribe la dirección completa (calle, número y colonia)." : "";
+}
+
 function validarUbicacionYHorario() {
   return {
-    direccion: f.direccion.value.trim().length < 8 ? "Escribe la dirección completa del refugio." : "",
+    // Basta con una: la dirección escrita o la ubicación marcada (con «Usar mi ubicación» se llena sola).
+    // Al apelar no hay mapa, así que ahí la dirección sigue siendo obligatoria.
+    direccion: errorDireccion(f.direccion.value.trim()),
     horaApertura: !f.horaApertura.value || !f.horaCierre.value ? "Indica el horario de atención." : (f.horaCierre.value <= f.horaApertura.value ? "La hora de cierre debe ser posterior a la de apertura." : ""),
   };
 }

@@ -454,14 +454,24 @@ final class Auth
 
     /* ---------- Validaciones comunes del registro y la apelación ---------- */
 
-    /** Datos del refugio que se capturan en el formulario de registro (y se corrigen al apelar). */
-    private static function leerDatosRefugio(array $b): array
+    /**
+     * Datos del refugio que se capturan en el formulario de registro (y se corrigen al apelar).
+     * Con la ubicación marcada en el mapa ($extras con latitud y longitud) la dirección escrita es opcional:
+     * quien está en el refugio puede usar «Usar mi ubicación» sin escribirla. Si no la manda, se guardan
+     * las coordenadas como dirección (la columna no admite vacío y el administrador las puede abrir en un mapa).
+     */
+    private static function leerDatosRefugio(array $b, array $extras = []): array
     {
+        $hayUbicacion = isset($extras['latitud'], $extras['longitud']);
+        $direccion = Validar::texto($b['direccion'] ?? null, 'La dirección', min: 8, max: 160, opcional: $hayUbicacion);
+        if ($direccion === '') {
+            $direccion = sprintf('Ubicación marcada en el mapa (%.6f, %.6f)', $extras['latitud'], $extras['longitud']);
+        }
         return [
             'nombre' => Validar::texto($b['nombreRefugio'] ?? null, 'El nombre del refugio', min: 3, max: 100),
             'responsable' => Validar::texto($b['responsable'] ?? null, 'El responsable', min: 3, max: 80),
             'telefono' => Validar::telefono($b['telefono'] ?? null),
-            'direccion' => Validar::texto($b['direccion'] ?? null, 'La dirección', min: 8, max: 160),
+            'direccion' => $direccion,
             'horario' => Validar::horario($b['horario'] ?? null),
         ];
     }
@@ -517,11 +527,11 @@ final class Auth
     public static function registroRefugio(Solicitud $s): \HuellApp\Respuesta
     {
         $b = $s->cuerpo();
-        ['nombre' => $nombreRefugio, 'responsable' => $responsable, 'telefono' => $telefono, 'direccion' => $direccion, 'horario' => $horario] = self::leerDatosRefugio($b);
+        $extras = RefugioExtra::leer($b); // ubicación, WhatsApp, redes, cargo, capacidad… (web y app)
+        ['nombre' => $nombreRefugio, 'responsable' => $responsable, 'telefono' => $telefono, 'direccion' => $direccion, 'horario' => $horario] = self::leerDatosRefugio($b, $extras);
         $correo = Validar::correo($b['correo'] ?? null);
         $password = Validar::password($b['password'] ?? null);
 
-        $extras = RefugioExtra::leer($b); // ubicación, WhatsApp, redes, cargo, capacidad… (web y app)
         [$documentos, $tipos] = self::leerDocumentos($b);
         $independiente = RefugioExtra::esIndependiente($extras['tipo_organizacion'] ?? null);
         self::revisarObligatorios($tipos, $independiente);

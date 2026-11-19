@@ -895,4 +895,12 @@ test("registro de refugio: rescatista independiente sin acta y datos de animales
   assert.equal(rosa.animalesActuales, 11);
   assert.equal(rosa.entregaEsterilizados, "algunos");
   assert.deepEqual(rosa.documentos.map((d) => d.tipo).sort(), ["domicilio", "identificacion", "lugar"]);
+
+  // Sin dirección escrita: no se puede sin ubicación, pero con «Usar mi ubicación» (coordenadas) sí
+  const sinDireccion = { ...base, direccion: "", correo: "lucia.ramos@ejemplo.mx", redes: ["Instagram: @rescateslucia"], documentos: [ine, luz, lugar] };
+  assert.equal((await api("POST", "/api/auth/registro-refugio", { cuerpo: sinDireccion })).estado, 400);
+  const conUbicacion = await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...sinDireccion, latitud: 19.6012, longitud: -99.0507 } });
+  assert.equal(conUbicacion.estado, 201, conUbicacion.datos?.error);
+  const lucia = (await api("GET", "/api/admin/refugios?estado=pendiente", { token: admin.token })).datos.refugios.find((p) => p.correo === "lucia.ramos@ejemplo.mx");
+  assert.match(lucia.direccion, /19\.601200, -99\.050700/);
 });

@@ -59,6 +59,26 @@ class _SelectorUbicacionState extends State<SelectorUbicacion> {
     }
   }
 
+  /// Si la pantalla cambia el punto desde fuera (p. ej. al buscar la dirección escrita), se mueve el pin.
+  @override
+  void didUpdateWidget(covariant SelectorUbicacion anterior) {
+    super.didUpdateWidget(anterior);
+    final lat = widget.latitud, lng = widget.longitud;
+    if (lat == null || lng == null) return;
+    if (_punto?.latitude == lat && _punto?.longitude == lng) return;
+    final punto = LatLng(lat, lng);
+    _punto = punto;
+    _mensaje = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        _mapController.move(punto, 16);
+      } catch (_) {
+        // El mapa aún no se dibuja: tomará el punto como centro al aparecer
+      }
+    });
+  }
+
   @override
   void dispose() {
     _mapController.dispose();
