@@ -125,7 +125,7 @@ final class Auth
         }
         Base::ejecutar('DELETE FROM intentos_login WHERE clave = ?', [$clave]);
         // Usuario que se registró pero no confirmó su correo: se le manda (otro) código y se le pide
-        if ((int) ($usuario['correo_verificado'] ?? 1) === 0) {
+        if ((int) ($usuario['correo_verificado'] ?? 1) === 0 && self::verificarCorreoActivo()) {
             return self::pedirVerificacion($usuario);
         }
         return self::entregar($usuario);
@@ -364,13 +364,21 @@ final class Auth
             throw new ErrorHttp(409, 'Ya existe una cuenta con ese correo. Inicia sesión o usa otro correo.');
         }
         // La cuenta nace SIN confirmar: se activa al escribir el código que le llega por correo
+        // (con VERIFICAR_CORREO=0 nace confirmada y entra directo: demo sin envío de correos)
+        $verificar = self::verificarCorreoActivo();
         Base::insertar(
-            "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en, correo_verificado) VALUES (?, ?, ?, ?, 'usuario', ?, 0)",
-            [$nombre, $correo, $telefono ?: null, password_hash($password, PASSWORD_DEFAULT), Base::ahora()],
+            "INSERT INTO usuarios (nombre, correo, telefono, password_hash, rol, creado_en, correo_verificado) VALUES (?, ?, ?, ?, 'usuario', ?, ?)",
+            [$nombre, $correo, $telefono ?: null, password_hash($password, PASSWORD_DEFAULT), Base::ahora(), $verificar ? 0 : 1],
         );
         self::anotarFallo($claveRegistro); // cuenta los registros de esta IP en la ventana de 10 minutos
         $usuario = Base::uno('SELECT * FROM usuarios WHERE correo = ?', [$correo]);
-        return \HuellApp\Respuesta::json(self::pedirVerificacion($usuario), 201);
+        return \HuellApp\Respuesta::json($verificar ? self::pedirVerificacion($usuario) : self::entregar($usuario), 201);
+    }
+
+    /** ¿Se pide el código por correo al registrarse? (VERIFICAR_CORREO=0 lo apaga, por ejemplo en una demo). */
+    private static function verificarCorreoActivo(): bool
+    {
+        return Config::obtener('VERIFICAR_CORREO') !== '0';
     }
 
     /* ---------- Código por correo: confirmar el correo y recuperar la contraseña ---------- */

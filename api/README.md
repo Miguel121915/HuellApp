@@ -120,6 +120,9 @@ Al registrarse, el usuario recibe un **código de 6 dígitos** por correo y su c
   4. En `api/.env` (nunca en GitHub ni en un chat): `BREVO_API_KEY=…` y `CORREO_REMITENTE=el-correo-del-paso-2`. Reinicia `php artisan serve`.
 
   Se usa la API web de Brevo (HTTPS), no SMTP: no necesita librerías y funciona aunque la nube bloquee los puertos de correo.
+- **Demo sin Brevo con varias personas:** `VERIFICAR_CORREO=0` en `api/.env` hace que la cuenta quede activa al registrarse y el usuario entre directo (la recuperación de contraseña sigue usando el código). Quítalo en cuanto haya envío real.
+
+Para presentar desde una computadora con un enlace público y un QR (túnel gratuito de Cloudflare) ver [`docs/DEMO-PRESENTACION.md`](../docs/DEMO-PRESENTACION.md) e `iniciar-demo-publica.bat`.
 
 ### IA de Gemini en los reportes (HU-5 y HU-8)
 

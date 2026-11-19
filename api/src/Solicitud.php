@@ -74,7 +74,10 @@ final class Solicitud
         $remota = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         // En el servidor publicado, nginx (en la misma máquina) reenvía la IP real en X-Real-IP.
         // Solo se le cree si la petición viene de la propia máquina: desde fuera no se puede falsificar.
-        $real = $_SERVER['HTTP_X_REAL_IP'] ?? '';
+        // Con el túnel de Cloudflare (demo desde una laptop, iniciar-demo-publica.bat) cloudflared corre en la
+        // misma máquina y manda la IP real en CF-Connecting-IP. Sin esto, todas las visitas parecerían una
+        // sola persona y los límites (por ejemplo, 10 registros cada 10 minutos) se agotarían en clase.
+        $real = $_SERVER['HTTP_X_REAL_IP'] ?? ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
         if (in_array($remota, ['127.0.0.1', '::1'], true) && filter_var($real, FILTER_VALIDATE_IP)) {
             return $real;
         }

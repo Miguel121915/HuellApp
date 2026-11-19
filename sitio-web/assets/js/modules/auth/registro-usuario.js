@@ -44,6 +44,8 @@ if (!redirigirSiHaySesion()) {
     if (!r.ok) { mostrarAlerta(alerta, "error", r.error); return; }
     // La cuenta nace sin confirmar: le llegó un código al correo y se escribe en la siguiente pantalla
     if (r.requiereVerificarCorreo) { irA("pages/verificar-correo.html"); return; }
+    // Sin verificación por correo (VERIFICAR_CORREO=0) la API ya entregó la sesión: entra directo
+    if (r.sesion) { mostrarAlerta(alerta, "exito", "¡Cuenta creada! Bienvenido a HuellApp."); setTimeout(() => irA("pages/usuario/inicio.html"), 900); return; }
     mostrarAlerta(alerta, "exito", "Cuenta creada. Te llevamos al inicio de sesión…");
     setTimeout(() => irA("pages/login.html"), 1400);
   });

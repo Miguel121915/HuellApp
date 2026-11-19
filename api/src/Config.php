@@ -51,6 +51,9 @@ final class Config
         'BREVO_API_KEY' => '',
         'CORREO_REMITENTE' => '',
         'CORREO_REMITENTE_NOMBRE' => 'HuellApp',
+        // 1 = al registrarse, el usuario confirma su correo con un código. 0 = entra directo (solo si no hay
+        // forma de enviar correos, por ejemplo en una demo sin Brevo: si no, nadie podría terminar su registro).
+        'VERIFICAR_CORREO' => '1',
         // SOLO para "php artisan test": incluye el código en la respuesta. Nunca lo actives en producción.
         'CORREO_CODIGO_EN_RESPUESTA' => '0',
     ];

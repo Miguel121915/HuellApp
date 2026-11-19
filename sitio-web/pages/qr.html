@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entra a HuellApp · QR</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap">
+  <link rel="stylesheet" href="../assets/css/base/reset.css">
+  <link rel="stylesheet" href="../assets/css/base/variables.css">
+  <link rel="stylesheet" href="../assets/css/base/tipografia.css">
+  <style>
+    /* Página para proyectar en clase: QR grande que lleva a HuellApp (la dirección del túnel del día) */
+    body { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(160deg, #e6f8f5, #fdf3e7); }
+    .qr-demo { display: grid; justify-items: center; gap: 18px; width: min(560px, 100%); padding: 32px; text-align: center; background: #fff; border-radius: 28px; box-shadow: 0 16px 40px rgb(20 49 46 / 0.16); }
+    .qr-demo img.logo { width: min(320px, 80%); height: auto; }
+    .qr-demo h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--aqua-fuerte); }
+    #qr svg { display: block; width: min(380px, 80vw); height: auto; }
+    .qr-demo__url { font-size: 1.05rem; font-weight: 700; color: var(--aqua-fuerte); overflow-wrap: anywhere; }
+    .qr-demo ol { display: grid; gap: 6px; margin: 0; padding-left: 1.2em; text-align: left; color: var(--tinta-suave); font-size: 1.05rem; }
+  </style>
+  <script type="module">
+    import { dibujarQr } from "../assets/js/components/seguridad-cuenta.js";
+    // El QR lleva a la misma dirección desde la que se abrió esta página (el túnel público del día)
+    const destino = `${window.location.origin}/pages/login.html`;
+    document.getElementById("url").textContent = destino.replace(/^https?:\/\//, "").replace(/\/pages\/login\.html$/, "");
+    await dibujarQr(document.getElementById("qr"), destino);
+    document.querySelector("#qr svg")?.setAttribute("aria-label", "Código QR para entrar a HuellApp");
+  </script>
+</head>
+<body>
+  <main class="qr-demo">
+    <img class="logo" src="../assets/img/logos/logo-huellapp.png" alt="HuellApp" width="900" height="312">
+    <p class="sobretitulo">Pruébala desde tu celular</p>
+    <h1>Escanea y entra a HuellApp</h1>
+    <div id="qr" aria-live="polite">Generando el código…</div>
+    <p class="qr-demo__url" id="url"></p>
+    <ol>
+      <li>Abre la cámara de tu celular y apunta al código.</li>
+      <li>Toca el enlace que aparece.</li>
+      <li>Crea tu cuenta o toca «Entrar sin cuenta».</li>
+    </ol>
+  </main>
+</body>
+</html>
