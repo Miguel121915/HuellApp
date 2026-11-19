@@ -12,7 +12,7 @@ import {
   obtenerPreguntasRefugio, obtenerMisSolicitudesAdopcion, obtenerFavoritos, obtenerRefugiosConMascotas, establecerFavorito,
   obtenerRequisitosRefugio, enviarMensajeRefugio,
 } from "../../core/servicios.js";
-import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
+import { crearElemento, debounce, normalizarTexto, mostrarAlerta, ocultarAlerta, resolverImagen } from "../../core/utils.js";
 import { montarFormularioAdopcion } from "./adopcion.js";
 import { pedirCuenta } from "../../components/aviso-cuenta.js";
 import { dibujarMapaRefugios, ubicarPersona, distanciaKm } from "../../components/mapa-refugios.js";
@@ -163,10 +163,6 @@ async function abrirAdopcion(mascotaId) {
     try { preguntas = await obtenerPreguntasRefugio(refugioActual.id); } catch { /* el asistente usa las respuestas generales */ }
     preguntasPorRefugio.set(refugioActual.id, preguntas);
   }
-  // Antes de llenar la solicitud, el usuario repasa los requisitos del refugio (HU-16)
-  const cajaRequisitos = document.getElementById("adopcion-requisitos");
-  cajaRequisitos.hidden = requisitosActuales.length === 0;
-  document.getElementById("adopcion-lista-requisitos").replaceChildren(...crearListaRequisitos(requisitosActuales));
   formularioAdopcion.abrir(mascota, refugioActual, preguntasPorRefugio.get(refugioActual.id));
 }
 
@@ -206,6 +202,13 @@ function enlazarEventos() {
     const enlace = evento.target.closest("[data-refugio]");
     if (!enlace) return;
     evento.preventDefault();
+    // Sin cursor no hay «pasar por encima»: el primer toque voltea la casa para ver sus datos
+    // (el botón «Ver refugio» siempre entra directo)
+    if (SIN_CURSOR.matches && !evento.target.closest(".refugio-tarjeta__boton") && !enlace.classList.contains("refugio-tarjeta--volteada")) {
+      listaRefugios.querySelectorAll(".refugio-tarjeta--volteada").forEach((c) => c.classList.remove("refugio-tarjeta--volteada"));
+      enlace.classList.add("refugio-tarjeta--volteada");
+      return;
+    }
     irARefugio(enlace.dataset.refugio);
   });
   document.getElementById("volver").addEventListener("click", (evento) => { evento.preventDefault(); irARefugio(null); });
@@ -269,25 +272,55 @@ async function mostrarLista() {
   }
 
   const fragmento = document.createDocumentFragment();
-  refugios.forEach((r) => {
-    // (la insignia distingue refugio verificado de rescatista independiente sin acta)
-    fragmento.append(crearElemento("li", {}, crearElemento("a", {
-      clase: "refugio-tarjeta",
-      atributos: { href: `?id=${encodeURIComponent(r.id)}`, "data-refugio": r.id },
-    }, [
-      crearElemento("span", { clase: "refugio-tarjeta__nombre", texto: r.nombre }),
-      insigniaRefugio(r),
-      crearElemento("span", { clase: "refugio-tarjeta__dato", texto: r.direccion }),
-      crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `Horario: ${r.horario}` }),
-      r.distanciaKm != null ? crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `📍 A ${r.distanciaKm.toFixed(1)} km` }) : null,
-      crearElemento("span", { clase: "refugio-tarjeta__accion", texto: "Ver mascotas →" }),
-    ].filter(Boolean))));
-  });
+  refugios.forEach((r) => fragmento.append(crearElemento("li", {}, crearTarjetaRefugio(r))));
   listaRefugios.replaceChildren(fragmento);
 
   // Mapa (HU-11)
   dibujarMapaRefugios(document.getElementById("mapa"), refugios, { alElegir: irARefugio, aviso: document.getElementById("mapa-aviso") });
 }
+
+/**
+ * Tarjeta del refugio que se voltea al pasar el cursor (o al enfocarla con el teclado):
+ * al frente la foto, el nombre y la zona; atrás dirección, horario y descripción.
+ * En pantallas táctiles (sin cursor) el primer toque la voltea; el botón «Ver refugio» entra directo.
+ */
+function crearTarjetaRefugio(r) {
+  const boton = () => crearElemento("span", { clase: "refugio-tarjeta__boton", texto: "Ver refugio →" });
+  const dato = (etiqueta, valor, clase = "") => crearElemento("span", { clase: `refugio-tarjeta__dato ${clase}`.trim() }, [
+    crearElemento("span", { clase: "refugio-tarjeta__etiqueta", texto: etiqueta }),
+    crearElemento("span", { texto: valor }),
+  ]);
+  const zona = r.municipio || r.direccion;
+  // Insignia: refugio verificado (con acta) o rescatista independiente (sin acta); va en las dos caras
+  const insignia = (clase) => { const e = insigniaRefugio(r); e.classList.add(clase); return e; };
+  // El frente es solo visual (aria-hidden): el reverso ya trae el nombre y todos los datos
+  const frente = crearElemento("span", { clase: "refugio-tarjeta__cara refugio-tarjeta__frente", atributos: { "aria-hidden": "true" } }, [
+    r.foto
+      ? crearElemento("img", { clase: "refugio-tarjeta__foto", atributos: { src: resolverImagen(r.foto), alt: "", loading: "lazy", decoding: "async" } })
+      : crearElemento("span", { clase: "refugio-tarjeta__foto refugio-tarjeta__foto--vacia" }),
+    insignia("refugio-tarjeta__insignia"),
+    crearElemento("span", { clase: "refugio-tarjeta__cuerpo" }, [
+      crearElemento("span", { clase: "refugio-tarjeta__nombre", texto: r.nombre }),
+      crearElemento("span", { clase: "refugio-tarjeta__zona", texto: r.distanciaKm != null ? `${zona} · a ${r.distanciaKm.toFixed(1)} km` : zona }),
+      boton(),
+    ]),
+  ]);
+  const reverso = crearElemento("span", { clase: "refugio-tarjeta__cara refugio-tarjeta__reverso" }, [
+    crearElemento("span", { clase: "refugio-tarjeta__nombre", texto: r.nombre }),
+    insignia("refugio-tarjeta__insignia-reverso"),
+    dato("Dirección", r.direccion),
+    dato("Horario", r.horario),
+    r.distanciaKm != null ? dato("Distancia", `A ${r.distanciaKm.toFixed(1)} km de ti`) : null,
+    r.descripcion ? dato("Sobre el refugio", r.descripcion, "refugio-tarjeta__dato--largo") : null,
+    boton(),
+  ].filter(Boolean));
+  return crearElemento("a", {
+    clase: "refugio-tarjeta",
+    atributos: { href: `?id=${encodeURIComponent(r.id)}`, "data-refugio": r.id },
+  }, crearElemento("span", { clase: "refugio-tarjeta__giro" }, [frente, reverso]));
+}
+
+const SIN_CURSOR = window.matchMedia("(hover: none)");
 
 let miUbicacion = null; // [lat, lon] después de «Cerca de mí»
 

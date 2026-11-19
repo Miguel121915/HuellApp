@@ -22,7 +22,8 @@
   background: var(--aqua-suave);
   border-bottom: 3px solid var(--aqua);
 }
-.adopcion__foto { width: 88px; height: 88px; flex: none; object-fit: cover; background: var(--lila-suave); border: 3px solid var(--lila-fuerte); border-radius: var(--radio-m); }
+/* Carrusel de fotos de la mascota: cuadrado, a la mitad del ancho de la cabecera */
+.adopcion__foto { position: relative; width: 50%; aspect-ratio: 1; flex: none; overflow: hidden; background: var(--lila-suave); border: 3px solid var(--lila-fuerte); border-radius: var(--radio-m); }
 .adopcion__antetitulo { font-size: 0.8125rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--aqua-fuerte); }
 .adopcion__titulo { font-size: 1.5rem; }
 
@@ -129,7 +130,8 @@
 }
 
 @media (max-width: 720px) {
-  .adopcion__cabecera { padding: var(--e3); }
+  .adopcion__cabecera { flex-direction: column; align-items: stretch; padding: var(--e3); }
+  .adopcion__foto { width: 100%; }
   .adopcion form { padding: var(--e3) var(--e3) calc(var(--e3) + 72px); } /* espacio para el botón de KIRO */
   .adopcion .formulario-grid { grid-template-columns: 1fr; }
   .asistente__boton span { display: none; } /* en móvil queda solo el avatar de KIRO */

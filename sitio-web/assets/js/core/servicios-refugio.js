@@ -130,7 +130,7 @@ export const descargarDocumentoAdopcion = (solicitudId, documentoId) => descarga
 
 /* ---------- Perfil ---------- */
 
-/** Solo se pueden editar: telefono, direccion, horario y descripcion. */
+/** Solo se pueden editar: telefono, direccion, horario, descripcion, foto y los datos extra. */
 export const actualizarPerfil = (cambios) => intentar(async () => {
   const r = await put("/refugio/perfil", cambios);
   return { ok: true, refugio: r.refugio };

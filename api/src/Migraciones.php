@@ -73,6 +73,8 @@ final class Migraciones
             // Registro: cargo, capacidad, animales actuales y si se entregan esterilizados
             'cargo_responsable' => 'VARCHAR2(80 CHAR)', 'capacidad' => 'NUMBER(6)', 'animales_actuales' => 'NUMBER(6)',
             'entrega_esterilizados' => 'VARCHAR2(10 CHAR)',
+            // Foto del refugio (fachada o instalaciones) que se ve en su tarjeta
+            'foto' => 'VARCHAR2(200 CHAR)',
         ],
         // HU-22: resumen con IA de cada solicitud (JSON), guardado para no gastar cuota cada vez que se abre
         'solicitudes_adopcion' => [
@@ -85,6 +87,8 @@ final class Migraciones
             'moderacion' => "VARCHAR2(10 CHAR) DEFAULT 'visible' NOT NULL", 'moderacion_motivo' => 'VARCHAR2(300 CHAR)',
             'moderacion_fuente' => 'VARCHAR2(10 CHAR)', 'moderacion_en' => 'TIMESTAMP(3)',
         ],
+        // Carrusel de la tarjeta: hasta 2 fotos más de la mascota además de la principal (foto)
+        'mascotas' => ['foto2' => 'VARCHAR2(200 CHAR)', 'foto3' => 'VARCHAR2(200 CHAR)'],
     ];
 
     /** Crea todas las tablas, secuencias e índices que falten, y las columnas nuevas. */

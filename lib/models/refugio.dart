@@ -55,7 +55,10 @@ class MascotaRefugio {
       edad: textoEdad(meses),
       genero: (j['sexo'] as String?) == 'hembra' ? 'Hembra' : 'Macho',
       descripcion: j['descripcion'] as String? ?? '',
-      fotos: foto.isEmpty ? [] : [urlArchivo(foto)],
+      // La API manda «fotos» (principal + hasta 2 extra del carrusel); si no viene, solo la principal
+      fotos: ((j['fotos'] as List?)?.whereType<String>().where((f) => f.isNotEmpty).toList() ?? (foto.isEmpty ? <String>[] : [foto]))
+          .map(urlArchivo)
+          .toList(),
       salud: salud.isEmpty ? [] : [salud],
     );
   }
@@ -116,12 +119,17 @@ class Refugio {
   });
 
   /// Convierte el refugio que devuelve la API (/api/refugios) junto con sus mascotas.
-  factory Refugio.desdeApi(Map<String, dynamic> j, List<MascotaRefugio> mascotas) {
+  /// La foto que el refugio sube en su Perfil va primero; si no tiene, se usan las de sus mascotas.
+  factory Refugio.desdeApi(Map<String, dynamic> j, List<MascotaRefugio> mascotas, String Function(String) urlArchivo) {
     List<String> lista(dynamic v) => v is List ? v.map((e) => '$e').toList() : <String>[];
     final direccion = j['direccion'] as String? ?? '';
     final municipio = j['municipio'] as String? ?? '';
     final necesidades = lista(j['necesidades']);
-    final fotos = [for (final m in mascotas) ...m.fotos].take(4).toList();
+    final fotoRefugio = j['foto'] as String? ?? '';
+    final fotos = [
+      if (fotoRefugio.isNotEmpty) urlArchivo(fotoRefugio),
+      for (final m in mascotas) ...m.fotos,
+    ].take(4).toList();
     return Refugio(
       id: '${j['id']}',
       nombre: j['nombre'] as String? ?? '',

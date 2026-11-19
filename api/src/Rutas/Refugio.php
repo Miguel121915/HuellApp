@@ -105,7 +105,28 @@ final class Refugio
             'descripcion' => Validar::texto($b['descripcion'] ?? null, 'La descripción', min: 10, max: 400),
             'estatus' => Validar::enumerado($b['estatus'] ?? 'disponible', 'El estatus', self::ESTATUS),
             'foto' => Archivos::resolverFoto($b['foto'] ?? null, 'La foto') ?: self::FOTO_POR_DEFECTO,
-        ];
+        ] + self::leerFotosExtra($b);
+    }
+
+    /**
+     * Fotos extra del carrusel: fotosExtra = [hasta 2 fotos] (data URL nueva o ruta ya guardada).
+     * Si no viene el campo (p. ej. la app móvil, que solo manda la principal) no se tocan las que ya hay.
+     * @return array{foto2?:?string, foto3?:?string}
+     */
+    private static function leerFotosExtra(array $b): array
+    {
+        if (!array_key_exists('fotosExtra', $b)) {
+            return [];
+        }
+        $lista = $b['fotosExtra'] ?? [];
+        if (!is_array($lista) || count($lista) > 2) {
+            throw new ErrorHttp(400, 'Puedes agregar máximo 2 fotos extra.');
+        }
+        $fotos = array_values(array_filter(array_map(
+            static fn (mixed $f): string => Archivos::resolverFoto($f, 'La foto extra'),
+            array_values($lista),
+        )));
+        return ['foto2' => $fotos[0] ?? null, 'foto3' => $fotos[1] ?? null];
     }
 
     /* ---------- Borrador de descripción con IA (HU-17) ---------- */
@@ -201,9 +222,9 @@ final class Refugio
     {
         $m = self::leerMascota($s->cuerpo());
         $id = Base::insertar(
-            'INSERT INTO mascotas (refugio_id, nombre, especie, raza, edad_meses, sexo, tamano, salud, descripcion, foto, estatus, creado_en, actualizado_en)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$s->refugio['id'], $m['nombre'], $m['especie'], $m['raza'], $m['edad_meses'], $m['sexo'], $m['tamano'], $m['salud'], $m['descripcion'], $m['foto'], $m['estatus'], Base::ahora(), Base::ahora()],
+            'INSERT INTO mascotas (refugio_id, nombre, especie, raza, edad_meses, sexo, tamano, salud, descripcion, foto, foto2, foto3, estatus, creado_en, actualizado_en)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$s->refugio['id'], $m['nombre'], $m['especie'], $m['raza'], $m['edad_meses'], $m['sexo'], $m['tamano'], $m['salud'], $m['descripcion'], $m['foto'], $m['foto2'] ?? null, $m['foto3'] ?? null, $m['estatus'], Base::ahora(), Base::ahora()],
         );
         return Respuesta::json(['ok' => true, 'mascota' => self::mascotaPorId($id)], 201);
     }
@@ -216,6 +237,9 @@ final class Refugio
             'UPDATE mascotas SET nombre = ?, especie = ?, raza = ?, edad_meses = ?, sexo = ?, tamano = ?, salud = ?, descripcion = ?, foto = ?, estatus = ?, actualizado_en = ? WHERE id = ?',
             [$m['nombre'], $m['especie'], $m['raza'], $m['edad_meses'], $m['sexo'], $m['tamano'], $m['salud'], $m['descripcion'], $m['foto'], $m['estatus'], Base::ahora(), $actual['id']],
         );
+        if (array_key_exists('foto2', $m)) { // solo si mandaron fotosExtra
+            Base::ejecutar('UPDATE mascotas SET foto2 = ?, foto3 = ? WHERE id = ?', [$m['foto2'], $m['foto3'], $actual['id']]);
+        }
         return ['ok' => true, 'mascota' => self::mascotaPorId((int) $actual['id'])];
     }
 

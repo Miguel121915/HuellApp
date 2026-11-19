@@ -79,6 +79,7 @@ CREATE TABLE refugios (
   necesidades       VARCHAR2(1000 CHAR),
   tiene_perros      NUMBER(1) DEFAULT 1 NOT NULL,
   tiene_gatos       NUMBER(1) DEFAULT 1 NOT NULL,
+  foto              VARCHAR2(200 CHAR), -- foto del refugio para su tarjeta (ruta /uploads/imagenes/...)
   CONSTRAINT pk_refugios PRIMARY KEY (id),
   CONSTRAINT uq_refugios_usuario UNIQUE (usuario_id),
   CONSTRAINT ck_refugios_estado CHECK (estado IN ('pendiente', 'aprobado', 'rechazado', 'suspendido')),
@@ -121,6 +122,8 @@ CREATE TABLE mascotas (
   salud          VARCHAR2(120 CHAR) NOT NULL,
   descripcion    VARCHAR2(400 CHAR) NOT NULL,
   foto           VARCHAR2(200 CHAR) NOT NULL,
+  foto2          VARCHAR2(200 CHAR), -- fotos extra para el carrusel de la tarjeta (opcionales)
+  foto3          VARCHAR2(200 CHAR),
   estatus        VARCHAR2(12 CHAR) DEFAULT 'disponible' NOT NULL,
   creado_en      TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
   actualizado_en TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,

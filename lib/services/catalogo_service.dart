@@ -73,7 +73,7 @@ class CatalogoService extends ChangeNotifier {
       ];
 
       final nuevos = [
-        for (var i = 0; i < refugiosJson.length; i++) Refugio.desdeApi(refugiosJson[i], mascotasPorRefugio[i]),
+        for (var i = 0; i < refugiosJson.length; i++) Refugio.desdeApi(refugiosJson[i], mascotasPorRefugio[i], ApiConfig.urlArchivo),
       ];
       listaRefugios
         ..clear()

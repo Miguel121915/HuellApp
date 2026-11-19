@@ -47,6 +47,8 @@ let mostradas = 0;
 let editandoId = null;   // null = creando
 let borrandoId = null;
 let fotoActual = "";     // data URL / ruta de la foto elegida ("" = usar la imagen por defecto)
+let fotosExtra = [];     // hasta 2 fotos más para el carrusel (data URL nuevas o rutas ya guardadas)
+const MAX_FOTOS_EXTRA = 2;
 
 if (sesion) {
   montarNavbar({ sesion, activa: "inventario" });
@@ -128,6 +130,14 @@ function mostrarVistaFoto() {
   vistaFoto.querySelector("img").src = resolverImagen(fotoActual || FOTO_POR_DEFECTO);
 }
 
+/** Miniaturas de las fotos extra, cada una con su botón «Quitar» (data-quitar-extra = posición). */
+function mostrarFotosExtra() {
+  document.getElementById("vista-fotos-extra").replaceChildren(...fotosExtra.map((foto, i) => crearElemento("li", {}, [
+    crearElemento("img", { atributos: { src: resolverImagen(foto), alt: `Foto extra ${i + 1}`, width: 120, height: 90 } }),
+    crearElemento("button", { clase: "boton boton--contorno boton--pequeno", texto: "Quitar", atributos: { type: "button", "data-quitar-extra": i } }),
+  ])));
+}
+
 function abrirFormulario(mascota = null) {
   editandoId = mascota ? mascota.id : null;
   formulario.reset();
@@ -151,7 +161,9 @@ function abrirFormulario(mascota = null) {
     f.descripcion.value = mascota.descripcion;
   }
   fotoActual = mascota && mascota.foto !== FOTO_POR_DEFECTO ? mascota.foto : "";
+  fotosExtra = mascota ? (mascota.fotos || []).slice(1, 1 + MAX_FOTOS_EXTRA) : [];
   mostrarVistaFoto();
+  mostrarFotosExtra();
   modal.showModal();
   formulario.elements.nombre.focus();
 }
@@ -181,6 +193,7 @@ function leerFormulario() {
   return {
     nombre: texto(f.nombre), especie: f.especie.value, raza: texto(f.raza), edadMeses, sexo: f.sexo.value, tamano: f.tamano.value,
     salud: texto(f.salud), descripcion: texto(f.descripcion), estatus: f.estatus.value, foto: fotoActual || FOTO_POR_DEFECTO,
+    fotosExtra,
   };
 }
 
@@ -291,6 +304,30 @@ function enlazarEventos() {
     fotoActual = "";
     formulario.elements.foto.value = "";
     mostrarVistaFoto();
+  });
+  // Fotos extra del carrusel: se suman a las que ya hay, sin pasar de 2
+  formulario.elements.fotosExtra.addEventListener("change", async (evento) => {
+    const zona = campo("fotosExtra");
+    const archivos = [...evento.target.files];
+    evento.target.value = "";
+    if (!archivos.length) return;
+    const lugares = MAX_FOTOS_EXTRA - fotosExtra.length;
+    const error = archivos.map((a) => validarImagen(a)).find(Boolean);
+    if (error) { marcarError(zona, error); return; }
+    try {
+      fotosExtra.push(...await Promise.all(archivos.slice(0, Math.max(0, lugares)).map((a) => redimensionarImagen(a))));
+      marcarError(zona, archivos.length > lugares ? `Solo caben ${MAX_FOTOS_EXTRA} fotos extra: quita una para cambiarla.` : "");
+      mostrarFotosExtra();
+    } catch {
+      marcarError(zona, "No pudimos leer alguna de esas imágenes. Prueba con otra.");
+    }
+  });
+  document.getElementById("vista-fotos-extra").addEventListener("click", (evento) => {
+    const boton = evento.target.closest("[data-quitar-extra]");
+    if (!boton) return;
+    fotosExtra.splice(Number(boton.dataset.quitarExtra), 1);
+    marcarError(campo("fotosExtra"), "");
+    mostrarFotosExtra();
   });
 
   /* Confirmación de eliminación */

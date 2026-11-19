@@ -46,8 +46,10 @@ final class Config
         // HU-19 Notificaciones push: ruta del JSON de la cuenta de servicio de Firebase (SECRETO: fuera del
         // proyecto, p. ej. C:\oracle\firebase\huellapp-firebase.json). Vacío = sin push (la campana sigue igual).
         'FIREBASE_CREDENCIALES' => '',
-        // Correos (códigos para confirmar el correo y recuperar la contraseña) con Brevo.
+        // Correos (códigos para confirmar el correo y recuperar la contraseña) con Gmail o, si no, con Brevo.
         // Vacío = MODO DE PRUEBA: no se envía nada y el código se muestra en la consola de la API.
+        'GMAIL_USUARIO' => '',
+        'GMAIL_CONTRASENA_APP' => '',
         'BREVO_API_KEY' => '',
         'CORREO_REMITENTE' => '',
         'CORREO_REMITENTE_NOMBRE' => 'HuellApp',
