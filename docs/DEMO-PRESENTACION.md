@@ -34,7 +34,7 @@ Abre `api\.env` con el Bloc de notas y revisa:
 
 | Línea | Qué debe tener |
 |---|---|
-| `BREVO_API_KEY=` y `CORREO_REMITENTE=` | Si **tienen valor**, el código de verificación llega de verdad al correo (ver paso 3). |
+| `GMAIL_USUARIO=` y `GMAIL_CONTRASENA_APP=` (o `BREVO_API_KEY=` y `CORREO_REMITENTE=`) | Si **tienen valor**, el código de verificación llega de verdad al correo (ver paso 3). Gmail tiene prioridad si están las dos. |
 | `SITIO_URL=` | **Vacío o sin poner.** Así los enlaces y QR usan la dirección del túnel. |
 | `VERIFICAR_CORREO=0` | **Solo** si en el paso 3 el correo NO llega. Así la gente entra directo al registrarse. |
 | `FIREBASE_CREDENCIALES=` | Opcional (notificaciones push). Ruta al JSON de Firebase, **fuera del proyecto**, p. ej. `C:/oracle/firebase/huellapp-firebase.json`. El JSON se pasa por USB, nunca por chat ni GitHub. |
@@ -46,14 +46,15 @@ Después de cambiar `.env` hay que cerrar y volver a abrir la ventana de la API.
 1. Doble clic en `iniciar-demo.bat` (la versión local) y espera a que abra `http://127.0.0.1:3000`.
 2. **Crear cuenta** con un correo tuyo real.
 3. Mira la ventana negra **«API y sitio web»**:
-   - Si aparece `[CORREO DE PRUEBA] … Tu código es: 123456` → **Brevo no está configurado** (modo de prueba).
+   - Si aparece `[CORREO DE PRUEBA] … Tu código es: 123456` → **no hay Gmail ni Brevo configurado** (modo de prueba).
      Para la clase pon `VERIFICAR_CORREO=0` en `api/.env`.
    - Si no aparece eso y en 1–2 minutos te llega el correo de HuellApp (revisa **Spam**) → **funciona**.
      Escribe el código y listo; deja `VERIFICAR_CORREO` como está.
-   - Si aparece un error de Brevo → revisa que el remitente esté verificado en Brevo
-     (Senders) o usa `VERIFICAR_CORREO=0` para la clase.
+   - Si aparece un error de Gmail → revisa que la contraseña sea una **contraseña de aplicación** de 16 letras
+     (myaccount.google.com/apppasswords), no la normal. Si es de Brevo → que el remitente esté verificado.
+     Si no se arregla rápido, usa `VERIFICAR_CORREO=0` para la clase.
 
-Brevo gratis permite **300 correos al día**: alcanza de sobra para un grupo.
+Gmail gratis permite ~500 correos al día y Brevo 300: alcanza de sobra para un grupo.
 
 ## 4. Descargar cloudflared (una sola vez, ~55 MB)
 
@@ -113,12 +114,12 @@ Reglas:
 
 Lo que necesito:
 1. Confirmar que estoy en integracion/web-api-oracle, hacer git pull y correr "php artisan migrate" en api/.
-2. Revisar api/.env SIN mostrar valores: si BREVO_API_KEY y CORREO_REMITENTE tienen valor, si SITIO_URL
-   está vacío, y si existe VERIFICAR_CORREO.
+2. Revisar api/.env SIN mostrar valores: si GMAIL_USUARIO y GMAIL_CONTRASENA_APP (o BREVO_API_KEY y
+   CORREO_REMITENTE) tienen valor, si SITIO_URL está vacío, y si existe VERIFICAR_CORREO.
 3. Verificar si el código por correo al registrarse funciona DE VERDAD: arranca la API (php artisan serve
    en api/), registra un usuario con el correo que yo te diga desde http://127.0.0.1:3000/pages/registro-usuario.html
-   y revisa la consola de la API. Si sale "[CORREO DE PRUEBA]" es modo de prueba (Brevo sin configurar);
-   si sale un error de Brevo, explícame la causa. Si no funciona, propón poner VERIFICAR_CORREO=0 en api/.env.
+   y revisa la consola de la API. Si sale "[CORREO DE PRUEBA]" es modo de prueba (sin Gmail ni Brevo);
+   si sale un error de Gmail o Brevo, explícame la causa. Si no funciona, propón poner VERIFICAR_CORREO=0 en api/.env.
 4. Ayudarme a dejar cloudflared.exe en C:\oracle\cloudflared y probar iniciar-demo-publica.bat
    (abre la página /pages/qr.html con la dirección pública). Comprobar que esa dirección abre desde fuera.
 5. Si falla algo de Oracle, recuerda que la red de la escuela bloquea el puerto 1522: hay que usar hotspot.
