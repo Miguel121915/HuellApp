@@ -6,9 +6,12 @@ import '../services/avisos_service.dart';
 /// Al tocarla abre la lista; al elegir un aviso llama a [alElegir] con su sección.
 /// Cuando llegan avisos nuevos muestra un mensaje abajo con «Ver».
 class CampanaAvisos extends StatefulWidget {
-  const CampanaAvisos({super.key, required this.alElegir});
+  const CampanaAvisos({super.key, required this.alElegir, this.colorIcono = Colors.black});
 
   final ValueChanged<String> alElegir;
+
+  /// Color del ícono (blanco sobre la barra verde de la pantalla principal).
+  final Color colorIcono;
 
   @override
   State<CampanaAvisos> createState() => _CampanaAvisosState();
@@ -117,11 +120,13 @@ class _CampanaAvisosState extends State<CampanaAvisos> {
     final n = _servicio.noLeidos;
     return IconButton(
       tooltip: n == 0 ? 'Avisos' : 'Avisos: $n sin leer',
+      // Círculo translúcido como la campana del sitio web (sobre la barra verde)
+      style: widget.colorIcono == Colors.white ? IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2)) : null,
       onPressed: _abrirLista,
       icon: Badge(
         isLabelVisible: n > 0,
         label: Text(n > 9 ? '9+' : '$n'),
-        child: const Icon(Icons.notifications_none, color: Colors.black, size: 28),
+        child: Icon(Icons.notifications_none, color: widget.colorIcono, size: 26),
       ),
     );
   }

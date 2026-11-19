@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:huellapp/core/requiere_sesion.dart';
 import 'package:huellapp/core/sesion_service.dart';
 import 'package:huellapp/screens/coincidencias_screen.dart';
@@ -32,6 +33,9 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   static const Color _turquoise = Color(0xFF75E6DA);
+
+  /// Coincidencias pendientes (burbuja roja de «Coincidencias» en la barra de abajo).
+  int _coincidencias = 0;
 
   static const int _refugios = 1;
 
@@ -87,6 +91,7 @@ class _AppShellState extends State<AppShell> {
     if (sesion == null || !sesion.esUsuario) return;
     try {
       final total = (await ComunidadService.instancia.resumenCoincidencias())['pendientes'] ?? 0;
+      if (mounted && total != _coincidencias) setState(() => _coincidencias = total); // burbuja de la barra de abajo
       final prefs = await SharedPreferences.getInstance();
       final clave = 'huellapp:coincidencias-vistas:${sesion.id}';
       final vistas = prefs.getInt(clave);
@@ -230,28 +235,33 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Mismos colores que el encabezado del sitio web: verde turquesa, logo en panel blanco curvo
+      // e íconos blancos
       appBar: AppBar(
-        backgroundColor: _turquoise,
+        backgroundColor: BarraInferiorHuellApp.verdeArriba,
+        flexibleSpace: const DecoratedBox(decoration: BoxDecoration(gradient: BarraInferiorHuellApp.degradado)),
+        systemOverlayStyle: SystemUiOverlayStyle.light, // reloj y batería en blanco sobre el verde
         elevation: 0,
         toolbarHeight: 70,
         automaticallyImplyLeading: false,
-        title: const LogoHuellApp(),
+        titleSpacing: 0,
+        title: const PanelLogoHuellApp(),
         actions: [
           // HU-19: avisos (solo con sesión)
           ListenableBuilder(
             listenable: SesionService.instancia,
             builder: (context, _) => SesionService.instancia.haySesion
-                ? CampanaAvisos(alElegir: _abrirAviso)
+                ? CampanaAvisos(alElegir: _abrirAviso, colorIcono: Colors.white)
                 : const SizedBox.shrink(),
           ),
           IconButton(
             tooltip: 'Mis favoritos',
-            icon: const Icon(Icons.favorite_border, color: Colors.black, size: 28),
+            icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28),
             onPressed: () => _abrir('guardar y comparar mascotas favoritas', const FavoritosScreen()),
           ),
           IconButton(
             tooltip: 'Mis mensajes',
-            icon: const Icon(Icons.mail_outline, color: Colors.black, size: 28),
+            icon: const Icon(Icons.mail_outline, color: Colors.white, size: 28),
             onPressed: () => _abrir('escribirles a los refugios', const MisMensajesScreen()),
           ),
           Padding(
@@ -264,7 +274,7 @@ class _AppShellState extends State<AppShell> {
                   tooltip: sesion == null ? 'Iniciar sesión' : 'Mi cuenta',
                   icon: Icon(
                     sesion == null ? Icons.pets : Icons.account_circle,
-                    color: Colors.black,
+                    color: Colors.white,
                     size: 32,
                   ),
                   onPressed: () => sesion == null ? _abrirLogin() : _mostrarCuenta(sesion),
@@ -288,6 +298,7 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: BarraInferiorHuellApp(
         indiceActual: _indice,
         onCambio: _irA,
+        coincidencias: _coincidencias,
       ),
     );
   }

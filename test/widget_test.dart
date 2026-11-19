@@ -13,6 +13,7 @@ import 'package:huellapp/screens/login_screen.dart';
 import 'package:huellapp/screens/recuperar_contrasena_screen.dart';
 import 'package:huellapp/screens/reportar_screen.dart';
 import 'package:huellapp/screens/verificar_correo_screen.dart';
+import 'package:huellapp/widgets/barra_inferior.dart';
 
 /// Monta una pantalla con el tema real de la app.
 Future<void> abrir(WidgetTester tester, Widget pantalla) async {
@@ -89,6 +90,30 @@ void main() {
       await tester.tap(find.text('Enviar código'));
       await tester.pump();
       expect(find.text('Escribe un correo válido, por ejemplo nombre@correo.com.'), findsOneWidget);
+    });
+  });
+
+  group('Barra de abajo', () {
+    testWidgets('colores de la web, sección activa marcada y burbuja real de coincidencias', (tester) async {
+      var elegida = -1;
+      await abrir(tester, Scaffold(
+        bottomNavigationBar: BarraInferiorHuellApp(indiceActual: 2, coincidencias: 3, onCambio: (i) => elegida = i),
+      ));
+      for (final texto in ['Foro', 'Refugios', 'Inicio', 'Reportar', 'Coincidencias']) {
+        expect(find.text(texto), findsOneWidget);
+      }
+      // Activa (Inicio): texto verde oscuro; las demás en blanco sobre el verde
+      expect(tester.widget<Text>(find.text('Inicio')).style?.color, Tipografia.aquaFuerte);
+      expect(tester.widget<Text>(find.text('Foro')).style?.color, Colors.white);
+      expect(find.text('3'), findsOneWidget, reason: 'la burbuja muestra las coincidencias pendientes, no un 1 fijo');
+      await tester.tap(find.text('Coincidencias'));
+      expect(elegida, 4);
+    });
+
+    testWidgets('sin coincidencias pendientes no hay burbuja', (tester) async {
+      await abrir(tester, Scaffold(bottomNavigationBar: BarraInferiorHuellApp(indiceActual: 0, onCambio: (_) {})));
+      expect(find.text('1'), findsNothing);
+      expect(find.text('0'), findsNothing);
     });
   });
 
