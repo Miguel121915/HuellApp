@@ -39,6 +39,8 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
   contenedor.innerHTML = ubicacionObligatoria
     ? plantilla.replace("Ubicación y contacto (opcional)", "Ubicación y contacto").replace("Ubicación en el mapa</span>", "Ubicación en el mapa (obligatoria)</span>")
     : plantilla;
+  // Dentro de un paso del registro (que ya es un fieldset con su título) sobra la leyenda propia
+  if (contenedor.tagName !== "FIELDSET") contenedor.querySelector("legend")?.remove();
   const lat = contenedor.querySelector("#latitud");
   const lng = contenedor.querySelector("#longitud");
   const texto = contenedor.querySelector("#texto-ubicacion");
@@ -79,6 +81,10 @@ export function montarDatosExtra(contenedor, { ubicacionObligatoria = false } = 
   });
 
   return {
+    /** Vuelve a medir el mapa (cuando estaba oculto, por ejemplo en otro paso del registro). */
+    ajustarMapa() {
+      setTimeout(() => mapa?.invalidateSize(), 0);
+    },
     /** Rellena los campos con los datos de un refugio de la API. */
     rellenar(refugio) {
       const f = contenedor;

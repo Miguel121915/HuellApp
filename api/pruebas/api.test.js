@@ -857,3 +857,42 @@ test("push: solo con cuenta se registra un token válido y se puede quitar", asy
   assert.equal((await api("POST", "/api/push/registrar", { token: sesion, cuerpo: { token, plataforma: "android" } })).estado, 200);
   assert.equal((await api("POST", "/api/push/quitar", { token: sesion, cuerpo: { token } })).estado, 200);
 });
+
+/* ---------- Registro de refugio: datos nuevos y rescatista independiente (sin acta) ----------
+   Va al final: crea solicitudes pendientes nuevas (las pruebas del administrador cuentan las de la demo). */
+test("registro de refugio: rescatista independiente sin acta y datos de animales", async () => {
+  const base = {
+    nombreRefugio: "Patitas de Ecatepec", responsable: "Rosa Méndez Torres", correo: "rosa.mendez@ejemplo.mx",
+    telefono: "55 4321 8765", direccion: "Calle Jacarandas 12, Col. Jardines", horario: "10:00 - 18:00", password: "ClaveSegura1",
+    tipoOrganizacion: "Rescatista independiente", descripcion: "Rescato perros y gatos atropellados o abandonados en Ecatepec.",
+    cargoResponsable: "Rescatista", capacidad: "15", animalesActuales: "11", entregaEsterilizados: "algunos",
+  };
+  const ine = { tipo: "identificacion", nombre: "ine.png", dataUrl: PNG };
+  const luz = { tipo: "domicilio", nombre: "luz.pdf", dataUrl: PDF };
+  const lugar = { tipo: "lugar", nombre: "patio.png", dataUrl: PNG };
+
+  // Sin foto del lugar no basta; sin acta sí se puede
+  assert.equal((await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...base, redes: ["Facebook: Patitas Ecatepec"], documentos: [ine, luz] } })).estado, 400);
+  // Sin redes o referencias tampoco
+  assert.equal((await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...base, documentos: [ine, luz, lugar] } })).estado, 400);
+  // Datos inválidos
+  assert.equal((await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...base, redes: ["Facebook: Patitas"], entregaEsterilizados: "tal vez", documentos: [ine, luz, lugar] } })).estado, 400);
+  // Completo: se registra sin acta
+  const r = await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...base, redes: ["Facebook: Patitas Ecatepec"], documentos: [ine, luz, lugar] } });
+  assert.equal(r.estado, 201, r.datos?.error);
+
+  // Un refugio formal sigue necesitando el acta
+  const formal = { ...base, correo: "formal.sinacta@ejemplo.mx", tipoOrganizacion: "Asociación Civil", redes: ["Facebook: AC"] };
+  assert.equal((await api("POST", "/api/auth/registro-refugio", { cuerpo: { ...formal, documentos: [ine, luz, lugar] } })).estado, 400);
+
+  // El administrador ve que es independiente y los datos nuevos
+  const admin = await entrar("admin@huellapp.mx", "admin");
+  const pendientes = (await api("GET", "/api/admin/refugios?estado=pendiente", { token: admin.token })).datos.refugios;
+  const rosa = pendientes.find((p) => p.correo === "rosa.mendez@ejemplo.mx");
+  assert.equal(rosa.independiente, true);
+  assert.equal(rosa.cargoResponsable, "Rescatista");
+  assert.equal(rosa.capacidad, 15);
+  assert.equal(rosa.animalesActuales, 11);
+  assert.equal(rosa.entregaEsterilizados, "algunos");
+  assert.deepEqual(rosa.documentos.map((d) => d.tipo).sort(), ["domicilio", "identificacion", "lugar"]);
+});

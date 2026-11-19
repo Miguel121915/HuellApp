@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/models/refugio.dart';
+import 'package:huellapp/widgets/insignia_refugio.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
 import 'package:huellapp/services/usuario_service.dart';
 import 'package:huellapp/widgets/contacto_refugio.dart';
@@ -288,10 +289,7 @@ class _RefugioPerfilScreenState extends State<RefugioPerfilScreen> {
                   ),
                 ),
               ),
-              const Tooltip(
-                message: 'Refugio verificado',
-                child: Icon(Icons.verified, color: Colors.blue, size: 24),
-              ),
+              InsigniaRefugio(independiente: _r.independiente, tamano: 24),
             ],
           ),
           const SizedBox(height: 6),

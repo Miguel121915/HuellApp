@@ -187,6 +187,8 @@ export const ETIQUETAS_DOCUMENTO = Object.freeze({
   domicilio: "Comprobante de domicilio",
   identificacion: "Identificación del responsable",
   permiso: "Permiso de refugio",
+  lugar: "Foto del lugar",
+  lugar2: "Segunda foto del lugar",
 });
 
 /** Documentos privados (refugios y mascotas): PDF, JPG o PNG de máx. 5 MB. Devuelve el error o "". */

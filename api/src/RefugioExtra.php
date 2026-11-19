@@ -19,6 +19,9 @@ final class RefugioExtra
         'whatsapp' => 'whatsapp', 'redes' => 'redes', 'necesidades' => 'necesidades',
         'tienePerros' => 'tiene_perros', 'tieneGatos' => 'tiene_gatos',
         'descripcion' => 'descripcion', // la app la pide desde el registro; el sitio la edita en el perfil
+        // Responsable y animales (registro web y app)
+        'cargoResponsable' => 'cargo_responsable', 'capacidad' => 'capacidad', 'animalesActuales' => 'animales_actuales',
+        'entregaEsterilizados' => 'entrega_esterilizados',
     ];
 
     /** Lee y valida los campos extra que vengan en el cuerpo. @return array<string,mixed> columna => valor */
@@ -43,9 +46,21 @@ final class RefugioExtra
                 'necesidades' => self::lista($v, 'Las necesidades', 10, 60),
                 'tienePerros', 'tieneGatos' => Validar::booleano($v, $campo) ? 1 : 0,
                 'descripcion' => Validar::texto($v, 'La descripción', max: 400, opcional: true),
+                'cargoResponsable' => Validar::texto($v, 'El cargo del responsable', max: 80, opcional: true),
+                'capacidad' => $v === null || $v === '' ? null : Validar::entero($v, 'La capacidad', 1, 100000),
+                'animalesActuales' => $v === null || $v === '' ? null : Validar::entero($v, 'El número actual de animales', 0, 100000),
+                'entregaEsterilizados' => $v === null || $v === '' ? null : Validar::enumerado($v, '«¿Se entregan esterilizados?»', ['si', 'algunos', 'no']),
             };
         }
         return $valores;
+    }
+
+    /** Tipo de organización de quien rescata sin acta constitutiva ni permiso. */
+    public const TIPO_INDEPENDIENTE = 'Rescatista independiente';
+
+    public static function esIndependiente(?string $tipo): bool
+    {
+        return $tipo !== null && strcasecmp(trim($tipo), self::TIPO_INDEPENDIENTE) === 0;
     }
 
     /** Guarda en el refugio los campos extra leídos con leer(). */
@@ -75,6 +90,12 @@ final class RefugioExtra
             'necesidades' => self::decodificar($r['necesidades'] ?? null),
             'tienePerros' => (bool) ($r['tiene_perros'] ?? 1),
             'tieneGatos' => (bool) ($r['tiene_gatos'] ?? 1),
+            // Rescatista independiente (sin acta): se registra con identificación, domicilio y fotos del lugar
+            'independiente' => self::esIndependiente($r['tipo_organizacion'] ?? null),
+            'cargoResponsable' => $r['cargo_responsable'] ?? '',
+            'capacidad' => isset($r['capacidad']) ? (int) $r['capacidad'] : null,
+            'animalesActuales' => isset($r['animales_actuales']) ? (int) $r['animales_actuales'] : null,
+            'entregaEsterilizados' => $r['entrega_esterilizados'] ?? null,
         ];
     }
 

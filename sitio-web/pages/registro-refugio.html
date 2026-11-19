@@ -40,20 +40,90 @@
       <p class="texto-pequeno">Tus datos y documentos ya están cargados. Corrige lo necesario y reemplaza los documentos marcados en rojo; los demás se conservan si no eliges un archivo nuevo.</p>
     </section>
 
+    <!-- Registro en 4 pasos (en modo apelación se ven todos juntos, sin barra de pasos) -->
+    <ol class="pasos-registro" id="pasos-registro" aria-label="Pasos del registro">
+      <li data-paso="1" aria-current="step"><span>1</span> Tu refugio</li>
+      <li data-paso="2"><span>2</span> Responsable y cuenta</li>
+      <li data-paso="3"><span>3</span> Ubicación y contacto</li>
+      <li data-paso="4"><span>4</span> Documentos y envío</li>
+    </ol>
+
     <form id="form-registro" novalidate>
       <div id="alerta" role="alert" hidden></div>
 
-      <fieldset>
-        <legend>Datos del refugio</legend>
+      <!-- Paso 1 -->
+      <fieldset class="paso" data-paso="1">
+        <legend>Tu refugio</legend>
         <div class="formulario-grid">
           <div class="campo campo--completo">
             <label class="campo__etiqueta" for="nombreRefugio">Nombre del refugio</label>
-            <input class="campo__control" id="nombreRefugio" name="nombreRefugio" type="text">
+            <input class="campo__control" id="nombreRefugio" name="nombreRefugio" type="text" maxlength="100">
             <span class="campo__error" role="status"></span>
           </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="tipoOrganizacion">Tipo de organización</label>
+            <select class="campo__control" id="tipoOrganizacion" name="tipoOrganizacion">
+              <option value="">Elige…</option>
+              <option>Asociación Civil</option>
+              <option>Fundación</option>
+              <option>Refugio Independiente</option>
+              <option>Albergue Municipal</option>
+              <option value="Rescatista independiente">Rescatista independiente (sin acta)</option>
+              <option>Otro</option>
+            </select>
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="anioFundacion">Año de fundación (opcional)</label>
+            <input class="campo__control" id="anioFundacion" name="anioFundacion" type="number" min="1900" inputmode="numeric">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <p class="campo--completo aviso-independiente solo-registro" id="aviso-independiente" hidden>🏠 <strong>Sin acta constitutiva también puedes registrarte.</strong> En lugar del acta te pediremos tu identificación, un comprobante de domicilio, fotos del lugar donde tienes a los animales y al menos una red social o referencia de tu trabajo. Tu perfil mostrará la insignia «Rescatista independiente».</p>
+          <div class="campo solo-registro" id="campo-rfc">
+            <label class="campo__etiqueta" for="rfc">RFC (opcional)</label>
+            <input class="campo__control" id="rfc" name="rfc" type="text" maxlength="13" autocomplete="off">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo campo--completo solo-registro">
+            <label class="campo__etiqueta" for="descripcion">Descripción y misión</label>
+            <textarea class="campo__control" id="descripcion" name="descripcion" rows="3" maxlength="400" placeholder="Rescatamos perros y gatos de la calle en Nezahualcóyotl y les buscamos un hogar responsable."></textarea>
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="capacidad">Capacidad aproximada</label>
+            <input class="campo__control" id="capacidad" name="capacidad" type="number" min="1" inputmode="numeric" placeholder="40">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="animalesActuales">Número actual de animales</label>
+            <input class="campo__control" id="animalesActuales" name="animalesActuales" type="number" min="0" inputmode="numeric" placeholder="25">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo campo--completo solo-registro">
+            <label class="campo__etiqueta" for="entregaEsterilizados">¿Se entregan esterilizados, vacunados y desparasitados?</label>
+            <select class="campo__control" id="entregaEsterilizados" name="entregaEsterilizados">
+              <option value="">Elige…</option>
+              <option value="si">Sí, todos</option>
+              <option value="algunos">Algunos</option>
+              <option value="no">No</option>
+            </select>
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Paso 2 -->
+      <fieldset class="paso" data-paso="2" id="cuenta-acceso">
+        <legend>Responsable y cuenta</legend>
+        <div class="formulario-grid">
           <div class="campo">
-            <label class="campo__etiqueta" for="responsable">Responsable</label>
-            <input class="campo__control" id="responsable" name="responsable" type="text" autocomplete="name">
+            <label class="campo__etiqueta" for="responsable">Nombre del responsable</label>
+            <input class="campo__control" id="responsable" name="responsable" type="text" autocomplete="name" maxlength="80">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="cargoResponsable">Cargo dentro del refugio</label>
+            <input class="campo__control" id="cargoResponsable" name="cargoResponsable" type="text" maxlength="80" placeholder="Fundadora, director, voluntaria…">
             <span class="campo__error" role="status"></span>
           </div>
           <div class="campo">
@@ -61,8 +131,31 @@
             <input class="campo__control" id="telefono" name="telefono" type="tel" autocomplete="tel">
             <span class="campo__error" role="status"></span>
           </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="correo">Correo electrónico (para entrar)</label>
+            <input class="campo__control" id="correo" name="correo" type="email" autocomplete="email">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="password">Contraseña</label>
+            <input class="campo__control" id="password" name="password" type="password" autocomplete="new-password">
+            <span class="campo__ayuda">Mínimo 8 caracteres.</span>
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo solo-registro">
+            <label class="campo__etiqueta" for="confirmar">Confirmar contraseña</label>
+            <input class="campo__control" id="confirmar" name="confirmar" type="password" autocomplete="new-password">
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Paso 3 -->
+      <fieldset class="paso" data-paso="3">
+        <legend>Ubicación y contacto</legend>
+        <div class="formulario-grid">
           <div class="campo campo--completo">
-            <label class="campo__etiqueta" for="direccion">Dirección del refugio</label>
+            <label class="campo__etiqueta" for="direccion">Dirección del refugio (calle, número y colonia)</label>
             <input class="campo__control" id="direccion" name="direccion" type="text" autocomplete="street-address">
             <span class="campo__error" role="status"></span>
           </div>
@@ -76,56 +169,65 @@
             <span class="campo__error" role="status"></span>
           </div>
         </div>
+        <!-- Mapa, municipio, código postal, WhatsApp, perros/gatos, redes y necesidades (components/datos-extra-refugio.js) -->
+        <div id="datos-extra" class="solo-registro"></div>
       </fieldset>
 
-      <fieldset id="cuenta-acceso">
-        <legend>Cuenta de acceso</legend>
-        <div class="formulario-grid">
-          <div class="campo">
-            <label class="campo__etiqueta" for="correo">Correo electrónico</label>
-            <input class="campo__control" id="correo" name="correo" type="email" autocomplete="email">
-            <span class="campo__error" role="status"></span>
-          </div>
-          <div class="campo">
-            <label class="campo__etiqueta" for="password">Contraseña</label>
-            <input class="campo__control" id="password" name="password" type="password" autocomplete="new-password">
-            <span class="campo__ayuda">Mínimo 8 caracteres.</span>
-            <span class="campo__error" role="status"></span>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset id="datos-extra"></fieldset>
-
-      <fieldset>
+      <!-- Paso 4 -->
+      <fieldset class="paso" data-paso="4">
         <legend>Documentos (PDF, JPG o PNG, máx. 5 MB)</legend>
+        <p class="campo__ayuda" id="ayuda-documentos">Un administrador los revisa antes de activar tu panel. No se muestran a los usuarios.</p>
         <div class="formulario-grid">
-          <div class="campo">
-            <label class="campo__etiqueta" for="acta">Acta constitutiva</label>
+          <div class="campo" data-documento="acta">
+            <label class="campo__etiqueta" for="acta">Acta constitutiva o constancia fiscal</label>
             <input class="campo__control" id="acta" name="acta" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <span class="campo__error" role="status"></span>
           </div>
-          <div class="campo">
+          <div class="campo" data-documento="domicilio">
             <label class="campo__etiqueta" for="domicilio">Comprobante de domicilio</label>
             <input class="campo__control" id="domicilio" name="domicilio" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <span class="campo__error" role="status"></span>
           </div>
-          <div class="campo">
+          <div class="campo" data-documento="identificacion">
             <label class="campo__etiqueta" for="identificacion">Identificación del responsable</label>
             <input class="campo__control" id="identificacion" name="identificacion" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <span class="campo__error" role="status"></span>
           </div>
-          <div class="campo">
-            <label class="campo__etiqueta" for="permiso">Permiso de refugio (opcional)</label>
+          <div class="campo" data-documento="permiso">
+            <label class="campo__etiqueta" for="permiso">Permiso municipal o de refugio (opcional)</label>
             <input class="campo__control" id="permiso" name="permiso" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <span class="campo__error" role="status"></span>
           </div>
+          <div class="campo" data-documento="lugar" hidden>
+            <label class="campo__etiqueta" for="lugar">Foto del lugar donde tienes a los animales</label>
+            <input class="campo__control" id="lugar" name="lugar" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+          <div class="campo" data-documento="lugar2" hidden>
+            <label class="campo__etiqueta" for="lugar2">Otra foto del lugar (opcional)</label>
+            <input class="campo__control" id="lugar2" name="lugar2" type="file" accept=".pdf,.jpg,.jpeg,.png">
+            <span class="campo__error" role="status"></span>
+          </div>
+        </div>
+
+        <section class="resumen-registro solo-registro" aria-labelledby="titulo-resumen">
+          <h2 id="titulo-resumen">Revisa tus datos antes de enviar</h2>
+          <div id="resumen"></div>
+        </section>
+
+        <div class="aceptacion solo-registro" id="campo-aceptacion">
+          <label><input type="checkbox" name="terminos"> Acepto los términos y condiciones de HuellApp</label>
+          <label><input type="checkbox" name="privacidad"> Acepto el aviso de privacidad</label>
+          <label><input type="checkbox" name="veraz"> Declaro que toda la información proporcionada es verdadera</label>
+          <span class="campo__error" role="status"></span>
         </div>
       </fieldset>
 
       <div class="registro__acciones">
         <a id="boton-volver" class="boton boton--contorno" href="login.html">Volver</a>
-        <button class="boton boton--primario" id="boton-enviar" type="submit">Enviar solicitud</button>
+        <button class="boton boton--contorno" id="boton-anterior" type="button" hidden>← Anterior</button>
+        <button class="boton boton--primario" id="boton-siguiente" type="button">Siguiente →</button>
+        <button class="boton boton--primario" id="boton-enviar" type="submit" hidden>Enviar solicitud</button>
       </div>
     </form>
   </main>

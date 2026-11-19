@@ -270,11 +270,13 @@ async function mostrarLista() {
 
   const fragmento = document.createDocumentFragment();
   refugios.forEach((r) => {
+    // (la insignia distingue refugio verificado de rescatista independiente sin acta)
     fragmento.append(crearElemento("li", {}, crearElemento("a", {
       clase: "refugio-tarjeta",
       atributos: { href: `?id=${encodeURIComponent(r.id)}`, "data-refugio": r.id },
     }, [
       crearElemento("span", { clase: "refugio-tarjeta__nombre", texto: r.nombre }),
+      insigniaRefugio(r),
       crearElemento("span", { clase: "refugio-tarjeta__dato", texto: r.direccion }),
       crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `Horario: ${r.horario}` }),
       r.distanciaKm != null ? crearElemento("span", { clase: "refugio-tarjeta__dato", texto: `📍 A ${r.distanciaKm.toFixed(1)} km` }) : null,
@@ -321,6 +323,10 @@ async function mostrarDetalle(id) {
   vistaDetalle.hidden = false;
   document.title = `${refugio.nombre} · HuellApp`;
   document.getElementById("refugio-nombre").textContent = refugio.nombre;
+  document.getElementById("insignia-refugio")?.remove();
+  const insignia = insigniaRefugio(refugio);
+  insignia.id = "insignia-refugio";
+  document.getElementById("refugio-nombre").after(insignia);
   document.getElementById("refugio-direccion").textContent = refugio.direccion;
   document.getElementById("refugio-horario").textContent = refugio.horario;
   document.getElementById("refugio-responsable").textContent = refugio.responsable;
@@ -431,4 +437,11 @@ if (sesion) {
   formularioAdopcion = montarFormularioAdopcion({ sesion, alEnviar: solicitudEnviada });
   enlazarEventos();
   Promise.all([cargarMisSolicitudes(), cargarFavoritos()]).then(mostrarSegunUrl);
+}
+
+/** Insignia del refugio: verificado (con acta) o rescatista independiente (identidad y domicilio revisados). */
+function insigniaRefugio(r) {
+  return r.independiente
+    ? crearElemento("span", { clase: "insignia-refugio insignia-refugio--independiente", texto: "🏠 Rescatista independiente", atributos: { title: "Sin acta constitutiva. HuellApp revisó su identificación, su domicilio y fotos del lugar." } })
+    : crearElemento("span", { clase: "insignia-refugio", texto: "✔ Refugio verificado", atributos: { title: "HuellApp revisó su acta constitutiva o constancia fiscal, su domicilio y la identificación del responsable." } });
 }

@@ -89,6 +89,10 @@ class Refugio {
   final List<String> redes;
   final List<String> fotos;
 
+  /// Rescatista independiente (sin acta constitutiva): HuellApp revisó su identificación,
+  /// su domicilio y fotos del lugar. Se muestra con otra insignia que un refugio verificado.
+  final bool independiente;
+
   Refugio({
     required this.id,
     required this.nombre,
@@ -108,6 +112,7 @@ class Refugio {
     this.whatsapp = '',
     this.redes = const [],
     this.fotos = const [],
+    this.independiente = false,
   });
 
   /// Convierte el refugio que devuelve la API (/api/refugios) junto con sus mascotas.
@@ -136,6 +141,7 @@ class Refugio {
       whatsapp: j['whatsapp'] as String? ?? '',
       redes: lista(j['redes']),
       fotos: fotos,
+      independiente: j['independiente'] as bool? ?? false,
     );
   }
 }

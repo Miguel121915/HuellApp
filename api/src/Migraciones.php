@@ -70,6 +70,9 @@ final class Migraciones
             'anio_fundacion' => 'NUMBER(4)', 'whatsapp' => 'VARCHAR2(25 CHAR)', 'redes' => 'VARCHAR2(1000 CHAR)',
             'necesidades' => 'VARCHAR2(1000 CHAR)', 'tiene_perros' => 'NUMBER(1) DEFAULT 1 NOT NULL',
             'tiene_gatos' => 'NUMBER(1) DEFAULT 1 NOT NULL',
+            // Registro: cargo, capacidad, animales actuales y si se entregan esterilizados
+            'cargo_responsable' => 'VARCHAR2(80 CHAR)', 'capacidad' => 'NUMBER(6)', 'animales_actuales' => 'NUMBER(6)',
+            'entrega_esterilizados' => 'VARCHAR2(10 CHAR)',
         ],
         // HU-22: resumen con IA de cada solicitud (JSON), guardado para no gastar cuota cada vez que se abre
         'solicitudes_adopcion' => [
@@ -98,6 +101,7 @@ final class Migraciones
             }
         }
         self::actualizar();
+        self::tiposDocumentoRefugio();
         self::ligarAlertasViejas();
         self::ubicarRefugiosDemo();
     }
@@ -151,6 +155,22 @@ final class Migraciones
                 }
             }
         }
+    }
+
+    /**
+     * Rescatistas independientes: documentos_refugio acepta también las fotos del lugar (lugar, lugar2).
+     * CREATE TABLE no cambia una restricción que ya existe; aquí se reemplaza si es la versión vieja.
+     */
+    private static function tiposDocumentoRefugio(): void
+    {
+        $condicion = (string) Base::valor(
+            "SELECT search_condition_vc FROM user_constraints WHERE constraint_name = 'CK_DOCUMENTOS_REFUGIO_TIPO'",
+        );
+        if ($condicion === '' || str_contains($condicion, 'lugar')) {
+            return;
+        }
+        Base::pdo()->exec('ALTER TABLE documentos_refugio DROP CONSTRAINT ck_documentos_refugio_tipo');
+        Base::pdo()->exec("ALTER TABLE documentos_refugio ADD CONSTRAINT ck_documentos_refugio_tipo CHECK (tipo IN ('acta', 'domicilio', 'identificacion', 'permiso', 'lugar', 'lugar2'))");
     }
 
     /** @return list<string> sentencias de database/esquema.sql, sin comentarios */

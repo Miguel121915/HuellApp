@@ -17,8 +17,11 @@ final class Auth
     private const MAX_REGISTROS_POR_IP = 10;
     /** Códigos por correo (confirmar correo y recuperar contraseña) que se pueden revisar o pedir por IP cada 10 minutos. */
     private const MAX_CODIGOS_POR_IP = 30;
-    private const TIPOS_DOCUMENTO = ['acta', 'domicilio', 'identificacion', 'permiso'];
+    /** lugar y lugar2: fotos del espacio donde un rescatista independiente tiene a los animales. */
+    private const TIPOS_DOCUMENTO = ['acta', 'domicilio', 'identificacion', 'permiso', 'lugar', 'lugar2'];
     private const TIPOS_OBLIGATORIOS = ['acta', 'domicilio', 'identificacion'];
+    /** Rescatista independiente (sin acta): identificación, domicilio y al menos una foto del lugar. */
+    private const TIPOS_OBLIGATORIOS_INDEPENDIENTE = ['domicilio', 'identificacion', 'lugar'];
 
     public static function registrar(Enrutador $r): void
     {
@@ -469,8 +472,14 @@ final class Auth
         return [$documentos, $tipos];
     }
 
-    private static function revisarObligatorios(array $tipos): void
+    private static function revisarObligatorios(array $tipos, bool $independiente = false): void
     {
+        if ($independiente) {
+            if (array_diff(self::TIPOS_OBLIGATORIOS_INDEPENDIENTE, $tipos)) {
+                throw new ErrorHttp(400, 'Faltan documentos obligatorios (identificación, comprobante de domicilio y al menos una foto del lugar donde tienes a los animales).');
+            }
+            return;
+        }
         if (array_diff(self::TIPOS_OBLIGATORIOS, $tipos)) {
             throw new ErrorHttp(400, 'Faltan documentos obligatorios (acta constitutiva, comprobante de domicilio e identificación).');
         }
@@ -504,9 +513,14 @@ final class Auth
         $correo = Validar::correo($b['correo'] ?? null);
         $password = Validar::password($b['password'] ?? null);
 
-        $extras = RefugioExtra::leer($b); // ubicación, WhatsApp, redes… (los manda la app móvil)
+        $extras = RefugioExtra::leer($b); // ubicación, WhatsApp, redes, cargo, capacidad… (web y app)
         [$documentos, $tipos] = self::leerDocumentos($b);
-        self::revisarObligatorios($tipos);
+        $independiente = RefugioExtra::esIndependiente($extras['tipo_organizacion'] ?? null);
+        self::revisarObligatorios($tipos, $independiente);
+        // Sin acta, las redes o referencias ayudan al administrador a confirmar que de verdad rescata
+        if ($independiente && empty(json_decode((string) ($extras['redes'] ?? ''), true))) {
+            throw new ErrorHttp(400, 'Como rescatista independiente, agrega al menos una red social o referencia donde se vea tu trabajo de rescate.');
+        }
         if (Base::uno('SELECT 1 FROM usuarios WHERE correo = ?', [$correo])) {
             throw new ErrorHttp(409, 'Ya existe una cuenta con ese correo. Inicia sesión o usa otro correo.');
         }
@@ -582,10 +596,10 @@ final class Auth
         $actuales = self::documentosDe((int) $refugio['id']);
         $porReemplazar = array_values(array_unique(array_column(array_filter($actuales, static fn ($d) => (bool) $d['con_error']), 'tipo')));
         if ($faltan = array_diff($porReemplazar, $tiposNuevos)) {
-            $nombres = ['acta' => 'acta constitutiva', 'domicilio' => 'comprobante de domicilio', 'identificacion' => 'identificación', 'permiso' => 'permiso de refugio'];
+            $nombres = ['acta' => 'acta constitutiva', 'domicilio' => 'comprobante de domicilio', 'identificacion' => 'identificación', 'permiso' => 'permiso de refugio', 'lugar' => 'foto del lugar', 'lugar2' => 'segunda foto del lugar'];
             throw new ErrorHttp(400, 'Sube un archivo nuevo para: ' . implode(', ', array_map(static fn ($t) => $nombres[$t], $faltan)) . '.');
         }
-        self::revisarObligatorios(array_unique([...array_column($actuales, 'tipo'), ...$tiposNuevos]));
+        self::revisarObligatorios(array_unique([...array_column($actuales, 'tipo'), ...$tiposNuevos]), RefugioExtra::esIndependiente($refugio['tipo_organizacion'] ?? null));
 
         $guardados = self::guardarArchivos($nuevos);
         $reemplazados = array_values(array_filter($actuales, static fn ($d) => in_array($d['tipo'], $tiposNuevos, true)));

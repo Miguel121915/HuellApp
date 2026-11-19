@@ -5,6 +5,7 @@ import 'package:huellapp/core/tipografia.dart';
 import 'package:huellapp/widgets/foto_huellapp.dart';
 import 'package:huellapp/data/refugios_data.dart';
 import 'package:huellapp/models/refugio.dart';
+import 'package:huellapp/widgets/insignia_refugio.dart';
 import 'package:huellapp/services/catalogo_service.dart';
 import 'package:huellapp/services/usuario_service.dart';
 import 'package:huellapp/widgets/mascota_perfil_sheet.dart';
@@ -588,11 +589,7 @@ class _RefugiosScreenState extends State<RefugiosScreen> {
                                           ),
                                         ),
                                       ),
-                                      const Icon(
-                                        Icons.verified,
-                                        color: Colors.blue,
-                                        size: 20,
-                                      ),
+                                      InsigniaRefugio(independiente: refugio.independiente),
                                     ],
                                   ),
                                   const SizedBox(height: 4),

@@ -51,6 +51,39 @@ async function iniciar() {
 
 /* ---------- Pantalla ---------- */
 
+const ESTERILIZADOS = { si: "Sí, todos", algunos: "Algunos", no: "No" };
+
+/**
+ * Tipo de refugio y datos del registro (tipo, RFC, cargo, capacidad…). Si es rescatista independiente
+ * (sin acta), se avisa qué revisar en su lugar: fotos del lugar y redes o referencias.
+ */
+function pintarDatosRegistro() {
+  document.getElementById("datos-registro")?.remove();
+  const filas = [
+    ["Tipo de organización", refugio.tipoOrganizacion],
+    ["Año de fundación", refugio.anioFundacion],
+    ["Cargo del responsable", refugio.cargoResponsable],
+    ["Capacidad", refugio.capacidad != null ? `${refugio.capacidad} animales` : ""],
+    ["Animales actualmente", refugio.animalesActuales != null ? String(refugio.animalesActuales) : ""],
+    ["¿Se entregan esterilizados, vacunados y desparasitados?", ESTERILIZADOS[refugio.entregaEsterilizados] || ""],
+    ["Redes o referencias", (refugio.redes || []).join(" · ")],
+    ["Descripción y misión", refugio.descripcion],
+  ].filter(([, valor]) => valor !== undefined && valor !== null && valor !== "");
+  const seccion = crearElemento("section", { clase: "datos-registro", atributos: { id: "datos-registro", "aria-label": "Datos del registro" } }, [
+    refugio.independiente
+      ? crearElemento("p", { clase: "alerta alerta--aviso" }, [
+        crearElemento("strong", { texto: "🏠 Rescatista independiente (sin acta). " }),
+        document.createTextNode("En lugar del acta constitutiva, revisa la identificación, el comprobante de domicilio, las fotos del lugar y sus redes o referencias."),
+      ])
+      : null,
+    filas.length
+      ? crearElemento("dl", { clase: "solicitud-datos" }, filas.map(([dt, dd]) =>
+        crearElemento("div", {}, [crearElemento("dt", { texto: dt }), crearElemento("dd", { texto: String(dd) })])))
+      : null,
+  ]);
+  document.querySelector(".solicitud-datos").after(seccion);
+}
+
 function render() {
   const estado = ESTADOS_REFUGIO[refugio.estado];
   document.title = `${refugio.nombre} · Solicitud · HuellApp`;
@@ -64,6 +97,7 @@ function render() {
     "dato-direccion": refugio.direccion, "dato-horario": refugio.horario, "dato-fecha": formatearFecha(refugio.fechaSolicitud),
   };
   Object.entries(datos).forEach(([idNodo, texto]) => { document.getElementById(idNodo).textContent = texto; });
+  pintarDatosRegistro();
 
   // Motivo de rechazo o de suspensión, si lo hay
   const motivo = document.getElementById("motivo");

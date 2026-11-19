@@ -74,12 +74,22 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
 
   // 6. Documento que avale
   // Documentos que pide la API (los mismos que en el sitio web)
-  static const List<(String, String, bool)> _tiposDocumento = [
+  static const List<(String, String, bool)> _documentosFormal = [
     ('acta', 'Acta constitutiva o constancia fiscal', true),
     ('domicilio', 'Comprobante de domicilio', true),
     ('identificacion', 'Identificación del responsable', true),
     ('permiso', 'Permiso municipal o de refugio (opcional)', false),
   ];
+  // Rescatista independiente (sin acta): en lugar del acta, fotos del lugar donde tiene a los animales
+  static const List<(String, String, bool)> _documentosIndependiente = [
+    ('identificacion', 'Identificación del responsable', true),
+    ('domicilio', 'Comprobante de domicilio', true),
+    ('lugar', 'Foto del lugar donde tienes a los animales', true),
+    ('lugar2', 'Otra foto del lugar (opcional)', false),
+  ];
+  static const String _tipoIndependiente = 'Rescatista independiente';
+  bool get _esIndependiente => _orgType == _tipoIndependiente;
+  List<(String, String, bool)> get _tiposDocumento => _esIndependiente ? _documentosIndependiente : _documentosFormal;
   static const int _maxBytesDocumento = 5 * 1024 * 1024;
   final Map<String, ArchivoElegido> _documentos = {};
   bool _documentError = false;
@@ -363,15 +373,34 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
         DropdownButtonFormField<String>(
           value: _orgType,
           decoration: _inputDecoration('Tipo de Organización', Icons.business),
-          items: [
-            'Asociación Civil',
-            'Fundación',
-            'Refugio Independiente',
-            'Albergue Municipal',
-            'Otro',
-          ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (val) => setState(() => _orgType = val!),
+          items: const [
+            ('Asociación Civil', 'Asociación Civil'),
+            ('Fundación', 'Fundación'),
+            ('Refugio Independiente', 'Refugio Independiente'),
+            ('Albergue Municipal', 'Albergue Municipal'),
+            (_tipoIndependiente, 'Rescatista independiente (sin acta)'),
+            ('Otro', 'Otro'),
+          ].map((e) => DropdownMenuItem(value: e.$1, child: Text(e.$2))).toList(),
+          onChanged: (val) => setState(() {
+            _orgType = val!;
+            // Los documentos cambian según el tipo: se quitan los que ya no aplican
+            final validos = _tiposDocumento.map((d) => d.$1).toSet();
+            _documentos.removeWhere((tipo, _) => !validos.contains(tipo));
+          }),
         ),
+        if (_esIndependiente) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFFFDECB5), borderRadius: BorderRadius.circular(12)),
+            child: const Text(
+              '🏠 Sin acta también puedes registrarte. En lugar del acta te pediremos tu identificación, '
+              'un comprobante de domicilio, fotos del lugar donde tienes a los animales y al menos una red '
+              'social o referencia de tu trabajo. Tu perfil mostrará la insignia «Rescatista independiente».',
+              style: TextStyle(fontSize: 13.5, height: 1.4, color: _textColor),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         _buildTextField(
           _rfcController,
@@ -815,6 +844,14 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       return;
     }
 
+    // Rescatista independiente: al menos una red social o referencia (etapa 5, contacto y redes)
+    if (_currentStep == 4 && _esIndependiente && _socialsController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Como rescatista independiente, agrega al menos una red social o referencia de tu trabajo de rescate.'),
+      ));
+      return;
+    }
+
     // Los tres documentos obligatorios en la etapa 6
     if (_currentStep == 5 &&
         _tiposDocumento.any((d) => d.$3 && !_documentos.containsKey(d.$1))) {
@@ -867,6 +904,11 @@ class _RegisterShelterScreenState extends State<RegisterShelterScreen> {
       'tienePerros': _attendsDogs,
       'tieneGatos': _attendsCats,
       'descripcion': _descriptionController.text.trim(),
+      // Antes la app los pedía pero no se guardaban
+      'cargoResponsable': _repRoleController.text.trim(),
+      'capacidad': _capacityController.text.trim(),
+      'animalesActuales': _currentAnimalsController.text.trim(),
+      'entregaEsterilizados': _providesHealthCare ? 'si' : 'no',
     };
 
     setState(() => _enviando = true);

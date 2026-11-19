@@ -290,3 +290,39 @@
 .codigo-correo__reenviar .enlace, .login__registro button.enlace { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .codigo-correo__reenviar .enlace:disabled { color: var(--tinta-tenue); cursor: default; text-decoration: none; }
 @media (max-width: 520px) { .codigo-correo__tarjeta { padding: var(--e5) var(--e4); } }
+
+/* ---------- Registro de refugio en 4 pasos ---------- */
+.pasos-registro { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--e2); margin: 0 0 var(--e5); padding: 0; list-style: none; counter-reset: paso; }
+.pasos-registro li { display: flex; align-items: center; gap: var(--e2); padding: var(--e2) var(--e3); border-radius: var(--radio-m); background: var(--aqua-suave); color: var(--tinta-suave); font-size: var(--texto-s); font-weight: 600; }
+.pasos-registro li span { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--blanco); color: var(--aqua-fuerte); font-family: var(--fuente-titulos); font-weight: 700; }
+.pasos-registro li[aria-current="step"] { background: var(--aqua-fuerte); color: var(--blanco); }
+.pasos-registro li.hecho span { background: var(--aqua); }
+.pasos-registro li.hecho span::before { content: "✓"; }
+.pasos-registro li.hecho span { font-size: 0; }
+.pasos-registro li.hecho span::before { font-size: 0.95rem; }
+@media (max-width: 720px) {
+  .pasos-registro { grid-template-columns: repeat(4, auto); justify-content: space-between; }
+  .pasos-registro li { padding: var(--e1); background: none; font-size: 0; }
+  .pasos-registro li[aria-current="step"] { background: none; }
+  .pasos-registro li[aria-current="step"] span { background: var(--aqua-fuerte); color: var(--blanco); }
+  .pasos-registro li span { font-size: 0.95rem; }
+}
+.registro textarea.campo__control, .registro select.campo__control { width: 100%; }
+.aviso-independiente { margin: 0; padding: var(--e3) var(--e4); border-radius: var(--radio-m); background: var(--amarillo); color: var(--tinta); line-height: 1.5; }
+.registro__acciones #boton-anterior { margin-left: auto; }
+
+/* Resumen antes de enviar */
+.resumen-registro { margin-top: var(--e5); }
+.resumen-registro h2 { font-size: var(--titulo-s); color: var(--aqua-fuerte); margin-bottom: var(--e3); }
+.resumen-registro__seccion { padding: var(--e3) var(--e4); margin-bottom: var(--e3); border-radius: var(--radio-m); background: var(--aqua-suave); }
+.resumen-registro__cabecera { display: flex; justify-content: space-between; align-items: center; gap: var(--e3); }
+.resumen-registro__cabecera h3 { font-size: var(--texto-l); }
+.resumen-registro__cabecera .enlace { border: 0; background: none; font: inherit; font-weight: 700; cursor: pointer; }
+.resumen-registro dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--e2) var(--e4); margin: var(--e2) 0 0; }
+.resumen-registro dt { font-size: var(--texto-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-suave); }
+.resumen-registro dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Casillas de aceptación */
+.aceptacion { display: grid; gap: var(--e2); margin-top: var(--e4); }
+.aceptacion label { display: flex; align-items: flex-start; gap: var(--e2); line-height: 1.4; }
+.aceptacion input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--aqua-fuerte); }

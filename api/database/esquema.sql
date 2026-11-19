@@ -52,6 +52,11 @@ CREATE TABLE refugios (
   direccion       VARCHAR2(160 CHAR) NOT NULL,
   horario         VARCHAR2(20 CHAR) NOT NULL,
   descripcion     VARCHAR2(400 CHAR),
+  -- Registro: cargo de quien responde, capacidad, animales que tienen hoy y si se entregan esterilizados (si | algunos | no)
+  cargo_responsable     VARCHAR2(80 CHAR),
+  capacidad             NUMBER(6),
+  animales_actuales     NUMBER(6),
+  entrega_esterilizados VARCHAR2(10 CHAR),
   estado          VARCHAR2(12 CHAR) DEFAULT 'pendiente' NOT NULL,
   motivo_rechazo  VARCHAR2(400 CHAR),
   revisado_por    NUMBER(10),
@@ -96,7 +101,8 @@ CREATE TABLE documentos_refugio (
   con_error   NUMBER(1) DEFAULT 0 NOT NULL,
   creado_en   TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
   CONSTRAINT pk_documentos_refugio PRIMARY KEY (id),
-  CONSTRAINT ck_documentos_refugio_tipo CHECK (tipo IN ('acta', 'domicilio', 'identificacion', 'permiso')),
+  -- lugar y lugar2: fotos del espacio de un rescatista independiente (sin acta constitutiva)
+  CONSTRAINT ck_documentos_refugio_tipo CHECK (tipo IN ('acta', 'domicilio', 'identificacion', 'permiso', 'lugar', 'lugar2')),
   CONSTRAINT fk_documentos_refugio FOREIGN KEY (refugio_id) REFERENCES refugios (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_documentos_refugio ON documentos_refugio (refugio_id);

@@ -90,3 +90,7 @@
 .moderacion__texto { margin: 0; padding: var(--e3); background: var(--lila-tenue); border-left: 4px solid var(--lila-fuerte); border-radius: var(--radio-s); white-space: pre-line; overflow-wrap: anywhere; }
 .moderacion__foto { max-width: 220px; max-height: 160px; border-radius: var(--radio-s); object-fit: cover; }
 .moderacion__acciones { display: flex; gap: var(--e2); justify-content: flex-end; }
+
+/* Datos del registro del refugio (tipo, cargo, capacidad…) y aviso de rescatista independiente */
+.datos-registro { display: grid; gap: var(--e3); margin-top: var(--e4); }
+.datos-registro .alerta { margin: 0; }
