@@ -98,11 +98,18 @@
             <span class="campo__error" role="alert"></span>
           </div>
           <div class="campo campo--completo" data-campo="foto">
-            <label class="campo__etiqueta" for="m-foto">Foto (opcional)</label>
+            <label class="campo__etiqueta" for="m-foto">Foto principal (opcional)</label>
             <input id="m-foto" name="foto" class="campo__control" type="file" accept="image/*">
             <span class="campo__ayuda">Se reduce automáticamente. Sin foto se usará una imagen genérica.</span>
             <span class="campo__error" role="alert"></span>
             <figure id="vista-foto" class="vista-foto"><img src="../../assets/img/mascotas/sin-foto.svg" alt="Vista previa de la foto" width="400" height="300"><button id="quitar-foto" class="boton boton--contorno boton--pequeno" type="button">Quitar foto</button></figure>
+          </div>
+          <div class="campo campo--completo" data-campo="fotosExtra">
+            <label class="campo__etiqueta" for="m-fotos-extra">Más fotos para el carrusel (hasta 2)</label>
+            <input id="m-fotos-extra" name="fotosExtra" class="campo__control" type="file" accept="image/*" multiple>
+            <span class="campo__ayuda">Los usuarios las ven al pasar el cursor por la tarjeta de la mascota.</span>
+            <span class="campo__error" role="alert"></span>
+            <ul id="vista-fotos-extra" class="vista-fotos-extra"></ul>
           </div>
         </div>
         <div id="alerta-modal" role="alert" hidden></div>

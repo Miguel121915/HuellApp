@@ -81,6 +81,10 @@
 .punto + .punto, .inicio-alertas__leyenda .punto:not(:first-child) { margin-left: var(--e3); }
 .punto--perdida { background: #b42318; }
 .punto--encontrada { background: #1b4f4a; }
+/* Marcador con la silueta de la mascota (divIcon de Leaflet: se quita su cuadro blanco por defecto) */
+.marcador-alerta { background: none; border: 0; }
+.marcador-alerta svg { display: block; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35)); transition: transform 0.15s; }
+.marcador-alerta:hover svg { transform: scale(1.15); }
 .mapa-popup { display: grid; gap: 4px; min-width: 170px; font-size: var(--texto-s); }
 .mapa-popup strong { font-family: var(--fuente-titulos); font-size: var(--texto-l); font-weight: 600; }
 .mapa-popup__tipo { justify-self: start; padding: 1px 8px; border-radius: 999px; color: var(--blanco); font-size: var(--texto-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }

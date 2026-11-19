@@ -4,34 +4,46 @@ declare(strict_types=1);
 namespace HuellApp;
 
 /**
- * Correo — Envía correos con Brevo (https://www.brevo.com, plan gratuito: 300 correos al día).
+ * Correo — Envía correos con Gmail (Google) o con Brevo. Se usa el primero que esté configurado en api/.env:
  *
- * Configuración en api/.env:
- *   BREVO_API_KEY=...               clave de API de Brevo (SMTP & API → API Keys)
- *   CORREO_REMITENTE=...            correo verificado como remitente en Brevo
- *   CORREO_REMITENTE_NOMBRE=HuellApp
+ * 1) GMAIL (Google, gratis, ~500 correos al día) con una «contraseña de aplicación»:
+ *      GMAIL_USUARIO=tu-cuenta@gmail.com
+ *      GMAIL_CONTRASENA_APP=abcd efgh ijkl mnop   (myaccount.google.com/apppasswords; requiere verificación en 2 pasos)
+ *    Se conecta a smtp.gmail.com por el puerto 465 (SSL). Los correos salen desde GMAIL_USUARIO.
  *
- * Sin BREVO_API_KEY la API funciona en MODO DE PRUEBA: no envía nada y escribe el correo (con el
- * código) en la consola donde corre "php artisan serve". Así se puede probar todo sin cuenta de Brevo.
+ * 2) BREVO (https://www.brevo.com, gratis: 300 correos al día), por su API web (HTTPS):
+ *      BREVO_API_KEY=...               clave de API de Brevo (SMTP & API → API Keys)
+ *      CORREO_REMITENTE=...            correo verificado como remitente en Brevo
  *
- * Se usa la API web de Brevo (HTTPS) y no SMTP: no necesita librerías y funciona aunque la nube
- * bloquee los puertos de correo.
+ * En ambos casos CORREO_REMITENTE_NOMBRE (por defecto «HuellApp») es el nombre que ve quien recibe.
+ *
+ * Sin ninguno de los dos la API funciona en MODO DE PRUEBA: no envía nada y escribe el correo (con el
+ * código) en la consola donde corre "php artisan serve". Así se puede probar todo sin cuentas.
  */
 final class Correo
 {
     private const URL = 'https://api.brevo.com/v3/smtp/email';
+    private const GMAIL_SERVIDOR = 'ssl://smtp.gmail.com:465';
+
+    public static function usaGmail(): bool
+    {
+        return Config::obtener('GMAIL_USUARIO') !== '' && Config::obtener('GMAIL_CONTRASENA_APP') !== '';
+    }
 
     public static function modoPrueba(): bool
     {
-        return Config::obtener('BREVO_API_KEY') === '' || Config::obtener('CORREO_REMITENTE') === '';
+        return !self::usaGmail() && (Config::obtener('BREVO_API_KEY') === '' || Config::obtener('CORREO_REMITENTE') === '');
     }
 
-    /** Envía un correo. Devuelve false si Brevo no lo aceptó (se anota el motivo en la consola). */
+    /** Envía un correo. Devuelve false si Gmail o Brevo no lo aceptaron (se anota el motivo en la consola). */
     public static function enviar(string $para, string $nombre, string $asunto, string $texto, string $html): bool
     {
         if (self::modoPrueba()) {
             error_log("[CORREO DE PRUEBA] Para: $para · Asunto: $asunto\n" . $texto);
             return true;
+        }
+        if (self::usaGmail()) {
+            return self::enviarGmail($para, $nombre, $asunto, $texto, $html);
         }
         $cuerpo = json_encode([
             'sender' => ['name' => Config::obtener('CORREO_REMITENTE_NOMBRE') ?: 'HuellApp', 'email' => Config::obtener('CORREO_REMITENTE')],
@@ -65,6 +77,94 @@ final class Correo
             return false;
         }
         return true;
+    }
+
+    /**
+     * Envía por el SMTP de Gmail (SSL, puerto 465) con la contraseña de aplicación. Sin librerías:
+     * se habla el protocolo directamente. Nunca se anota la contraseña, solo la respuesta del servidor.
+     */
+    private static function enviarGmail(string $para, string $nombre, string $asunto, string $texto, string $html): bool
+    {
+        $usuario = trim(Config::obtener('GMAIL_USUARIO'));
+        $clave = str_replace(' ', '', Config::obtener('GMAIL_CONTRASENA_APP')); // Google la muestra con espacios
+        $limpiar = static fn (string $t): string => str_replace(["\r", "\n"], '', $t); // evita inyectar cabeceras
+        $para = $limpiar($para);
+
+        $socket = @stream_socket_client(self::GMAIL_SERVIDOR, $errno, $error, 10);
+        if ($socket === false) {
+            error_log("Gmail: no se pudo conectar con smtp.gmail.com ($errno $error). Revisa tu internet o que el puerto 465 no esté bloqueado.");
+            return false;
+        }
+        stream_set_timeout($socket, 15);
+
+        // Lee la respuesta (puede ser de varias líneas: «250-…» y la última «250 …») y revisa el código
+        $responder = static function (int $esperado) use ($socket): string {
+            $respuesta = '';
+            while (($linea = fgets($socket, 1024)) !== false) {
+                $respuesta .= $linea;
+                if (strlen($linea) < 4 || $linea[3] === ' ') {
+                    break;
+                }
+            }
+            if ((int) substr($respuesta, 0, 3) !== $esperado) {
+                throw new \RuntimeException(trim($respuesta) ?: 'sin respuesta del servidor');
+            }
+            return $respuesta;
+        };
+        $comando = static function (string $linea, int $esperado) use ($socket, $responder): string {
+            fwrite($socket, $linea . "\r\n");
+            return $responder($esperado);
+        };
+
+        $codificar = static fn (string $t): string => '=?UTF-8?B?' . base64_encode($t) . '?=';
+        $remitente = Config::obtener('CORREO_REMITENTE_NOMBRE') ?: 'HuellApp';
+        $limite = 'huellapp-' . bin2hex(random_bytes(12));
+        $dominio = substr(strrchr($usuario, '@') ?: '@gmail.com', 1);
+        $mensaje = implode("\r\n", [
+            'From: ' . $codificar($limpiar($remitente)) . " <$usuario>",
+            'To: ' . $codificar($limpiar($nombre)) . " <$para>",
+            'Subject: ' . $codificar($limpiar($asunto)),
+            'Date: ' . date('r'),
+            'Message-ID: <' . bin2hex(random_bytes(16)) . "@$dominio>",
+            'MIME-Version: 1.0',
+            "Content-Type: multipart/alternative; boundary=\"$limite\"",
+            '',
+            "--$limite",
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            rtrim(chunk_split(base64_encode($texto), 76, "\r\n")),
+            "--$limite",
+            'Content-Type: text/html; charset=UTF-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            rtrim(chunk_split(base64_encode($html), 76, "\r\n")),
+            "--$limite--",
+        ]);
+        // El cuerpo va en base64, así que ninguna línea empieza con «.» (no hace falta duplicar puntos)
+
+        try {
+            $responder(220);
+            $comando('EHLO huellapp', 250);
+            $comando('AUTH LOGIN', 334);
+            $comando(base64_encode($usuario), 334);
+            try {
+                $comando(base64_encode($clave), 235);
+            } catch (\RuntimeException $e) {
+                throw new \RuntimeException('Google rechazó GMAIL_USUARIO o GMAIL_CONTRASENA_APP (usa una contraseña de aplicación, no la normal). ' . $e->getMessage());
+            }
+            $comando("MAIL FROM:<$usuario>", 250);
+            $comando("RCPT TO:<$para>", 250);
+            $comando('DATA', 354);
+            $comando($mensaje . "\r\n.", 250);
+            fwrite($socket, "QUIT\r\n"); // el correo ya fue aceptado: la respuesta al cierre no importa
+            return true;
+        } catch (\RuntimeException $e) {
+            error_log('Gmail: no se pudo enviar el correo. ' . substr($e->getMessage(), 0, 300));
+            return false;
+        } finally {
+            fclose($socket);
+        }
     }
 
     /** Correo con un código de 6 dígitos (confirmar correo o recuperar contraseña). */

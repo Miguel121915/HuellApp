@@ -20,6 +20,10 @@
 .campo-edad { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e2); }
 .vista-foto { display: flex; align-items: flex-end; gap: var(--e3); margin-top: var(--e2); }
 .vista-foto img { width: 160px; border: 3px solid var(--tinta); border-radius: var(--radio-s); }
+.vista-fotos-extra { display: flex; flex-wrap: wrap; gap: var(--e3); margin: var(--e2) 0 0; padding: 0; list-style: none; }
+.vista-fotos-extra:empty { display: none; }
+.vista-fotos-extra li { display: grid; gap: var(--e1); justify-items: start; }
+.vista-fotos-extra img { width: 120px; aspect-ratio: 4 / 3; object-fit: cover; border: 3px solid var(--tinta); border-radius: var(--radio-s); }
 
 /* Documentos de una mascota (diálogo del inventario) */
 .docs-mascota { display: flex; flex-direction: column; gap: var(--e2); margin-block: var(--e3); }

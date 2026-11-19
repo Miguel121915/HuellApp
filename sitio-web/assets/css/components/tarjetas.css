@@ -29,33 +29,84 @@
 .insignia--aprobado { background: var(--exito-fondo); color: var(--exito); }
 .insignia--rechazado { background: var(--error-fondo); color: var(--error); }
 
-/* ---------- Tarjeta de mascota ---------- */
+/* ---------- Tarjeta de mascota ----------
+   Al frente la foto, el nombre y la raza. Al pasar el cursor (o enfocarla con el teclado, o con un
+   toque en celular) se voltea: carrusel de fotos arriba, datos y botones abajo. */
 .mascota {
+  --alto: 470px;
+  --fondo: #f6fbf1;
+  height: var(--alto);
+  perspective: 1400px;
+}
+.mascota__giro {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+@media (hover: hover) { .mascota:hover .mascota__giro { transform: rotateY(180deg); } }
+.mascota:focus-within .mascota__giro,
+.mascota--volteada .mascota__giro { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) { .mascota__giro { transition: none; } }
+.mascota__cara {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--blanco);
-  border: 3px solid var(--lila-fuerte);
-  border-radius: var(--radio-m);
+  border: 1px solid #d7e8c8;
+  border-radius: 20px;
+  background: var(--fondo);
+  box-shadow: 0 6px 18px rgb(27 49 46 / 0.12);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.mascota__reverso { transform: rotateY(180deg); }
+
+/* Frente */
+.mascota__portada { flex: 1; min-height: 0; width: 100%; max-width: none; object-fit: cover; background: var(--lila-suave); }
+.mascota__num-fotos {
+  position: absolute; top: var(--e3); left: var(--e3);
+  padding: 2px var(--e2); border-radius: 999px;
+  background: rgb(255 255 255 / 0.9); font-size: var(--texto-xs); font-weight: 700;
+}
+.mascota__resumen { display: grid; gap: var(--e1); padding: var(--e4); }
+.mascota__linea { color: var(--tinta-suave); font-size: var(--texto-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota__estado { justify-self: start; padding: 2px var(--e2); border-radius: 999px; background: var(--exito-fondo); color: var(--exito); font-size: var(--texto-xs); font-weight: 700; }
+
+/* Carrusel de fotos (lo usa la cabecera del formulario de adopción) */
+.carrusel { position: absolute; inset: 0; }
+.carrusel__foto { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+.carrusel__foto--activa { opacity: 1; }
+.carrusel__flecha {
+  position: absolute; top: 50%; translate: 0 -50%;
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgb(255 255 255 / 0.88); color: var(--tinta);
+  font-size: 1.4rem; line-height: 1; cursor: pointer;
   box-shadow: var(--sombra-s);
 }
-/* La foto va en una caja de tamaño fijo (4:3) y se recorta al centro: una foto vertical u horizontal
-   nunca estira ni deforma la tarjeta (antes una foto alta empujaba la caja hacia abajo). */
-.mascota__foto { position: relative; aspect-ratio: 4 / 3; margin: 0; overflow: hidden; background: var(--lila-suave); flex: none; }
-.mascota__foto img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: center; }
-.mascota__cuerpo { display: flex; flex-direction: column; gap: var(--e2); padding: var(--e4); background: var(--lila); flex: 1; }
+.carrusel__flecha:hover { background: var(--blanco); }
+.carrusel__flecha:focus-visible, .carrusel__punto:focus-visible { box-shadow: var(--foco); outline: none; }
+.carrusel__flecha--anterior { left: var(--e2); }
+.carrusel__flecha--siguiente { right: var(--e2); }
+.carrusel__puntos { position: absolute; bottom: var(--e2); left: 50%; translate: -50% 0; display: flex; gap: 6px; }
+.carrusel__punto { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%; background: rgb(255 255 255 / 0.6); cursor: pointer; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.15); }
+.carrusel__punto[aria-current="true"] { background: var(--blanco); transform: scale(1.25); }
+
+/* Reverso: solo la información y los botones */
+.mascota__cuerpo { display: flex; flex-direction: column; gap: var(--e3); padding: var(--e5) var(--e4) var(--e4); flex: 1; min-height: 0; }
 .mascota__encabezado { display: flex; align-items: center; justify-content: space-between; gap: var(--e2); }
-.mascota__nombre { font-size: 1.3rem; font-weight: 800; line-height: 1.2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota__nombre { font-size: 1.3rem; font-weight: 600; line-height: 1.2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Textos de largo variable con alto fijo: todas las tarjetas miden lo mismo */
-.mascota__cuerpo > .texto-suave { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mascota__datos { min-height: 1.6rem; }
-.mascota__especie { padding: 2px var(--e3); border-radius: 999px; background: var(--amarillo); font-size: 0.8125rem; font-weight: 800; }
-.mascota__datos { display: flex; flex-wrap: wrap; gap: var(--e1) var(--e2); }
-.mascota__dato { padding: 2px var(--e2); border-radius: var(--radio-s); background: var(--blanco); font-size: 0.8125rem; font-weight: 600; } /* datos secundarios: semibold, por debajo del nombre */
-.mascota__descripcion { background: var(--amarillo); border-radius: var(--radio-s); padding: var(--e3); font-size: 0.9rem; line-height: 1.5; flex: none;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; height: calc(3 * 1.5em + 2 * var(--e3)); box-sizing: border-box;
-  overflow: clip; overflow-clip-margin: content-box; } /* recorta en el borde del texto: no asoma una 4.ª línea en el relleno */
-.mascota__salud { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota__cuerpo > * { flex: none; }
+.mascota__cuerpo > .texto-suave { margin-top: calc(-1 * var(--e1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mascota__especie { flex: none; padding: 2px var(--e3); border-radius: 999px; background: var(--amarillo); font-size: 0.8125rem; font-weight: 700; }
+.mascota__datos { display: flex; flex-wrap: wrap; gap: var(--e1) var(--e2); margin: 0; padding: 0; list-style: none; }
+.mascota__dato { padding: 2px var(--e2); border-radius: var(--radio-s); background: #e3f3d4; font-size: 0.8125rem; font-weight: 600; }
+.mascota__descripcion { font-size: 0.875rem; line-height: 1.45; flex: none;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; line-clamp: 6; overflow: hidden; }
+.mascota__salud { color: var(--tinta-suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- Tarjeta de publicación (foro y refugios) ---------- */
 .publicacion { display: grid; grid-template-columns: minmax(180px, 280px) 1fr; gap: var(--e4); align-items: start; }
@@ -106,7 +157,10 @@
 .dato-resumen__etiqueta { padding: 2px var(--e3); background: var(--amarillo); border-radius: var(--radio-s); font-size: 0.875rem; font-weight: 700; }
 
 /* HU-12 Corazón de favoritos sobre la foto de la mascota */
-.mascota__foto { position: relative; }
+/* En el reverso de la tarjeta va junto al nombre */
+.mascota__encabezado .mascota__favorito { position: static; flex: none; width: 40px; height: 40px; margin-left: auto; border-color: #f3c4cf; font-size: 1.3rem; }
+.mascota__encabezado .mascota__especie { margin-left: auto; }
+.mascota__encabezado .mascota__especie + .mascota__favorito { margin-left: 0; }
 .mascota__favorito {
   position: absolute;
   top: var(--e2); right: var(--e2);

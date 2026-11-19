@@ -7,7 +7,10 @@ import { obtenerMiRefugio } from "../../core/auth.js";
 import { actualizarPerfil } from "../../core/servicios-refugio.js";
 import { montarNavbar } from "../../components/navbar.js";
 import { montarDatosExtra } from "../../components/datos-extra-refugio.js";
-import { crearElemento, ETIQUETAS_DOCUMENTO, formatearTamano, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta } from "../../core/utils.js";
+import {
+  crearElemento, ETIQUETAS_DOCUMENTO, formatearTamano, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta,
+  redimensionarImagen, resolverImagen, validarImagen,
+} from "../../core/utils.js";
 
 const sesion = requerirRol("refugio");
 
@@ -16,12 +19,42 @@ const alerta = document.getElementById("alerta-perfil");
 const botonGuardar = document.getElementById("boton-guardar");
 const campo = (nombre) => formulario.querySelector(`[data-campo="${nombre}"]`);
 const datosExtra = sesion ? montarDatosExtra(document.getElementById("datos-extra")) : null;
+const vistaFoto = document.getElementById("vista-foto-refugio");
+let fotoActual = ""; // ruta guardada o data URL de la foto nueva ("" = sin foto)
 
 if (sesion) {
   montarNavbar({ sesion, activa: "perfil" });
   mostrarPerfil();
   formulario.addEventListener("submit", guardar);
   limpiarErroresAlEscribir(formulario);
+  enlazarFoto();
+}
+
+function mostrarVistaFoto() {
+  vistaFoto.hidden = !fotoActual;
+  vistaFoto.querySelector("img").src = fotoActual ? resolverImagen(fotoActual) : "";
+}
+
+function enlazarFoto() {
+  formulario.elements.foto.addEventListener("change", async (evento) => {
+    const archivo = evento.target.files[0];
+    const zona = campo("foto");
+    if (!archivo) return;
+    const error = validarImagen(archivo);
+    if (error) { marcarError(zona, error); evento.target.value = ""; return; }
+    try {
+      fotoActual = await redimensionarImagen(archivo, 960); // la tarjeta es ancha: un poco más de resolución
+      marcarError(zona, "");
+      mostrarVistaFoto();
+    } catch {
+      marcarError(zona, "No pudimos leer esa imagen. Prueba con otra.");
+    }
+  });
+  document.getElementById("quitar-foto").addEventListener("click", () => {
+    fotoActual = "";
+    formulario.elements.foto.value = "";
+    mostrarVistaFoto();
+  });
 }
 
 /** "09:00 - 18:00" → ["09:00", "18:00"] (con valores por defecto si el formato no coincide) */
@@ -48,6 +81,8 @@ async function mostrarPerfil() {
   f.horaApertura.value = apertura;
   f.horaCierre.value = cierre;
   f.descripcion.value = refugio.descripcion || "";
+  fotoActual = refugio.foto || "";
+  mostrarVistaFoto();
   datosExtra.rellenar(refugio);
 
   const lista = document.getElementById("lista-documentos");
@@ -82,9 +117,12 @@ async function guardar(evento) {
   const resultado = await actualizarPerfil({
     telefono, direccion, descripcion, horario: `${f.horaApertura.value} - ${f.horaCierre.value}`,
     ...datosExtra.leer(),
+    foto: fotoActual,
   });
   botonGuardar.disabled = false;
 
   if (!resultado.ok) { mostrarAlerta(alerta, "error", resultado.error); return; }
+  // La foto nueva ya quedó guardada en el servidor: se usa su ruta para no volver a subirla
+  if (resultado.refugio?.foto !== undefined) fotoActual = resultado.refugio.foto;
   mostrarAlerta(alerta, "exito", "Perfil actualizado. Los usuarios ya ven tus nuevos datos de contacto.");
 }

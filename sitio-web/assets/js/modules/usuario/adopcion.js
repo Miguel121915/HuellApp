@@ -4,10 +4,11 @@
  * de 1 a 3 fotos del espacio). Incluye el asistente KIRO con las preguntas frecuentes del refugio.
  */
 import { montarAsistente } from "../../components/asistente-adopcion.js";
+import { crearCarrusel } from "../../components/tarjeta-mascota.js";
 import { enviarSolicitudAdopcion, obtenerMiPerfil } from "../../core/servicios.js";
 import {
   crearElemento, esCorreoValido, leerComoDataUrl, limpiarErroresAlEscribir, marcarError, mostrarAlerta, ocultarAlerta,
-  redimensionarImagen, resolverImagen, validarDocumento, validarImagen,
+  redimensionarImagen, validarDocumento, validarImagen,
 } from "../../core/utils.js";
 
 const MAX_FOTOS = 3;
@@ -200,9 +201,9 @@ export function montarFormularioAdopcion({ sesion, alEnviar }) {
       mascota = nueva;
       document.getElementById("adopcion-titulo").textContent = `Adoptar a ${nueva.nombre}`;
       document.getElementById("adopcion-refugio").textContent = `${nueva.raza} · ${refugio.nombre}`;
-      const foto = document.getElementById("adopcion-foto");
-      foto.src = resolverImagen(nueva.foto);
-      foto.alt = `Foto de ${nueva.nombre}`;
+      // Carrusel con las fotos de la mascota (la principal y hasta 2 extra), grande y cuadrado
+      const fotos = (nueva.fotos?.length ? nueva.fotos : [nueva.foto]).filter(Boolean).slice(0, 3);
+      document.getElementById("adopcion-foto").replaceChildren(crearCarrusel(fotos, `Foto de ${nueva.nombre}`));
       modal.showModal();
       f.nombre.focus();
     },

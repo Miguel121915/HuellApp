@@ -116,18 +116,13 @@
     <!-- Solicitud de adopción (se abre con el botón «Adoptar» de cada mascota) -->
     <dialog id="modal-adopcion" class="modal modal--ancho adopcion" aria-labelledby="adopcion-titulo">
       <header class="adopcion__cabecera">
-        <img id="adopcion-foto" class="adopcion__foto" alt="" width="88" height="88">
+        <div id="adopcion-foto" class="adopcion__foto"></div>
         <div>
           <p class="adopcion__antetitulo">Solicitud de adopción</p>
           <h2 id="adopcion-titulo" class="adopcion__titulo">Adoptar</h2>
           <p id="adopcion-refugio" class="texto-suave texto-pequeno"></p>
         </div>
       </header>
-
-      <section id="adopcion-requisitos" class="adopcion__requisitos" aria-labelledby="adopcion-requisitos-titulo" hidden>
-        <h3 id="adopcion-requisitos-titulo">Antes de enviar, revisa los requisitos del refugio</h3>
-        <div id="adopcion-lista-requisitos"></div>
-      </section>
 
       <div id="adopcion-relleno" class="relleno-kiro" role="status" hidden>
         <img class="relleno-kiro__avatar" src="../../assets/img/kiro/kiro.svg" alt="" width="56" height="59">

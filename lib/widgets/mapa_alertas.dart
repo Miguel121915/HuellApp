@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -46,6 +47,31 @@ class _MapaAlertasState extends State<MapaAlertas> {
   static Color _color(Map<String, dynamic> a) => a['tipo'] == 'perdida' ? MapaAlertas.rojo : MapaAlertas.verde;
   static String _nombre(Map<String, dynamic> a) =>
       (a['nombre'] as String?) ?? const {'perro': 'Perro', 'gato': 'Gato'}[a['especie']] ?? 'Mascota';
+
+  // Siluetas del marcador según la especie (viewBox 40×40): cabeza de gato, cabeza de perro o
+  // huellita para otras mascotas. Las mismas que en sitio-web/assets/js/components/mapa-alertas.js.
+  static const _siluetas = {
+    'gato': '<path d="M7 4 L16.5 12.5 Q20 11.6 23.5 12.5 L33 4 Q35.5 13 34 19.5 Q37 25 34 30.5 Q29 37 20 37 Q11 37 6 30.5 Q3 25 6 19.5 Q4.5 13 7 4 Z"/>',
+    'perro': '<path d="M12 9 Q4 6 2.5 15 Q1.5 24 6.5 27 Q9.5 28.5 10.5 24 Z"/><path d="M28 9 Q36 6 37.5 15 Q38.5 24 33.5 27 Q30.5 28.5 29.5 24 Z"/><ellipse cx="20" cy="22" rx="11.5" ry="13.5"/>',
+    'otro': '<ellipse cx="20" cy="27" rx="9" ry="8"/><circle cx="9.5" cy="17.5" r="4"/><circle cx="16.5" cy="10.5" r="4"/><circle cx="23.5" cy="10.5" r="4"/><circle cx="30.5" cy="17.5" r="4"/>',
+  };
+  // Ojos y hocico en blanco; {c} es el color de la alerta (la nariz del perro)
+  static const _caritas = {
+    'gato': '<g fill="#fff"><ellipse cx="14" cy="22.5" rx="2.2" ry="2.8"/><ellipse cx="26" cy="22.5" rx="2.2" ry="2.8"/><path d="M17.8 28 H22.2 L20 30.6 Z"/></g>',
+    'perro': '<g fill="#fff"><circle cx="15.5" cy="19.5" r="2.2"/><circle cx="24.5" cy="19.5" r="2.2"/><ellipse cx="20" cy="29" rx="6" ry="4.6"/></g><ellipse cx="20" cy="27.2" rx="2.6" ry="1.8" fill="{c}"/>',
+    'otro': '',
+  };
+
+  /// SVG del marcador: la silueta de la especie, roja (se busca) o verde (busca a su familia).
+  /// Primero la silueta en blanco y más gruesa (el borde), encima la de color y luego la carita.
+  static String _iconoSvg(Map<String, dynamic> a) {
+    final especie = _siluetas.containsKey(a['especie']) ? a['especie'] as String : 'otro';
+    final silueta = _siluetas[especie]!;
+    final c = '#${(_color(a).toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">'
+        '<g fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round">$silueta</g>'
+        '<g fill="$c">$silueta</g>${_caritas[especie]!.replaceAll('{c}', c)}</svg>';
+  }
 
   void _abrir(Map<String, dynamic> a) {
     final perdida = a['tipo'] == 'perdida';
@@ -140,21 +166,14 @@ class _MapaAlertasState extends State<MapaAlertas> {
               for (final a in alertas)
                 Marker(
                   point: _punto(a),
-                  width: 30,
-                  height: 30,
+                  width: 36,
+                  height: 36,
                   child: Semantics(
                     button: true,
                     label: '${a['tipo'] == 'perdida' ? 'Se busca' : 'Busca a su familia'}: ${_nombre(a)}',
                     child: GestureDetector(
                       onTap: () => _abrir(a),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _color(a),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 4, offset: Offset(0, 1))],
-                        ),
-                      ),
+                      child: SvgPicture.string(_iconoSvg(a), width: 36, height: 36),
                     ),
                   ),
                 ),
@@ -197,7 +216,7 @@ class _MapaAlertasState extends State<MapaAlertas> {
             Text(
               alertas.isEmpty
                   ? 'Por ahora no hay alertas activas con ubicación. ¡Buena señal! 🐾'
-                  : '${alertas.length} ${alertas.length == 1 ? 'alerta activa' : 'alertas activas'}. Toca un punto para ver la alerta.',
+                  : '${alertas.length} ${alertas.length == 1 ? 'alerta activa' : 'alertas activas'}. Toca un ícono para ver la alerta.',
               style: const TextStyle(fontSize: 12.5, color: Tipografia.tintaTenue),
             ),
           ],

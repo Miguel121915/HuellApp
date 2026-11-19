@@ -6,7 +6,7 @@ namespace HuellApp;
 /**
  * RefugioExtra — Datos del refugio que pide la app móvil además de los del sitio web:
  * ubicación en el mapa, municipio, CP, RFC, tipo de organización, año de fundación,
- * WhatsApp, redes sociales, necesidades y si recibe perros y/o gatos.
+ * WhatsApp, redes sociales, necesidades, si recibe perros y/o gatos y la foto del refugio.
  *
  * Todos son OPCIONALES: el registro del sitio web sigue funcionando sin mandarlos.
  * En el JSON van con los nombres de la izquierda; en la tabla refugios, con los de la derecha.
@@ -22,6 +22,7 @@ final class RefugioExtra
         // Responsable y animales (registro web y app)
         'cargoResponsable' => 'cargo_responsable', 'capacidad' => 'capacidad', 'animalesActuales' => 'animales_actuales',
         'entregaEsterilizados' => 'entrega_esterilizados',
+        'foto' => 'foto', // foto del refugio: data URL nueva, la ruta que ya tenía, o "" para quitarla
     ];
 
     /** Lee y valida los campos extra que vengan en el cuerpo. @return array<string,mixed> columna => valor */
@@ -50,6 +51,7 @@ final class RefugioExtra
                 'capacidad' => $v === null || $v === '' ? null : Validar::entero($v, 'La capacidad', 1, 100000),
                 'animalesActuales' => $v === null || $v === '' ? null : Validar::entero($v, 'El número actual de animales', 0, 100000),
                 'entregaEsterilizados' => $v === null || $v === '' ? null : Validar::enumerado($v, '«¿Se entregan esterilizados?»', ['si', 'algunos', 'no']),
+                'foto' => Archivos::resolverFoto($v, 'La foto del refugio'),
             };
         }
         return $valores;
@@ -96,6 +98,7 @@ final class RefugioExtra
             'capacidad' => isset($r['capacidad']) ? (int) $r['capacidad'] : null,
             'animalesActuales' => isset($r['animales_actuales']) ? (int) $r['animales_actuales'] : null,
             'entregaEsterilizados' => $r['entrega_esterilizados'] ?? null,
+            'foto' => $r['foto'] ?? '',
         ];
     }
 

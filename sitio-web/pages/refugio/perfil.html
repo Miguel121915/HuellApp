@@ -59,6 +59,13 @@
           <span class="campo__error" role="alert"></span>
         </div>
         <div class="campo" data-campo="descripcion"><label class="campo__etiqueta" for="p-descripcion">Sobre el refugio (opcional)</label><textarea id="p-descripcion" name="descripcion" class="campo__control" maxlength="400" placeholder="Cuenta tu misión, cuántos animales cuidas y cómo es el proceso de adopción."></textarea><span class="campo__error" role="alert"></span></div>
+        <div class="campo" data-campo="foto">
+          <label class="campo__etiqueta" for="p-foto">Foto del refugio (opcional)</label>
+          <input id="p-foto" name="foto" class="campo__control" type="file" accept="image/*">
+          <span class="campo__ayuda">La fachada o tus instalaciones. Aparece en la tarjeta de tu refugio.</span>
+          <span class="campo__error" role="alert"></span>
+          <figure id="vista-foto-refugio" class="vista-foto" hidden><img src="" alt="Vista previa de la foto del refugio" width="400" height="300"><button id="quitar-foto" class="boton boton--contorno boton--pequeno" type="button">Quitar foto</button></figure>
+        </div>
         <div id="alerta-perfil" role="status" hidden></div>
         <fieldset id="datos-extra" class="datos-extra"></fieldset>
         <button id="boton-guardar" class="boton boton--primario boton--bloque" type="submit">Guardar cambios</button>

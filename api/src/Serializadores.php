@@ -21,6 +21,8 @@ final class Serializadores
             'id' => (string) $r['id'], 'refugioId' => (string) $r['refugio_id'], 'nombre' => $r['nombre'], 'especie' => $r['especie'],
             'raza' => $r['raza'], 'edadMeses' => (int) $r['edad_meses'], 'sexo' => $r['sexo'], 'tamano' => $r['tamano'],
             'salud' => $r['salud'], 'descripcion' => $r['descripcion'], 'foto' => $r['foto'], 'estatus' => $r['estatus'],
+            // Carrusel: la principal y las extra que tenga (máximo 3)
+            'fotos' => array_values(array_filter([$r['foto'], $r['foto2'] ?? null, $r['foto3'] ?? null], static fn ($f): bool => is_string($f) && $f !== '')),
         ];
     }
 

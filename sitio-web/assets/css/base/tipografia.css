@@ -51,7 +51,7 @@ strong, b, dt { font-weight: 700; }
 .mascota__nombre,
 .mascota-mini__nombre,
 .refugio-tarjeta__nombre,
-.refugio-tarjeta__accion,
+.refugio-tarjeta__boton,
 .tarjeta__titulo,
 .dato-resumen__numero {
   font-family: var(--fuente-titulos);

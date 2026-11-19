@@ -113,6 +113,12 @@ Cada alerta del foro tiene una página pública (`pages/alerta.html?id=…`) y u
 Al registrarse, el usuario recibe un **código de 6 dígitos** por correo y su cuenta se activa al escribirlo (web y app). Con el mismo mecanismo funciona **«¿Olvidaste tu contraseña?»**. Quien entra con Google no necesita código (Google ya verificó el correo). Los refugios no lo piden: ya pasan por la revisión del administrador.
 
 - **Sin configurar nada (modo de prueba):** no se envían correos; el código aparece en la consola donde corre `php artisan serve` como `[CORREO DE PRUEBA] … Tu código es: 123456`.
+- **Envío real con Gmail (Google, gratis, unos 500 correos al día).** Tiene prioridad sobre Brevo si están las dos:
+  1. En la cuenta de Gmail que enviará los correos, activa la **verificación en 2 pasos** ([myaccount.google.com/security](https://myaccount.google.com/security)).
+  2. Entra a [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), crea una **contraseña de aplicación** llamada `HuellApp` y copia la clave de 16 letras.
+  3. En `api/.env` (nunca en GitHub ni en un chat): `GMAIL_USUARIO=tu-cuenta@gmail.com` y `GMAIL_CONTRASENA_APP=abcd efgh ijkl mnop`. Reinicia `php artisan serve`.
+
+  Los correos salen desde esa cuenta de Gmail, por `smtp.gmail.com` puerto 465 (SSL). Si falla, el motivo aparece en la consola de la API (`Gmail: …`).
 - **Envío real con Brevo (gratis hasta 300 correos al día):**
   1. Crea una cuenta en [brevo.com](https://www.brevo.com).
   2. **Senders, Domains & Dedicated IPs → Senders → Add a sender**: agrega el correo que enviará los mensajes y confírmalo desde su bandeja.

@@ -12,6 +12,38 @@ const COLORES = { perdida: "#b42318", encontrada: "#1b4f4a" };
 const ETIQUETAS = { perdida: "Se busca", encontrada: "Busca a su familia" };
 const ESPECIE = { perro: "Perro", gato: "Gato", otro: "Mascota" };
 
+// Siluetas del marcador según la especie (viewBox 40×40): cabeza de gato, cabeza de perro o
+// huellita para otras mascotas. Son textos fijos (sin datos de usuarios), así que es seguro
+// meterlos como HTML del icono. La app usa las mismas en lib/widgets/mapa_alertas.dart.
+const SILUETAS = {
+  gato: '<path d="M7 4 L16.5 12.5 Q20 11.6 23.5 12.5 L33 4 Q35.5 13 34 19.5 Q37 25 34 30.5 Q29 37 20 37 Q11 37 6 30.5 Q3 25 6 19.5 Q4.5 13 7 4 Z"/>',
+  perro: '<path d="M12 9 Q4 6 2.5 15 Q1.5 24 6.5 27 Q9.5 28.5 10.5 24 Z"/><path d="M28 9 Q36 6 37.5 15 Q38.5 24 33.5 27 Q30.5 28.5 29.5 24 Z"/><ellipse cx="20" cy="22" rx="11.5" ry="13.5"/>',
+  otro: '<ellipse cx="20" cy="27" rx="9" ry="8"/><circle cx="9.5" cy="17.5" r="4"/><circle cx="16.5" cy="10.5" r="4"/><circle cx="23.5" cy="10.5" r="4"/><circle cx="30.5" cy="17.5" r="4"/>',
+};
+// Ojos y hocico (en blanco) y la nariz del perro (del color de la alerta)
+const CARITAS = {
+  gato: '<g fill="#fff"><ellipse cx="14" cy="22.5" rx="2.2" ry="2.8"/><ellipse cx="26" cy="22.5" rx="2.2" ry="2.8"/><path d="M17.8 28 H22.2 L20 30.6 Z"/></g>',
+  perro: '<g fill="#fff"><circle cx="15.5" cy="19.5" r="2.2"/><circle cx="24.5" cy="19.5" r="2.2"/><ellipse cx="20" cy="29" rx="6" ry="4.6"/></g><ellipse cx="20" cy="27.2" rx="2.6" ry="1.8" fill="currentColor"/>',
+  otro: "",
+};
+
+/** Icono de la alerta: la silueta de su especie, roja (se busca) o verde (busca a su familia). */
+function iconoAlerta(L, especie, color) {
+  const clave = SILUETAS[especie] ? especie : "otro";
+  const silueta = SILUETAS[clave];
+  return L.divIcon({
+    className: "marcador-alerta",
+    // Primero la silueta en blanco y más gruesa (el borde), encima la de color y luego la carita
+    html: `<svg viewBox="0 0 40 40" width="38" height="38" style="color:${color}" aria-hidden="true">`
+      + `<g fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round">${silueta}</g>`
+      + `<g fill="currentColor">${silueta}</g>${CARITAS[clave]}</svg>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -16],
+    tooltipAnchor: [16, 0],
+  });
+}
+
 let mapa = null;
 let marcadorPersona = null;
 
@@ -52,7 +84,7 @@ export function dibujarMapaAlertas(contenedor, alertas, { aviso, botonCerca }) {
       crearElemento("span", { clase: "texto-suave", texto: tiempoRelativo(a.fecha) }),
       crearElemento("a", { clase: "enlace", texto: "Ver alerta →", atributos: { href: rutaDesdeRaiz(`pages/alerta.html?id=${encodeURIComponent(a.id)}`) } }),
     ]);
-    L.circleMarker(punto, { radius: 10, color: "#fff", weight: 3, fillColor: color, fillOpacity: 1 })
+    L.marker(punto, { icon: iconoAlerta(L, a.especie, color), alt: `${ETIQUETAS[a.tipo] || "Alerta"}: ${ESPECIE[a.especie] || "Mascota"}` })
       .addTo(mapa)
       .bindPopup(popup)
       .bindTooltip(`${ETIQUETAS[a.tipo] || "Alerta"}: ${a.nombre || ESPECIE[a.especie] || "Mascota"}`);

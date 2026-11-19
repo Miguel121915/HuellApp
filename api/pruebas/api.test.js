@@ -212,6 +212,17 @@ test("inventario: crear, editar, cambiar estatus y eliminar con sus publicacione
   const editada = await api("PUT", `/api/refugio/mascotas/${id}`, { token, cuerpo: { ...MASCOTA, nombre: "Rayo II", edadMeses: 8, foto: creada.datos.mascota.foto } });
   assert.equal(editada.datos.mascota.nombre, "Rayo II");
   assert.equal(editada.datos.mascota.edadMeses, 8);
+  assert.deepEqual(editada.datos.mascota.fotos, [creada.datos.mascota.foto], "sin fotos extra, el carrusel solo trae la principal");
+
+  // Carrusel: hasta 2 fotos extra; si no se mandan (la app móvil) se conservan las que ya había
+  const base = { ...MASCOTA, nombre: "Rayo II", edadMeses: 8, foto: creada.datos.mascota.foto };
+  const conExtra = (await api("PUT", `/api/refugio/mascotas/${id}`, { token, cuerpo: { ...base, fotosExtra: [PNG, PNG] } })).datos.mascota;
+  assert.equal(conExtra.fotos.length, 3);
+  assert.equal(conExtra.fotos[0], creada.datos.mascota.foto);
+  assert.equal((await api("PUT", `/api/refugio/mascotas/${id}`, { token, cuerpo: base })).datos.mascota.fotos.length, 3);
+  assert.equal((await api("PUT", `/api/refugio/mascotas/${id}`, { token, cuerpo: { ...base, fotosExtra: [PNG, PNG, PNG] } })).estado, 400);
+  assert.deepEqual((await api("PUT", `/api/refugio/mascotas/${id}`, { token, cuerpo: { ...base, fotosExtra: [conExtra.fotos[2]] } })).datos.mascota.fotos,
+    [creada.datos.mascota.foto, conExtra.fotos[2]]);
 
   const estatus = await api("PATCH", `/api/refugio/mascotas/${id}/estatus`, { token, cuerpo: { estatus: "adoptado" } });
   assert.equal(estatus.datos.mascota.estatus, "adoptado");
@@ -292,6 +303,14 @@ test("perfil del refugio: se edita y los usuarios lo ven; adoptadas se ocultan",
   const publico = (await api("GET", `/api/refugios/${id}`, { token: u.token })).datos.refugio;
   assert.equal(publico.telefono, "55 9876 5432");
   assert.equal(publico.horario, "08:00 - 20:00");
+
+  // Foto del refugio (se ve en su tarjeta): se sube, se conserva al guardar de nuevo y se puede quitar
+  const conFoto = (await api("PUT", "/api/refugio/perfil", { token: r.token, cuerpo: { ...cambios, foto: PNG } })).datos.refugio;
+  assert.match(conFoto.foto, /^\/uploads\/imagenes\/[0-9a-f-]{36}\.png$/);
+  assert.equal((await api("GET", `/api/refugios/${id}`, { token: u.token })).datos.refugio.foto, conFoto.foto);
+  assert.equal((await api("PUT", "/api/refugio/perfil", { token: r.token, cuerpo: { ...cambios, foto: conFoto.foto } })).datos.refugio.foto, conFoto.foto);
+  assert.equal((await api("PUT", "/api/refugio/perfil", { token: r.token, cuerpo: { ...cambios, foto: "data:image/png;base64,AAAA" } })).estado, 400, "firma de PNG falsa");
+  assert.equal((await api("PUT", "/api/refugio/perfil", { token: r.token, cuerpo: { ...cambios, foto: "" } })).datos.refugio.foto, "");
 
   const mascotas = (await api("GET", `/api/refugios/${id}/mascotas`, { token: u.token })).datos.mascotas;
   const luna = mascotas.find((m) => m.nombre === "Luna");
