@@ -131,7 +131,9 @@ export async function montarNavbar({ sesion, activa }) {
   if (sesion.rol !== "invitado" && sesion.token) {
     import("./avisos.js").then(({ montarAvisos }) => montarAvisos(encabezado.querySelector(".encabezado__acciones")));
   }
-  encabezado.querySelector("#boton-salir").addEventListener("click", () => {
+  encabezado.querySelector("#boton-salir").addEventListener("click", async () => {
+    // Este navegador deja de recibir las notificaciones push de la cuenta (HU-19)
+    if (sesion.rol !== "invitado") await import("./notificaciones-push.js").then((m) => m.quitarPush()).catch(() => {});
     cerrarSesion();
     irA("pages/login.html");
   });

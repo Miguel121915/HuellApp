@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'core/push_service.dart';
 import 'core/tipografia.dart';
 import 'screens/arranque_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // HU-19: notificaciones push (solo Android; en web y en las pruebas no hace nada)
+  await PushService.instancia.iniciar();
   runApp(const MyApp());
 }
 

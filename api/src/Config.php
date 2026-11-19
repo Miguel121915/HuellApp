@@ -43,6 +43,9 @@ final class Config
         // Dirección pública del sitio (p. ej. https://huellapp.duckdns.org) para los enlaces que se comparten
         // y el QR del cartel. Vacío = la misma dirección desde la que se abrió el sitio o la API.
         'SITIO_URL' => '',
+        // HU-19 Notificaciones push: ruta del JSON de la cuenta de servicio de Firebase (SECRETO: fuera del
+        // proyecto, p. ej. C:\oracle\firebase\huellapp-firebase.json). Vacío = sin push (la campana sigue igual).
+        'FIREBASE_CREDENCIALES' => '',
         // Correos (códigos para confirmar el correo y recuperar la contraseña) con Brevo.
         // Vacío = MODO DE PRUEBA: no se envía nada y el código se muestra en la consola de la API.
         'BREVO_API_KEY' => '',

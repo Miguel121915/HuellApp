@@ -35,7 +35,10 @@ final class Avisos
             );
         } catch (\Throwable $e) {
             error_log('No se pudo guardar el aviso: ' . $e->getMessage());
+            return;
         }
+        // HU-19: también como notificación push (llega con la app o la página cerradas)
+        Push::aUsuario($usuarioId, mb_substr($titulo, 0, 120), mb_substr($texto, 0, 300), in_array($seccion, self::SECCIONES, true) ? $seccion : 'foro');
     }
 
     /** Aviso para la cuenta responsable de un refugio. */

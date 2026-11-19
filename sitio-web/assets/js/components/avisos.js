@@ -6,6 +6,7 @@
  */
 import { get, post } from "../core/api.js";
 import { crearElemento, rutaDesdeRaiz, irA } from "../core/utils.js";
+import { activarPush, prepararPush, pushActivo, pushDisponible } from "./notificaciones-push.js";
 
 const CADA_MS = 30000;
 
@@ -48,6 +49,8 @@ export function montarAvisos(contenedor) {
   let avisos = [];
   let noLeidos = 0;
   let ultimoVisto = null; // id del aviso más nuevo ya conocido (para notificar solo lo nuevo)
+  let hayPush = false; // la API puede mandar notificaciones push (HU-19)
+  let mensajePush = "";
 
   function pintarInsignia() {
     insignia.textContent = noLeidos > 9 ? "9+" : String(noLeidos);
@@ -72,14 +75,19 @@ export function montarAvisos(contenedor) {
           crearElemento("small", { texto: hace(a.fecha) }),
         ]))))
         : crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "No tienes avisos todavía." }),
-      permiso === "default"
-        ? crearElemento("button", { clase: "boton boton--secundario boton--pequeno", texto: "Recibir avisos del navegador", atributos: { type: "button", "data-accion": "permiso" } })
+      // Push real (llega con HuellApp cerrada) si la API lo tiene; si no, el aviso del navegador de siempre
+      permiso === "default" || (hayPush && permiso === "granted" && !pushActivo())
+        ? crearElemento("button", { clase: "boton boton--secundario boton--pequeno", texto: hayPush ? "🔔 Activar notificaciones" : "Recibir avisos del navegador", atributos: { type: "button", "data-accion": "permiso" } })
         : null,
+      hayPush && pushActivo() ? crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "🔔 Notificaciones activadas en este navegador." }) : null,
+      hayPush && permiso === "denied" ? crearElemento("p", { clase: "texto-suave texto-pequeno", texto: "Las notificaciones están bloqueadas en este navegador. Puedes permitirlas en el candado 🔒 de la barra de direcciones." }) : null,
+      mensajePush ? crearElemento("p", { clase: "texto-pequeno", texto: mensajePush, atributos: { role: "status" } }) : null,
     ].filter(Boolean)); // replaceChildren escribiría «null» como texto
   }
 
   function notificar(nuevos) {
     if (!("Notification" in window) || Notification.permission !== "granted" || !document.hidden) return;
+    if (pushActivo()) return; // ya llega como notificación push: no se repite
     nuevos.slice(0, 3).forEach((a) => {
       const n = new Notification(a.titulo, { body: a.texto || "HuellApp", icon: rutaDesdeRaiz("assets/img/favicon.svg"), tag: `aviso-${a.id}` });
       n.onclick = () => { window.focus(); abrir(a); };
@@ -126,12 +134,15 @@ export function montarAvisos(contenedor) {
       pintarInsignia();
       pintarPanel();
     } else if (accion === "permiso") {
-      await Notification.requestPermission();
+      if (hayPush) mensajePush = (await activarPush()).mensaje;
+      else await Notification.requestPermission();
       pintarPanel();
     }
   });
 
   actualizar();
+  // HU-19: si ya dio permiso antes, este navegador queda registrado para recibir push
+  pushDisponible().then((si) => { hayPush = si; if (si) prepararPush(); });
   const conPermiso = () => "Notification" in window && Notification.permission === "granted";
   setInterval(() => { if (!document.hidden || conPermiso()) actualizar(); }, CADA_MS);
 }

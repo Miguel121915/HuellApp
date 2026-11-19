@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012369050353",
+    "project_id": "huellapp-b42ba",
+    "storage_bucket": "huellapp-b42ba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012369050353:android:a5b1a820b9445d8d5ef750",
+        "android_client_info": {
+          "package_name": "com.example.huellapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDveRTMIQVHj4dqB855hXpDceM9YvyWEko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

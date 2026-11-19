@@ -95,6 +95,15 @@ Todo se configura en `.env` (copia de `.env.example`): `DB_TNS` (servicio del `t
 3. En `api/.env`: `GOOGLE_CLIENT_ID=<ese id>.apps.googleusercontent.com` y reinicia `php artisan serve`.
 4. (Solo para el APK de Android) Crea otro ID de cliente tipo **Android** con el paquete `com.example.huellapp` y la huella SHA-1 de tu llave (`cd android` y `gradlew signingReport`). No hace falta copiarlo a ningún lado: la app usa el ID **web** que le da la API.
 
+### Notificaciones push (HU-19)
+
+Cada aviso de la campana también llega como **notificación del sistema**, aunque HuellApp esté cerrada, en el **navegador** (Chrome, Edge, Firefox; en tu computadora sirve `http://localhost`, en otros equipos hace falta **HTTPS**) y en la **app de Android**. iPhone no: necesita la cuenta de desarrollador de Apple (de pago).
+
+- **API:** `FIREBASE_CREDENCIALES` en `api/.env` con la ruta del JSON de la **cuenta de servicio** de Firebase (*Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada*). Es **secreto**: guárdalo **fuera** del proyecto (por ejemplo, en el `.env` con diagonales normales: `C:/oracle/firebase/huellapp-firebase.json`). Vacío = sin push (la campana funciona igual).
+- **Web:** los datos públicos del proyecto y la clave VAPID están en `sitio-web/assets/js/core/firebase-config.js` y en `sitio-web/firebase-messaging-sw.js` (debe quedar en la raíz del sitio). Se activa con el botón **🔔 Activar notificaciones** de la campana.
+- **App Android:** `android/app/google-services.json` (de *Agregar app → Android*, paquete `com.example.huellapp`). La app pide el permiso al iniciar sesión.
+- Rutas: `GET /push/estado` (¿hay push?), `POST /push/registrar` `{token, plataforma: web|android}` y `POST /push/quitar` `{token}` (con sesión). Los tokens que Firebase da por inválidos se borran solos. Tabla: `dispositivos_push`.
+
 ### Compartir alertas y cartel con QR
 
 Cada alerta del foro tiene una página pública (`pages/alerta.html?id=…`) y un cartel imprimible con código QR (`pages/cartel.html?id=…`). Los enlaces que se comparten por WhatsApp o Facebook y el QR usan la dirección de `SITIO_URL` en `api/.env`. Mientras no la pongas, usan la dirección desde la que se abrió el sitio (por ejemplo `http://127.0.0.1:3000`), que **solo funciona en tu computadora**. Después del despliegue pon la de HTTPS, por ejemplo `SITIO_URL=https://huellapp.duckdns.org`.

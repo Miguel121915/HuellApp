@@ -439,3 +439,20 @@ CREATE TABLE codigos_correo (
   CONSTRAINT ck_codigos_correo_proposito CHECK (proposito IN ('verificar', 'recuperar'))
 );
 CREATE INDEX idx_codigos_correo_usuario ON codigos_correo (usuario_id, proposito);
+
+-- HU-19 Notificaciones push (Firebase Cloud Messaging): un registro por navegador o celular con permiso.
+-- El token lo entrega Firebase; si Firebase dice que ya no sirve, la API lo borra sola.
+CREATE SEQUENCE dispositivos_push_seq;
+CREATE TABLE dispositivos_push (
+  id             NUMBER(10) DEFAULT dispositivos_push_seq.NEXTVAL NOT NULL,
+  usuario_id     NUMBER(10) NOT NULL,
+  token          VARCHAR2(512 CHAR) NOT NULL,
+  plataforma     VARCHAR2(10 CHAR) NOT NULL,
+  creado_en      TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  actualizado_en TIMESTAMP(3) DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
+  CONSTRAINT pk_dispositivos_push PRIMARY KEY (id),
+  CONSTRAINT uq_dispositivos_push_token UNIQUE (token),
+  CONSTRAINT fk_dispositivos_push_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+  CONSTRAINT ck_dispositivos_push_plataforma CHECK (plataforma IN ('web', 'android'))
+);
+CREATE INDEX idx_dispositivos_push_usuario ON dispositivos_push (usuario_id);

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 import 'google_login.dart';
+import 'push_service.dart';
 
 /// Datos de la cuenta que inició sesión (lo que devuelve /api/auth/login y /api/auth/yo).
 class Sesion {
@@ -258,6 +259,8 @@ class SesionService extends ChangeNotifier {
   }
 
   Future<void> cerrarSesion() async {
+    // HU-19: este celular deja de recibir las notificaciones de la cuenta (antes de borrar el token de sesión)
+    await PushService.instancia.quitar();
     await _borrar();
     await GoogleLogin.instancia.salir();
     _invitado = false;

@@ -843,3 +843,17 @@ test("alertas públicas: sin cuenta, sin datos privados y con ubicación aproxim
   assert.equal((await api("GET", "/api/alertas/999999")).estado, 404);
   assert.equal((await api("GET", "/api/alertas/abc")).estado, 400);
 });
+
+/* ---------- HU-19 Notificaciones push: registrar y quitar el token de un dispositivo ---------- */
+test("push: solo con cuenta se registra un token válido y se puede quitar", async () => {
+  assert.equal((await api("GET", "/api/push/estado")).estado, 200, "cualquiera puede preguntar si hay push");
+  const token = `token-de-prueba-${Date.now()}-abcdefghijklmnop`;
+  assert.equal((await api("POST", "/api/push/registrar", { cuerpo: { token, plataforma: "web" } })).estado, 401);
+  const { token: sesion } = await entrar("ana@huellapp.mx", "usuario");
+  assert.equal((await api("POST", "/api/push/registrar", { token: sesion, cuerpo: { token: "corto", plataforma: "web" } })).estado, 400);
+  assert.equal((await api("POST", "/api/push/registrar", { token: sesion, cuerpo: { token, plataforma: "ios" } })).estado, 400);
+  assert.equal((await api("POST", "/api/push/registrar", { token: sesion, cuerpo: { token, plataforma: "web" } })).estado, 200);
+  // Registrar dos veces el mismo token no lo duplica
+  assert.equal((await api("POST", "/api/push/registrar", { token: sesion, cuerpo: { token, plataforma: "android" } })).estado, 200);
+  assert.equal((await api("POST", "/api/push/quitar", { token: sesion, cuerpo: { token } })).estado, 200);
+});

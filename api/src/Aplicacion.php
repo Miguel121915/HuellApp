@@ -56,6 +56,7 @@ final class Aplicacion
         Requisitos::registrar($r);
         Kiro::registrar($r);
         Avisos::registrar($r);
+        Push::registrar($r); // HU-19: tokens de notificaciones push
         return $r;
     }
 
